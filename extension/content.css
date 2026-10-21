@@ -1,0 +1,400 @@
+/* 元のDOMは残す(MOREボタンの代行クリックに使う)ので display:none のみ */
+html.mu-rewrite #app-contents > :not(#mu-root) { display: none !important; }
+html.mu-rewrite #dashboard-home { display: none !important; }
+html.mu-rewrite #menu { display: none !important; }
+/* 元CSSの margin-left:250px / min-width:774px を打ち消す(サイドバーを隠すため) */
+html.mu-rewrite #app-contents { margin-left: 0 !important; min-width: 0 !important; }
+/* ユーザーメニュー代行クリック中だけ元のドロップダウンを見えなくする */
+html.mu-proxy-click .ant-dropdown { opacity: 0 !important; }
+
+/* #menu#menu は元CSSの !important 付き白文字指定に詳細度で勝つため */
+#menu#menu { background: #fff !important; color: #4a4553 !important; border-right: 1px solid #ece8f1; }
+#menu#menu .ant-menu, #menu#menu .ant-menu-sub, #menu#menu .ant-menu-item, #menu#menu .ant-menu-submenu-title {
+  background: transparent !important;
+}
+#menu#menu .ant-menu-item:hover, #menu#menu .ant-menu-submenu-title:hover,
+#menu#menu .ant-menu-item-selected, #menu#menu .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background: #f1e9f8 !important;
+}
+#menu#menu a, #menu#menu .ant-typography, #menu#menu .anticon, #menu#menu .header-logo,
+#menu#menu ._name_1tez8_53, #menu#menu .ant-menu-submenu-arrow { color: #4a4553 !important; }
+#menu#menu .ant-menu-item-selected a, #menu#menu .ant-menu-submenu-selected > .ant-menu-submenu-title a,
+#menu#menu .ant-menu-item:hover a, #menu#menu .ant-menu-submenu-title:hover a { color: #541b86 !important; font-weight: 700; }
+#menu#menu button.ant-btn:not(#desktop-sider-trigger) { background: #f1e9f8 !important; border-color: transparent !important; }
+#menu#menu button.ant-btn:not(#desktop-sider-trigger) * { color: #541b86 !important; }
+
+#mu-root {
+  box-sizing: border-box; min-height: 100vh; background: #F5F3F7; color: #26212E;
+  font-size: 15px; line-height: 1.65;
+  font-family: "Murecho", "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+}
+#mu-root * { box-sizing: border-box; }
+
+/* 読み込み中は、中身をまだ見せずにスピナーだけを出す */
+#mu-root.mu-busy > :not(.mu-loading) { display: none !important; }
+/* 元の起動スプラッシュの複製(content.js の captureSplash)。元のクラス名のまま入るので、見た目は元のCSSが決める */
+#mu-splash { position: fixed; inset: 0; z-index: 2100; background: #fdfdfd; overflow: hidden; }
+#mu-splash.mu-fade { animation: mu-fadeout 305ms forwards; pointer-events: none; }
+html.mu-splash-on, html.mu-splash-on body { overflow: hidden !important; }
+
+/* 元のポータルの起動時スプラッシュ(全面 #fdfdfd、ロゴ+紫の回る輪、終了時に 305ms で薄くなる)に見た目をそろえる */
+#mu-root .mu-loading { position: fixed; inset: 0; z-index: 1900; background: #fdfdfd; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+#mu-root .mu-loading.mu-fade { animation: mu-fadeout 305ms forwards; pointer-events: none; }
+#mu-root .mu-loading-logo { font-weight: 800; font-size: 30px; letter-spacing: -0.01em; color: #541B86; }
+#mu-root .mu-spinner { width: 24px; height: 24px; border: 3px solid #EEE8F3; border-top-color: #541B86; border-radius: 50%; animation: mu-spin 0.8s linear infinite; }
+#mu-root .mu-fs-spin { margin: 28px auto; } /* 電子キャビネットのカード内の回る輪(中央) */
+@keyframes mu-spin { to { transform: rotate(360deg); } }
+@keyframes mu-fadeout { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #mu-root .mu-spinner { animation-duration: 2.4s; } }
+#mu-root a { color: #541B86; overflow-wrap: anywhere; }
+#mu-root a:hover { color: #3A1260; }
+#mu-root button { font: inherit; color: inherit; cursor: pointer; }
+#mu-root a:focus-visible, #mu-root button:focus-visible, #mu-root summary:focus-visible { outline: 2px solid #541B86; outline-offset: 2px; }
+#mu-root h2 { margin: 0; font-size: 17px; font-weight: 700; color: inherit; }
+#mu-root > p { padding: 16px; }
+
+/* ヘッダー */
+#mu-root .mu-header {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 32px;
+  background: #fff; border-bottom: 1px solid #E6E1EC;
+  position: sticky; top: 0; z-index: 100; /* ドロワー(2000)より下 */
+}
+/* ユーザーメニューを開く間は、背景の幕(2002)より上に出す(ヘッダーが独立した重なりになるため) */
+#mu-root.mu-user-open .mu-header { z-index: 2003; }
+/* ハンバーガーはヘッダーの一部で、本画面と一緒に動く。メニューを開いている間は隠し(場所は残す)、メニュー側の×が閉じる役をする */
+#mu-root .mu-burger {
+  width: 44px; height: 44px; border: 1px solid #DDD6E6; border-radius: 99px; background: #F7F4FA; padding: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+}
+#mu-root .mu-burger span { width: 18px; height: 2px; border-radius: 2px; background: #26212E; }
+#mu-root.mu-drawer-open .mu-burger { visibility: hidden; }
+#mu-root .mu-logo { font-weight: 800; letter-spacing: -0.01em; font-size: 20px; color: #541B86; }
+#mu-root .mu-search {
+  flex: 1 1 260px; max-width: 420px; min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px;
+  border: 1px solid #DDD6E6; border-radius: 99px; background: #F7F4FA; color: #707684; text-align: left;
+}
+#mu-root .mu-user { margin-left: auto; position: relative; }
+#mu-root.mu-user-open .mu-user { z-index: 2003; }
+#mu-root .mu-pill {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 14px 4px 4px;
+  border: 1px solid #DDD6E6; border-radius: 99px; background: #fff; font-size: 14px;
+}
+#mu-root .mu-avatar { width: 36px; height: 36px; border-radius: 50%; background: #EEE8F3; color: #541B86; display: flex; align-items: center; justify-content: center; }
+#mu-root .mu-menu {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 260px; padding: 6px; border-radius: 16px;
+  background: #fff; border: 1px solid #E6E1EC; box-shadow: 0 12px 32px rgba(38, 33, 46, 0.16); flex-direction: column;
+}
+#mu-root.mu-user-open .mu-menu { display: flex; }
+#mu-root .mu-mi {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px;
+  padding: 10px 12px; border: 0; border-radius: 10px; background: transparent; text-align: left;
+}
+#mu-root .mu-mi:hover { background: #F7F4FA; }
+#mu-root .mu-mi-l { display: flex; align-items: center; gap: 12px; }
+#mu-root .mu-mi-r { color: #707684; font-size: 13px; }
+#mu-root .mu-danger { color: #CF1322; }
+#mu-root .mu-langs { display: none; flex-direction: column; padding-left: 32px; }
+#mu-root .mu-langs.mu-open { display: flex; }#mu-root .mu-sep { height: 1px; margin: 4px 8px; background: #EDE8F2; }
+#mu-root .mu-ubackdrop { display: none; position: fixed; inset: 0; z-index: 2002; width: 100%; border: 0; padding: 0; background: transparent; cursor: default; }
+#mu-root.mu-user-open .mu-ubackdrop { display: block; }
+
+/* ドロワー: 広い画面では、左から滑り出して本画面を右へ押し出す(暗幕なし)。狭い画面では、従来どおり上に重ねて暗幕を出す */
+#mu-root { transition: padding-left 0.25s ease; }
+#mu-root.mu-drawer-open { padding-left: 300px; }
+html.mu-rewrite footer { transition: margin-left 0.25s ease; } /* フッターも一緒に動かす */
+html.mu-rewrite.mu-drawer-on footer { margin-left: 300px !important; }
+#mu-root .mu-backdrop { display: none; position: fixed; inset: 0; z-index: 2000; width: 100%; border: 0; padding: 0; background: rgba(20, 35, 43, 0.4); cursor: default; }
+#mu-root .mu-drawer {
+  display: flex; position: fixed; top: 0; left: 0; bottom: 0; z-index: 2001; width: 300px; max-width: 85%; padding: 16px;
+  overflow-y: auto; flex-direction: column; gap: 6px; background: #fff; border-right: 1px solid #E6E1EC;
+  transform: translateX(-100%); visibility: hidden; transition: transform 0.25s ease, visibility 0s 0.25s;
+}
+#mu-root.mu-drawer-open .mu-drawer { transform: none; visibility: visible; transition: transform 0.25s ease, visibility 0s; }
+@media (max-width: 760px) {
+  #mu-root.mu-drawer-open { padding-left: 0; }
+  html.mu-rewrite.mu-drawer-on footer { margin-left: 0 !important; }
+  #mu-root.mu-drawer-open .mu-backdrop { display: block; }
+  #mu-root .mu-drawer { border-radius: 0 24px 24px 0; border-right: 0; box-shadow: 8px 0 32px rgba(20, 35, 43, 0.18); }
+}
+/* 押し出し表示では、ヘッダーのロゴとメニューのロゴが並んで二重になるので、ヘッダーのロゴを隠し、
+   ハンバーガーが抜けた分だけヘッダーの左余白を詰める。×は、メニュー右上のハンバーガーが閉じる役を兼ねるので隠す */
+@media (min-width: 761px) {
+  #mu-root.mu-drawer-open .mu-header .mu-logo { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #mu-root, html.mu-rewrite footer, #mu-root .mu-drawer, #mu-root.mu-drawer-open .mu-drawer { transition: none; }
+}
+/* メニューの上部: MU Portal(左)と×(右端、ヘッダーのハンバーガーと同じ形)。下は最初の項目との間 */
+#mu-root .mu-drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 0 22px 8px; }
+#mu-root .mu-x {
+  width: 44px; height: 44px; border: 1px solid #DDD6E6; border-radius: 99px; background: #F7F4FA; color: #26212E; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+#mu-root a.mu-nav {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 99px;
+  background: #F7F4FA; color: #26212E; font-weight: 500; text-decoration: none;
+}
+#mu-root a.mu-nav svg { flex: none; color: #541B86; }
+#mu-root a.mu-nav.mu-cur { background: #26212E; color: #fff; }
+#mu-root a.mu-nav.mu-cur svg { color: inherit; }
+/* 子の項目は、親の下に縦線つきの字下げグループとして置く。親には下向きの矢印を付ける
+   (.mu-sub はお知らせ行の副文用なので、別名 .mu-navsub にしてある) */
+#mu-root .mu-navgroup { display: grid; grid-template-rows: 1fr; margin: 0 0 4px 22px; transition: grid-template-rows 0.2s ease, margin 0.2s ease; }
+/* 閉じた枠は高さ0でも、メニューの縦の gap(6px)を前後に1回ずつ足してしまい、そこだけ間が広がるので、上に -6px で打ち消す */
+#mu-root .mu-navgroup.mu-closed { grid-template-rows: 0fr; margin-top: -6px; margin-bottom: 0; }
+#mu-root .mu-navin { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 6px; padding-left: 10px; border-left: 2px solid #DDD6E6; }
+#mu-root .mu-navgroup.mu-closed > .mu-navin { visibility: hidden; transition: visibility 0s 0.2s; }
+#mu-root a.mu-navsub { padding: 8px 14px; font-size: 14px; }
+#mu-root .mu-navitem { position: relative; }
+#mu-root .mu-navitem > a.mu-nav { padding-right: 52px; }
+#mu-root .mu-navtog { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #707684; display: flex; align-items: center; justify-content: center; }
+#mu-root .mu-navtog:hover { background: #EEE8F3; }
+#mu-root .mu-navtog svg { transition: transform 0.15s; }
+#mu-root .mu-navtog[aria-expanded="false"] svg { transform: rotate(-90deg); }
+#mu-root a.mu-cur ~ .mu-navtog { color: #fff; }
+#mu-root a.mu-cur ~ .mu-navtog:hover { background: #3A3446; }
+@media (prefers-reduced-motion: reduce) {
+  #mu-root .mu-navtog svg, #mu-root .mu-navgroup, #mu-root .mu-navgroup.mu-closed > .mu-navin { transition: none; }
+}
+
+/* メイン */
+#mu-root .mu-main { max-width: 1280px; margin: 0 auto; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 28px; }
+#mu-root .mu-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+#mu-root a.mu-tile, #mu-root .mu-linkbox {
+  min-height: 132px; padding: 20px; border-radius: 20px; text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;
+}
+#mu-root a.mu-t-main { background: #541B86; color: #fff; }
+#mu-root a.mu-t-dark { background: #26212E; color: #fff; }
+#mu-root a.mu-t-line { background: #fff; color: #26212E; border: 1px solid #DDD6E6; }
+#mu-root .mu-t-title { font-weight: 800; letter-spacing: -0.01em; font-size: 28px; }
+#mu-root a.mu-t-line .mu-t-title { font-size: 22px; }
+#mu-root .mu-t-sub { font-size: 13px; opacity: 0.9; }
+#mu-root a.mu-t-line .mu-t-sub { color: #707684; opacity: 1; }
+#mu-root .mu-linkbox { justify-content: flex-start; gap: 4px; padding: 16px 20px; background: #fff; border: 1px solid #DDD6E6; font-size: 14px; }
+#mu-root .mu-linkbox b { font-size: 13px; color: #707684; }
+#mu-root .mu-callout { padding: 12px 18px; border-radius: 14px; background: #E6F4FF; color: #0B3D6B; font-size: 14px; overflow-wrap: anywhere; }
+#mu-root .mu-callout a { color: inherit; }
+#mu-root .mu-cols { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+#mu-root .mu-col { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+#mu-root .mu-card { padding: 20px; border-radius: 20px; background: #fff; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#mu-root .mu-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+#mu-root .mu-card-head a { font-size: 14px; }
+#mu-root .mu-list { display: flex; flex-direction: column; gap: 14px; }
+
+/* お知らせの行 */
+#mu-root .mu-row { padding: 14px 16px; border-radius: 12px; background: #F7F4FA; min-width: 0; }
+#mu-root .mu-empty { font-size: 13px; color: #707684; }
+#mu-root p.mu-empty { margin: 0; }
+#mu-root .mu-row summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+#mu-root .mu-row summary::-webkit-details-marker { display: none; }
+#mu-root .mu-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+#mu-root .mu-chip { padding: 1px 10px; border-radius: 99px; background: #EEE8F3; color: #3A1260; font-weight: 700; }
+#mu-root .mu-chip.mu-unread { background: #FFE1E2; color: #B42318; }
+#mu-root .mu-when { margin-left: auto; color: #707684; font-variant-numeric: tabular-nums; }
+#mu-root .mu-ttl { font-weight: 700; overflow-wrap: anywhere; }
+#mu-root .mu-sub { font-size: 13px; color: #707684; }
+#mu-root .mu-body { padding-top: 10px; overflow-wrap: anywhere; font-size: 14px; }
+#mu-root .mu-body img, #mu-root .mu-body table { max-width: 100%; }
+#mu-root .mu-files { margin: 8px 0 0; padding-left: 20px; font-size: 12px; color: #707684; }
+
+/* 学年暦 */
+#mu-root .mu-calnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#mu-root .mu-calmonth { font-weight: 700; }
+#mu-root .mu-calbtns { display: flex; gap: 6px; }
+#mu-root .mu-calbtn { width: 44px; height: 44px; border: 1px solid #DDD6E6; border-radius: 50%; background: #fff; font-size: 18px; line-height: 1; padding: 0; }
+#mu-root .mu-wk, #mu-root .mu-calgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); column-gap: 4px; }
+#mu-root .mu-wk { text-align: center; font-size: 12px; color: #707684; }
+#mu-root .mu-calgrid { row-gap: 3px; align-items: start; }
+#mu-root .mu-calgrid > .mu-empty { grid-column: 1 / -1; }
+/* 月の切り替え中: 前の月を薄くして操作を止め、中央に回る輪を出す */
+#mu-root .mu-calcard { position: relative; }
+#mu-root .mu-cal-spin { display: none; position: absolute; left: 50%; top: 55%; margin: -12px 0 0 -12px; z-index: 1; }
+#mu-root .mu-cal-busy .mu-cal-spin { display: block; }
+#mu-root .mu-cal-busy .mu-calgrid { opacity: 0.35; pointer-events: none; }
+#mu-root .mu-cal-busy .mu-calbtn { pointer-events: none; }
+#mu-root .mu-sun { color: #CF1322; }
+#mu-root .mu-sat { color: #1E88E5; }
+#mu-root .mu-day { min-width: 0; padding: 6px 2px 2px; border-top: 1px solid #EDE8F2; text-align: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+#mu-root .mu-day span { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; border-radius: 50%; }
+#mu-root .mu-day .mu-today { background: #541B86; color: #fff; }
+#mu-root .mu-bar { min-width: 0; padding: 1px 6px; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+#mu-root .mu-bar.mu-bl { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+#mu-root .mu-bar.mu-br { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+#mu-root .mu-c-class { background: #6B3FA0; }
+#mu-root .mu-c-off { background: #C62F3A; }
+#mu-root .mu-c-event { background: #F5B83D; }
+#mu-root .mu-bar.mu-c-event { color: #3B2A00; }
+#mu-root .mu-c-reg { background: #2E7D4F; }
+#mu-root .mu-c-exam { background: #1E6FBF; }
+#mu-root .mu-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #707684; }
+#mu-root .mu-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 3px; }
+
+/* トップ以外のページ本文 */
+#mu-root .mu-main > h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+#mu-root .mu-lead { margin: 0; font-size: 14.5px; line-height: 1.8; color: #707684; } /* 幅の上限を付けない: 短い注記は1行に収める */
+#mu-root .mu-main > h1 + .mu-lead { margin-top: -16px; }
+#mu-root .mu-lead + .mu-lead { margin-top: -20px; }
+#mu-root .mu-page { display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: flex-start; }
+#mu-root .mu-rail { flex: 0 0 220px; position: sticky; top: 96px; /* 固定ヘッダーの下 */ display: flex; flex-direction: column; gap: 2px; }
+#mu-root .mu-rail-h { padding: 0 12px 8px; font-size: 12px; font-weight: 700; color: #707684; }
+#mu-root .mu-rail a { padding: 7px 12px; border-radius: 10px; color: #26212E; text-decoration: none; font-size: 14px; }
+#mu-root .mu-rail a:hover { background: #EEE8F3; }
+#mu-root .mu-rail a.mu-cur { background: #26212E; color: #fff; font-weight: 500; }
+#mu-root .mu-pgbody { flex: 1 1 640px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 20px; align-items: stretch; }
+#mu-root .mu-sec { padding: 24px; border-radius: 20px; background: #fff; display: flex; flex-direction: column; gap: 14px; min-width: 0; scroll-margin-top: 96px; }
+#mu-root .mu-sec.mu-wide { grid-column: 1 / -1; }
+#mu-root .mu-sec > h2 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.4; }
+/* 間隔は親の gap だけで持つ */
+#mu-root :is(.mu-sec, .mu-dcol) > * { margin: 0; }
+#mu-root :is(.mu-sec, .mu-dcol) > .mu-hd { margin-top: 4px; font-size: 16px; font-weight: 700; line-height: 1.4; color: #26212E; }
+#mu-root :is(.mu-sec, .mu-dcol) > p { max-width: 76ch; font-size: 14.5px; line-height: 1.8; overflow-wrap: anywhere; }
+#mu-root :is(.mu-sec, .mu-dcol) > :is(ul, ol) { padding-left: 1.4em; font-size: 14.5px; line-height: 1.75; }
+#mu-root :is(.mu-sec, .mu-dcol) > :is(ul, ol) li + li, #mu-root :is(.mu-sec, .mu-dcol) > :is(ul, ol) li > :is(ul, ol) { margin-top: 4px; }
+#mu-root :is(.mu-sec, .mu-dcol) > :is(ul, ol):is(.mu-steps, .mu-bul) { padding: 0; list-style: none; display: grid; }
+#mu-root .mu-steps { grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px; }
+#mu-root .mu-steps li { display: flex; align-items: center; gap: 12px; margin: 0; padding: 12px 14px; border-radius: 12px; background: #F7F4FA; font-size: 14px; font-weight: 500; }
+#mu-root .mu-n { flex: none; width: 28px; height: 28px; border-radius: 50%; background: #541B86; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+#mu-root .mu-bul { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 6px 16px; font-size: 14px; }
+#mu-root .mu-bul li { display: flex; gap: 8px; align-items: baseline; margin: 0; }
+#mu-root .mu-bul li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: #541B86; transform: translateY(-2px); }
+#mu-root .mu-bul li > span { min-width: 0; overflow-wrap: anywhere; }
+#mu-root .mu-sec img, #mu-root .mu-sec table { max-width: 100%; }
+#mu-root .mu-sec hr { width: 100%; height: 1px; border: 0; background: #EDE8F2; }
+#mu-root .mu-sec .mu-card { padding: 0; border-radius: 0; background: none; }
+#mu-root .mu-dcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 12px 24px; }
+#mu-root .mu-dcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+#mu-root .mu-lbl { font-size: 13px; font-weight: 700; color: #707684; }
+#mu-root .mu-files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; }
+#mu-root a.mu-file { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px 16px; border-radius: 12px; background: #F7F4FA; text-decoration: none; color: #26212E; }
+#mu-root a.mu-file:hover { background: #EEE8F3; }
+#mu-root a.mu-file svg { flex: none; color: #541B86; }
+#mu-root .mu-fname { flex: 1 1 auto; min-width: 0; font-weight: 500; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#mu-root .mu-fkind { flex: none; font-size: 11px; font-weight: 700; color: #707684; }
+/* 電子キャビネット */
+#mu-root .mu-fs { padding: 20px; border-radius: 20px; background: #fff; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+#mu-root .mu-sec .mu-fs { padding: 0; border-radius: 0; background: none; }
+#mu-root .mu-fs-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; font-size: 14px; color: #707684; }
+#mu-root .mu-fs-nav b { color: #26212E; }
+#mu-root .mu-fs-nav button { padding: 0; border: 0; background: none; color: #541B86; text-decoration: underline; }
+#mu-root .mu-fs-nav button.mu-fs-up { padding: 6px 14px; border-radius: 99px; background: #F7F4FA; text-decoration: none; }
+#mu-root .mu-fs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 8px; }
+#mu-root .mu-fs-item { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 44px; padding: 12px 16px; border: 0; border-radius: 12px; background: #F7F4FA; color: #26212E; text-align: left; font: inherit; text-decoration: none; }
+#mu-root .mu-fs-item:hover { background: #EEE8F3; }
+#mu-root .mu-fs-item svg { flex: none; color: #541B86; }
+#mu-root .mu-fs-dir { font-weight: 700; }
+#mu-root .mu-fs-meta { font-size: 11px; color: #707684; flex: none; }
+#mu-root .mu-img { display: block; max-width: 100%; border-radius: 12px; object-fit: contain; }
+#mu-root .mu-imgs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+#mu-root .mu-imgs .mu-img { height: 120px; width: auto; }
+#mu-root .mu-imgs.mu-one { display: block; }
+#mu-root .mu-one > a { display: block; width: fit-content; max-width: 100%; }
+#mu-root .mu-one .mu-img { height: auto; max-height: 160px; }
+#mu-root .mu-banner > a { width: 100%; }
+#mu-root .mu-banner .mu-img { width: 100%; max-height: 120px; object-position: left; }
+#mu-root .mu-links { display: flex; flex-direction: column; gap: 8px; }
+#mu-root .mu-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+#mu-root a.mu-lk { padding: 8px 16px; border-radius: 99px; background: #F7F4FA; color: #26212E; text-decoration: none; font-size: 14px; font-weight: 500; }
+#mu-root a.mu-lk:hover { background: #EEE8F3; }
+#mu-root a.mu-lk span { color: #707684; }
+#mu-root .mu-toc { padding: 16px 20px; border-radius: 12px; background: #F7F4FA; font-size: 14px; }
+#mu-root .mu-toc ul { margin: 0; padding-left: 20px; line-height: 1.8; }
+#mu-root .mu-toc > ul { padding-left: 0; list-style: none; }
+#mu-root .mu-more { padding: 0; border: 0; background: transparent; color: #541B86; font-size: 14px; text-decoration: underline; }
+
+/* お知らせ一覧ウィンドウ(ドロワー 2000・ユーザーメニュー 2003 と スプラッシュ 2100 の間) */
+html.mu-nw-lock, html.mu-nw-lock body { overflow: hidden !important; }
+#mu-root .mu-nw { position: fixed; inset: 0; z-index: 2050; box-sizing: border-box; padding: 24px; background: rgba(38, 33, 46, 0.55); display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1.6; }
+#mu-root .mu-nw-dlg { width: 100%; max-width: 1120px; height: min(820px, 100vh - 48px); background: #fff; border-radius: 24px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; overflow: hidden; }
+#mu-root .mu-nw-head { flex: none; display: flex; align-items: center; gap: 12px; padding: 14px 20px 14px 24px; border-bottom: 1px solid #EDE8F2; }
+#mu-root .mu-nw-head h2 { flex: 1 1 auto; font-size: 18px; font-weight: 800; }
+#mu-root .mu-nw-count { font-size: 13px; color: #707684; }
+#mu-root .mu-nw-close { width: 40px; height: 40px; border: 0; border-radius: 50%; background: #F7F4FA; font-size: 22px; line-height: 1; padding: 0; }
+#mu-root .mu-nw-cols { flex: 1 1 auto; min-height: 0; display: flex; flex-wrap: nowrap; }
+#mu-root .mu-nw-list { flex: 0 0 46%; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid #EDE8F2; }
+#mu-root .mu-nw-tools { flex: none; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #EDE8F2; }
+#mu-root .mu-nw-r1 { display: flex; gap: 8px; }
+#mu-root .mu-nw-r2 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; } /* 英語は長いので折り返す */
+#mu-root .mu-nw-q, #mu-root .mu-nw-cat { min-width: 0; min-height: 40px; padding: 0 14px; border: 1px solid #DDD6E6; border-radius: 99px; font: inherit; color: inherit; }
+#mu-root .mu-nw-q { flex: 1 1 auto; background: #F7F4FA; }
+#mu-root .mu-nw-cat { flex: 0 1 190px; padding: 0 12px; background: #fff; }
+#mu-root .mu-nw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#mu-root .mu-nw-chip { white-space: nowrap; padding: 3px 12px; border: 1px solid #DDD6E6; border-radius: 99px; background: #fff; color: #26212E; font-size: 13px; }
+#mu-root .mu-nw-chip.mu-on { background: #26212E; border-color: #26212E; color: #fff; }
+#mu-root .mu-nw-allwrap { flex: none; max-width: 100%; display: flex; align-items: center; gap: 6px; }
+#mu-root .mu-nw-all { min-width: 0; text-align: right; padding: 3px 8px; border: 0; background: transparent; color: #541B86; font-size: 13px; font-weight: 700; }
+#mu-root .mu-nw-fail { font-size: 12px; color: #B42318; }
+#mu-root .mu-nw-rows { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+#mu-root .mu-nw-row { display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 14px 16px; border: 0; border-bottom: 1px solid #F1EDF6; background: #fff; text-align: left; }
+#mu-root .mu-nw-row.mu-sel { background: #F1E9F8; }
+#mu-root .mu-nw-dot { flex: none; width: 8px; height: 8px; margin-top: 8px; border-radius: 50%; background: transparent; }
+#mu-root .mu-nw-row.mu-unr .mu-nw-dot { background: #541B86; }
+#mu-root .mu-nw-mid { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+#mu-root .mu-nw-ttl { overflow-wrap: anywhere; }
+#mu-root .mu-nw-row.mu-unr .mu-nw-ttl { font-weight: 700; }
+#mu-root .mu-nw-meta, #mu-root .mu-nw-when { font-size: 12px; color: #707684; }
+#mu-root .mu-nw-when { flex: none; font-variant-numeric: tabular-nums; }
+#mu-root .mu-nw-note { margin: 0; padding: 20px 16px; font-size: 13px; color: #707684; }
+#mu-root .mu-nw-more { flex: none; align-self: center; margin: 12px; min-height: 40px; padding: 0 20px; border: 1px solid #DDD6E6; border-radius: 99px; background: #fff; }
+#mu-root .mu-nw-detail { flex: 1 1 0; min-width: 0; padding: 20px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+#mu-root .mu-nw-detail > * { margin: 0; flex: none; }
+#mu-root .mu-nw-bar { display: flex; align-items: center; gap: 8px; }
+#mu-root .mu-nw-back { display: none; }
+#mu-root .mu-nw-detail h3 { font-size: 19px; font-weight: 800; line-height: 1.5; overflow-wrap: anywhere; }
+#mu-root .mu-nw-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+#mu-root .mu-nw-cat1, #mu-root .mu-nw-dept { padding: 1px 12px; border-radius: 99px; font-size: 12px; }
+#mu-root .mu-nw-cat1 { background: #EEE8F3; color: #3A1260; font-weight: 700; }
+#mu-root .mu-nw-dept { background: #F7F4FA; color: #4B4658; }
+#mu-root .mu-nw-period { font-size: 12px; color: #707684; }
+#mu-root .mu-nw-event { font-size: 13px; font-weight: 700; color: #3A1260; overflow-wrap: anywhere; }
+#mu-root .mu-nw-body { font-size: 14.5px; line-height: 1.85; overflow-wrap: anywhere; }
+#mu-root .mu-nw-body p { margin: 0 0 10px; }
+#mu-root .mu-nw-body img, #mu-root .mu-nw-body table { max-width: 100%; }
+#mu-root .mu-nw-files { display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
+@media (max-width: 760px) {
+  #mu-root .mu-nw-list { flex: 1 1 auto; border-right: 0; }
+  #mu-root .mu-nw-detail { display: none; padding: 16px; }
+  #mu-root .mu-nw-dlg.mu-show-detail .mu-nw-list { display: none; }
+  #mu-root .mu-nw-dlg.mu-show-detail .mu-nw-detail { display: flex; flex: 1 1 auto; }
+  #mu-root .mu-nw-back { display: inline-block; }
+}
+
+@media (max-width: 760px) {
+  #mu-root .mu-rail { flex: 1 1 100%; position: static; flex-direction: row; gap: 6px; overflow-x: auto; }
+  #mu-root .mu-rail-h { display: none; }
+  #mu-root .mu-rail a { flex: none; white-space: nowrap; }
+}
+@media (max-width: 600px) {
+  #mu-root .mu-header, #mu-root .mu-main { padding-left: 16px; padding-right: 16px; }
+  #mu-root .mu-header { position: relative; } /* 狭い幅ではヘッダーが折り返して高くなるので固定しない */
+  #mu-root .mu-sec { padding: 16px; }
+}
+
+/* フッター(元UIの #app の次の兄弟)。サイドバー分の左余白を外し、デザインの色と幅にそろえる。
+   内側のクラス名はビルドでハッシュ化されるので、接頭辞で当てる */
+html.mu-rewrite footer {
+  margin-left: 0 !important; width: auto !important; height: auto !important; min-height: 0 !important; box-sizing: border-box;
+  padding: 28px max(32px, calc((100% - 1216px) / 2)) !important;
+  background: #26212E !important; color: #CFC8DC !important; font-size: 13px; line-height: 1.7;
+  font-family: "Murecho", "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  display: flex !important; flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px 32px;
+}
+html.mu-rewrite footer [class*="_footerHead_"],
+html.mu-rewrite footer [class*="_footerSub_"] {
+  display: flex !important; flex-direction: column; gap: 10px; margin: 0 !important; padding: 0 !important; width: auto !important; background: none !important;
+}
+html.mu-rewrite footer [class*="_footerHead_"] { align-items: flex-start; text-align: left; }
+html.mu-rewrite footer [class*="_footerSub_"] { align-items: flex-end; text-align: right; }
+html.mu-rewrite footer [class*="_footerLogo_"] { display: none !important; }
+html.mu-rewrite footer [class*="_footerMain_"] { margin: 0 !important; color: #fff !important; font-size: 14px; }
+html.mu-rewrite footer [class*="_footerSns_"] { display: flex !important; justify-content: flex-end; gap: 10px; margin: 0 !important; }
+html.mu-rewrite footer [class*="_footerSns_"] a {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #3A3446; color: #fff !important;
+}
+html.mu-rewrite footer [class*="_footerSns_"] svg { width: 18px; height: 18px; fill: currentColor; }
+html.mu-rewrite footer [class*="_footerCopyright_"] { margin: 0 !important; color: #A49CB3 !important; font-size: 12px; text-align: inherit; }
+html.mu-rewrite footer [class*="_footerCopyright_"] span { color: inherit !important; }
+html.mu-rewrite footer [role="button"] { text-decoration: underline; cursor: pointer; }
+@media (max-width: 760px) {
+  html.mu-rewrite footer [class*="_footerSub_"] { align-items: flex-start; text-align: left; }
+  html.mu-rewrite footer [class*="_footerSns_"] { justify-content: flex-start; }
+}
