@@ -15,6 +15,16 @@ const page = (rows: string, key = "2026|03") =>
     <table id="funcForm:jugyoKaisuTbl">${head}${rows}</table></form>`;
 const parse = (html: string) => parseAttendance(new DOMParser().parseFromString(html, "text/html"));
 
+// 実機の確認: まだ実施されていない回は、記号が空の span.jugyoList(クラスは jugyoList だけ)を持ち、日付は入っている
+test("記号が空の回は、span があっても「未実施」", () => {
+  const empty = `<td class="colSizeFixed"><span class="jugyoList"><span class="syuketsuKbnMark"></span></span><p class="jugyoDate">11/10</p></td>`;
+  const a = parse(page(row(`5300100033<span class="ml-2">合成演習</span>（教員A）`, "", empty + `<td class="colSizeFixed"><span class="jugyoList"></span></td>`)));
+  expect(a.courses[0]!.sessions).toEqual([
+    { kind: "none", label: "", date: "11/10" },
+    { kind: "none", label: "", date: "" },
+  ]);
+});
+
 test("出席・欠席・遅刻・その他・未実施と出席率", () => {
   const a = parse(
     page(

@@ -6,8 +6,9 @@ const KINDS: Record<string, AttendanceKind> = { attendance: "present", absence: 
 function parseMark(td: Element): AttendanceMark {
   const date = td.querySelector(".jugyoDate")?.textContent?.trim() ?? "";
   const span = td.querySelector(".jugyoList");
-  if (!span) return { kind: "none", label: "", date };
-  const label = (span.querySelector(".syuketsuKbnMark") ?? span).textContent?.trim() ?? "";
+  const label = span ? ((span.querySelector(".syuketsuKbnMark") ?? span).textContent?.trim() ?? "") : "";
+  // 実施前の回は span.jugyoList が空で入っている(実機で確認)。記号が無ければ未実施
+  if (!span || !label) return { kind: "none", label: "", date };
   const cls = [...span.classList].find((c) => c in KINDS);
   return { kind: cls ? KINDS[cls]! : "other", label, date };
 }
