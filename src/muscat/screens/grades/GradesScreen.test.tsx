@@ -1,12 +1,11 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { MuscatClient } from "@/muscat/api/client";
 import type { GradeCourse, GradeEntry, Grades } from "@/muscat/api/types";
+import { fakeClient } from "../fakeClient";
 import { GradesScreen } from "./GradesScreen";
 import { GradeList } from "./GradeList";
 
-const never = () => new Promise<never>(() => {});
-const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never, getStudentInfo: never };
+const client = fakeClient();
 
 const course = (o: Partial<GradeCourse>): GradeCourse => ({
   mark: "", online: false, inProgress: false, name: "科目", credits: 2, grade: "B", gpaTarget: true, gpaTargetYear: true,

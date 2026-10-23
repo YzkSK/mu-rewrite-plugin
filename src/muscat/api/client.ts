@@ -12,6 +12,7 @@ export type MuscatClient = {
   getAttendance(termKey?: string): Promise<Attendance>;
   getGrades(filter?: GradeFilter): Promise<Grades>;
   getStudentInfo(): Promise<InfoPage>;
+  getHealthInfo(): Promise<InfoPage>;
 };
 
 export function createMuscatClient(deps: {
@@ -26,5 +27,6 @@ export function createMuscatClient(deps: {
     getAttendance: (termKey) => getAttendance(core, termKey),
     getGrades: (filter) => getGrades(core, filter),
     getStudentInfo: () => getInfoPage(core, "学籍情報照会", "Bsb004"),
+    getHealthInfo: () => getInfoPage(core, "健康診断情報照会", "Bsb007"),
   };
 }

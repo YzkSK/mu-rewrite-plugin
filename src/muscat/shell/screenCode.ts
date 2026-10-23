@@ -4,7 +4,7 @@ const RE = /\[([A-Z][a-z]{2}\d{3})\]/;
 export function screenCodeOf(doc: Document): string {
   const top = doc.getElementById("mainWrapTop") ?? doc.getElementById("funcHeader");
   const m = top?.textContent?.match(RE);
-  if (m) return m[1];
+  if (m?.[1]) return m[1];
   const body = doc.getElementById("mainWrapBottom") ?? doc.getElementById("wrap");
   return body?.textContent?.match(RE)?.[1] ?? "";
 }

@@ -11,7 +11,7 @@ export function readMenuIds(doc: Document): MenuIds {
   const ids: MenuIds = {};
   for (const a of doc.querySelectorAll<HTMLElement>("#menuForm a[data-pfconfirmcommand]")) {
     const m = ID_IN_COMMAND.exec(a.getAttribute("data-pfconfirmcommand") ?? "");
-    if (m) ids[(a.textContent ?? "").trim() as MenuLabel] = m[1].replace(/\\(.)/g, "$1");
+    if (m?.[1] !== undefined) ids[(a.textContent ?? "").trim() as MenuLabel] = m[1].replace(/\\(.)/g, "$1");
   }
   return ids;
 }

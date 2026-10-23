@@ -11,7 +11,7 @@ const text = () => host()?.shadowRoot?.textContent ?? "";
 beforeEach(() => {
   unmountScreen();
   document.body.innerHTML = `<form id="menuForm">${["学生時間割表", "出席確認", "成績照会"].map(menuLink).join("")}</form>`;
-  globalThis.fetch = (() => new Promise(() => {})) as typeof fetch; // 通信は止めておく
+  globalThis.fetch = (() => new Promise(() => {})) as unknown as typeof fetch; // 通信は止めておく
 });
 
 test("登録コードで mount、未登録で unmount", async () => {

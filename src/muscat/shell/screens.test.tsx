@@ -1,30 +1,36 @@
 import { expect, test } from "bun:test";
-import type { MuscatClient } from "@/muscat/api/client";
 import { AttendanceScreen } from "@/muscat/screens/attendance/AttendanceScreen";
+import { fakeClient } from "@/muscat/screens/fakeClient";
 import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
+import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 import { SCREENS } from "./screens";
 
-const client = {} as MuscatClient;
+const client = fakeClient();
+const doc = new DOMParser().parseFromString(`<input name="funcForm:nendo_input" value="2024">`, "text/html");
 
-test("登録されているのは Kmd008 と Atb005 と Kmg006 と Bsb004 だけ", () => {
-  expect(Object.keys(SCREENS).sort()).toEqual(["Atb005", "Bsb004", "Kmd008", "Kmg006"]);
+// 画面コード → [メニューの表示テキスト(= title)、描く部品]。画面を足したら、ここに 1 行足す
+const EXPECTED = {
+  Kmd008: ["学生時間割表", TimetableScreen],
+  Atb005: ["出席確認", AttendanceScreen],
+  Kmg006: ["成績照会", GradesScreen],
+  Bsb004: ["学籍情報照会", StudentInfoScreen],
+  Bsb007: ["健康診断情報照会", HealthInfoScreen],
+} as const;
+
+test("登録されている画面が、期待の一覧と一致する", () => {
+  expect(Object.keys(SCREENS).sort()).toEqual(Object.keys(EXPECTED).sort());
 });
 
-test("title はメニューの表示テキストと同じ", () => {
-  expect(SCREENS.Kmd008!.title).toBe("学生時間割表");
-  expect(SCREENS.Atb005!.title).toBe("出席確認");
-  expect(SCREENS.Kmg006!.title).toBe("成績照会");
-  expect(SCREENS.Bsb004!.title).toBe("学籍情報照会");
-  expect((SCREENS.Bsb004!.render(client, new DOMParser().parseFromString("", "text/html")) as { type: unknown }).type).toBe(StudentInfoScreen);
-});
+for (const [code, [title, component]] of Object.entries(EXPECTED)) {
+  test(`${code}: title は ${title}、描く部品が一致する`, () => {
+    expect(SCREENS[code]!.title).toBe(title);
+    expect((SCREENS[code]!.render(client, doc) as { type: unknown }).type).toBe(component);
+  });
+}
 
-test("render は画面の要素を返す", () => {
-  const doc = new DOMParser().parseFromString(`<input name="funcForm:nendo_input" value="2024">`, "text/html");
-  const tt = SCREENS.Kmd008!.render(client, doc) as { type: unknown; props: { year: number } };
-  expect(tt.type).toBe(TimetableScreen);
+test("時間割は、ページの年度を初期値に渡す", () => {
+  const tt = SCREENS.Kmd008!.render(client, doc) as { props: { year: number } };
   expect(tt.props.year).toBe(2024);
-  expect((SCREENS.Atb005!.render(client, doc) as { type: unknown }).type).toBe(AttendanceScreen);
-  expect((SCREENS.Kmg006!.render(client, doc) as { type: unknown }).type).toBe(GradesScreen);
 });
