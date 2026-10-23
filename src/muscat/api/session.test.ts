@@ -8,10 +8,6 @@ const page = (action: string, token: string) =>
   );
 
 const ids = { 学生時間割表: "A|1" };
-(window as unknown as { happyDOM: { setURL(u: string): void } }).happyDOM.setURL(
-  "https://muscat.example/uprx/up/bs/Bsa00101.xhtml",
-);
-
 test("menuRequest は menuForm の action に送り、項目を足す", () => {
   const s = createSession(page("/uprx/up/bs/Bsa00101.xhtml", "t1"), ids);
   const { url, body } = s.menuRequest("学生時間割表");
