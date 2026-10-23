@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { AttendanceScreen } from "@/muscat/screens/attendance/AttendanceScreen";
 import { fakeClient } from "@/muscat/screens/fakeClient";
+import { GenericScreen } from "@/muscat/screens/generic/GenericScreen";
 import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
@@ -17,6 +18,7 @@ const EXPECTED = {
   Kmg006: ["成績照会", GradesScreen],
   Bsb004: ["学籍情報照会", StudentInfoScreen],
   Bsb007: ["健康診断情報照会", HealthInfoScreen],
+  Bsa004: ["個人設定", GenericScreen],
 } as const;
 
 test("登録されている画面が、期待の一覧と一致する", () => {

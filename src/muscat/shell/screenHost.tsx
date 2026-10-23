@@ -4,7 +4,7 @@ import { createMuscatClient } from "../api/client";
 import { readMenuIds } from "../api/menuIds";
 import { App } from "./App";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
-import { nativeNav } from "./nativeNav";
+import { nativeNav, SETTING_LABEL } from "./nativeNav";
 import { SCREENS } from "./screens";
 
 let current: { code: string; root: Root } | null = null;
@@ -17,7 +17,7 @@ export function mountScreen(code: string): void {
   unmountScreen();
   const ids = readMenuIds(document);
   const client = createMuscatClient({ fetch: window.fetch.bind(window), doc: document, ids });
-  const menuLabels = Object.keys(ids).filter((l) => l !== screen.title);
+  const menuLabels = [...Object.keys(ids), SETTING_LABEL].filter((l) => l !== screen.title);
   const mountPoint = document.createElement("div");
   mountShadowRoot(document, css).appendChild(mountPoint);
   const root = createRoot(mountPoint);
