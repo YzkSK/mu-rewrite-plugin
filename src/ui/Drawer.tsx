@@ -1,5 +1,8 @@
-type Item = { label: string; onSelect: () => void };
-type Props = { open: boolean; items: Item[]; onClose: () => void };
+/** onSelect はクリック操作、href は新しいタブで開く外部リンク */
+export type DrawerItem = { label: string } & ({ onSelect: () => void } | { href: string });
+type Props = { open: boolean; items: DrawerItem[]; onClose: () => void };
+
+const ROW = "rounded-md px-3 py-2 text-left text-foreground hover:bg-accent";
 
 // 本文をずらすのは配置側の仕事。ここは左ドロワー本体だけ。
 export function Drawer({ open, items, onClose }: Props) {
@@ -10,19 +13,25 @@ export function Drawer({ open, items, onClose }: Props) {
       className={`w-64 shrink-0 overflow-hidden bg-card transition-[margin] duration-200 ${open ? "ml-0" : "-ml-64"}`}
     >
       <nav className="flex flex-col p-2">
-        {items.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            className="rounded-md px-3 py-2 text-left text-foreground hover:bg-accent"
-            onClick={() => {
-              item.onSelect();
-              onClose();
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+        {items.map((item) =>
+          "href" in item ? (
+            <a key={item.label} className={ROW} href={item.href} target="_blank" rel="noopener noreferrer" onClick={onClose}>
+              {item.label}
+            </a>
+          ) : (
+            <button
+              key={item.label}
+              type="button"
+              className={ROW}
+              onClick={() => {
+                item.onSelect();
+                onClose();
+              }}
+            >
+              {item.label}
+            </button>
+          ),
+        )}
       </nav>
     </aside>
   );

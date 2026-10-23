@@ -30,6 +30,23 @@ test("Drawer toggles aria-hidden and lists items", () => {
   expect(open).toContain("成績照会");
 });
 
+test("Drawer: 外部リンクは新しいタブ + noopener、操作の項目は button", () => {
+  const html = renderToString(
+    <Drawer
+      open
+      items={[
+        { label: "ホーム", onSelect: () => {} },
+        { label: "MU-LMS へ", href: "https://musashino-u.myopenlms.net/" },
+      ]}
+      onClose={() => {}}
+    />,
+  );
+  expect(html).toMatch(/<a [^>]*href="https:\/\/musashino-u\.myopenlms\.net\/"/);
+  expect(html).toContain('target="_blank"');
+  expect(html).toContain('rel="noopener noreferrer"');
+  expect(html).toMatch(/<button[^>]*>ホーム/);
+});
+
 test("Header has a menu button and shows title and user", () => {
   const html = renderToString(<Header title="学生時間割表" user="太郎" onMenu={() => {}} />);
   expect(html).toContain('aria-label="メニュー"');
