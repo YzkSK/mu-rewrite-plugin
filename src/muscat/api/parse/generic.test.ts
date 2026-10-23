@@ -17,6 +17,21 @@ test("見出し(アコーディオン・h3・panel title・legend)と、文字�
   expect(kinds(b)).toEqual(["heading", "message", "heading", "heading", "heading", "message"]);
 });
 
+test("同じ親の中のインラインの断片は 1 つの message、div で区切れば別", () => {
+  const b = blocks(`<div><span>掲示</span> <span>2026/10/19</span><a class="ui-commandlink" href="#">タイトル</a> [<span>発信元</span>]</div><div><div>一</div><div>二</div></div>`);
+  expect(b).toEqual([{ kind: "message", text: "掲示 2026/10/19 タイトル [ 発信元 ]" }, { kind: "message", text: "一" }, { kind: "message", text: "二" }]);
+});
+
+test("見出し・操作部品の境目で区切る", () => {
+  const b = blocks(`<div>前 <span>文</span><input name="a" value="1"> 後 <span>文</span></div>`);
+  expect(b).toMatchObject([{ kind: "message", text: "前 文" }, { kind: "controls" }, { kind: "message", text: "後 文" }]);
+});
+
+test("ui-button の文字は拾わない(ボタンの label にも使わない)", () => {
+  const b = blocks(`<div><a class="ui-button" href="#"><span class="ui-button-text">ui-button</span></a>実文</div><button type="button" title="開く"><span class="ui-button-text">ui-button</span></button>`);
+  expect(b).toMatchObject([{ kind: "message", text: "実文" }, { kind: "controls", controls: [{ kind: "button", label: "開く" }] }]);
+});
+
 test("panelgrid: 2 セルの行は fields(値の中の部品つき)、3 セル以上は table", () => {
   const b = blocks(`<table class="ui-panelgrid"><tr><td>氏名</td><td>テスト 太郎</td></tr><tr><td>メモ</td><td><input id="m" name="m" value="v"></td></tr></table>
     <table class="ui-panelgrid"><tr><td>a</td><td>b</td><td>c</td></tr><tr><td>1</td><td>2</td><td>3</td></tr></table>`);

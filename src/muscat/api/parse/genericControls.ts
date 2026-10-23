@@ -16,6 +16,8 @@ const DROP = `${SKIP}, select, textarea, button, a[onclick]`;
 export function textOf(el: Element, stripLabels = false): string {
   const c = el.cloneNode(true) as Element;
   c.querySelectorAll(DROP).forEach((n) => n.remove());
+  // アイコンだけのボタンは、文字がクラス名 "ui-button" になる
+  c.querySelectorAll(".ui-button-text").forEach((n) => squash(n.textContent) === "ui-button" && n.remove());
   if (stripLabels) {
     const doc = el.ownerDocument;
     c.querySelectorAll("label[for]").forEach((l) => doc.getElementById(l.getAttribute("for")!)?.matches(REF_SEL) && l.remove());
@@ -55,7 +57,7 @@ function controlOf(el: Element): GControl | null {
     if (["submit", "button", "image", "reset"].includes(t)) return { kind: "button", ref, label: squash(el.value || el.alt) || label, disabled };
     return { kind: "text", ref, label, value: el.value, disabled };
   }
-  return { kind: "button", ref, label: squash(el.textContent) || label, disabled };
+  return { kind: "button", ref, label: textOf(el) || label, disabled };
 }
 
 /** root の中(root 自身を含む)の操作部品を文書順に */
