@@ -33,6 +33,22 @@ test("run は直列: 同時に 2 回呼んでも開始が重ならない", async
   expect(max).toBe(1);
 });
 
+test("runLive は run と同じ直列キュー。live.doc は渡した doc、op の例外はそのまま出て、次は動く", async () => {
+  const { core, calls } = make([""]);
+  const order: string[] = [];
+  const a = core.runLive(async (l) => {
+    await new Promise((r) => setTimeout(r, 5));
+    order.push("a");
+    return l.doc.body.textContent;
+  });
+  const b = core.run(async () => (order.push("b"), 1));
+  expect(await Promise.all([a, b])).toEqual(["x", 1]);
+  expect(order).toEqual(["a", "b"]);
+  await expect(core.runLive(async () => { throw new TypeError("boom"); })).rejects.toThrow(TypeError);
+  expect(await core.runLive(async () => 2)).toBe(2);
+  expect(calls.length).toBe(0);
+});
+
 test("喪失 → 復帰 → 一度だけやり直して成功", async () => {
   const { core, calls } = make([relay, menu]);
   let n = 0;

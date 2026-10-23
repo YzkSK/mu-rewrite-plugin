@@ -59,6 +59,22 @@ export type InfoGrid = { rows: string[][] };
 export type InfoTable = { headers: string[]; rows: string[][] };
 export type InfoSection = { title: string; grids: InfoGrid[]; tables: InfoTable[] };
 export type InfoPage = { sections: InfoSection[] };
+/** 汎用画面: 生きたページの DOM から読んだ、構造に依らない最低限の表現。ref は driver の data-mu-ref */
+export type GControl =
+  | { kind: "text"; ref: string; label: string; value: string; disabled: boolean }
+  | { kind: "textarea"; ref: string; label: string; value: string; disabled: boolean }
+  | { kind: "select"; ref: string; label: string; value: string; options: { value: string; label: string }[]; disabled: boolean }
+  | { kind: "checkbox"; ref: string; label: string; checked: boolean; disabled: boolean }
+  | { kind: "radio"; ref: string; name: string; label: string; value: string; checked: boolean; disabled: boolean }
+  | { kind: "button"; ref: string; label: string; disabled: boolean };
+export type GCell = { text: string; controls: GControl[] };
+export type GBlock =
+  | { kind: "heading"; text: string }
+  | { kind: "message"; text: string }
+  | { kind: "fields"; rows: { label: string; text: string; controls: GControl[] }[] }
+  | { kind: "table"; headers: string[]; rows: GCell[][] }
+  | { kind: "controls"; controls: GControl[] };
+export type GenericPage = { blocks: GBlock[] };
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];

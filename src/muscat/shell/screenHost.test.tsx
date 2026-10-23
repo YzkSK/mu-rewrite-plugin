@@ -33,6 +33,15 @@ test("コードが変わると前の画面を unmount して差し替える", as
   expect(text()).toContain("出席確認");
 });
 
+test("ドロワーに個人設定が出る。個人設定の画面(Bsa004)では、自身は出さない", async () => {
+  mountScreen("Atb005");
+  await flush();
+  expect(text()).toContain("個人設定");
+  mountScreen("Bsa004");
+  await flush();
+  expect(text().split("個人設定").length - 1).toBe(1); // 見出しだけ
+});
+
 test("同じコードの再 mount は何もしない", async () => {
   mountScreen("Atb005");
   const first = host();
