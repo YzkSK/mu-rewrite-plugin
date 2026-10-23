@@ -40,8 +40,9 @@ test("範囲外の年度が分かっているとき: そのボタンは押せず
   const html = render({ initial: { status: "ready", timetable, blocked: [2025] } });
   expect(html).toContain("これより前の年度はありません");
   expect(html).not.toContain("これより後の年度はありません");
-  expect(/disabled[^>]*>前の年度/.test(html)).toBe(true);
-  expect(/disabled[^>]*>次の年度/.test(html)).toBe(false);
+  // クラス名の disabled: と区別するため、属性の disabled="" を見る
+  expect(/ disabled=""[^>]*>前の年度/.test(html)).toBe(true);
+  expect(/ disabled=""[^>]*>次の年度/.test(html)).toBe(false);
 });
 
 test("読み込み中は表示が出る", () => {
