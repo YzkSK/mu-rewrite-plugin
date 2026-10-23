@@ -38,12 +38,12 @@ export function parseAttendance(root: ParentNode): Attendance {
   const table = [...form.querySelectorAll("table")].find(
     (t) => t.querySelector("tr > th, tr > td")?.textContent?.trim() === "曜日時限",
   );
-  if (!table) throw new ParseError("出席の表がありません");
+  // 授業が 0 件の学期では結果の表が丸ごと無くなる(実機で確認)。学期の選択があれば、この画面なので 0 件として扱う
   const terms = [...select.options].map((o) => ({ key: o.value, label: (o.textContent ?? "").trim() }));
   return {
     termKey: select.value,
     baseDate: form.querySelector<HTMLInputElement>('[name="funcForm:baseDate1:baseDate1_input"]')?.value ?? "",
     terms,
-    courses: [...table.querySelectorAll("tr")].flatMap((tr) => parseCourse(tr) ?? []),
+    courses: table ? [...table.querySelectorAll("tr")].flatMap((tr) => parseCourse(tr) ?? []) : [],
   };
 }

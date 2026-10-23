@@ -67,8 +67,15 @@ test("授業 0 件", () => {
   expect(parse(page("")).courses).toEqual([]);
 });
 
-test("funcForm / select / 表が無ければ ParseError", () => {
+// 実機の確認: 授業が 0 件の学期(例: 1988 年度 1 学期)では、結果の表(funcForm:jugyoKaisuTbl)が丸ごと無くなり、メッセージも出ない
+test("結果の表が無い(授業 0 件の学期)は、エラーではなく授業 0 件", () => {
+  const html = `<form id="funcForm"><select name="funcForm:kaikoNendoGakki_input"><option value="1988|01" selected>1988年度 1学期</option></select></form>`;
+  const a = parse(html);
+  expect(a.courses).toEqual([]);
+  expect(a.termKey).toBe("1988|01");
+});
+
+test("funcForm / 学期の選択が無ければ ParseError", () => {
   expect(() => parse("<p>x</p>")).toThrow(ParseError);
   expect(() => parse(`<form id="funcForm"><table>${head}</table></form>`)).toThrow(ParseError);
-  expect(() => parse(`<form id="funcForm"><select name="funcForm:kaikoNendoGakki_input"></select></form>`)).toThrow(ParseError);
 });
