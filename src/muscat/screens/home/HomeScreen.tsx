@@ -17,7 +17,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
           <h1 className="text-xl font-bold">ホーム</h1>
           <p className="text-sm text-muted-foreground">今日の授業と、未読のお知らせをひと目で。</p>
         </div>
-        {page && <HomeInfo unread={page.unreadKeiji} disabled={busy} onKeiji={() => click(page.keijiRef)} onTimetable={() => click(page.timetableChangeRef)} />}
+        {page && <HomeInfo unread={page.unreadKeiji} disabled={busy} keijiRef={page.keijiRef} timetableRef={page.timetableChangeRef} onKeiji={() => click(page.keijiRef)} onTimetable={() => click(page.timetableChangeRef)} />}
       </div>
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
       {status === "loading" && !page && <Card className="p-4">読み込み中…</Card>}

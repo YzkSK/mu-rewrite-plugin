@@ -50,6 +50,16 @@ test("未読数が取れないときは –、操作中はタイルが無効", (
   expect(render(ready({}, true))).toMatch(/ disabled=""[^>]*>\s*<b[^>]*>18</);
 });
 
+// 元のリンクが無いとき(parseHome は空の ref を返す)、押すと「要素が見つかりません」でエラー画面になるので、そのタイルだけ無効にする
+test("元のリンクが無いタイルは無効(もう一方は有効のまま)", () => {
+  const noKeiji = render(ready({ keijiRef: "" }));
+  expect(noKeiji).toMatch(/ disabled=""[^>]*>\s*<b[^>]*>18</);
+  expect(noKeiji).not.toMatch(/ disabled=""[^>]*>\s*<b[^>]*>→</);
+  const noTimetable = render(ready({ timetableChangeRef: "" }));
+  expect(noTimetable).toMatch(/ disabled=""[^>]*>\s*<b[^>]*>→</);
+  expect(noTimetable).not.toMatch(/ disabled=""[^>]*>\s*<b[^>]*>18</);
+});
+
 test("詳細は一覧の上に出る。無ければ出ない", () => {
   const detail = { title: "詳細の件名", fields: [{ label: "件名", text: "詳細の件名", html: "" }], flagged: false, flagRef: "", prevRef: "", nextRef: "", closeRef: "d4" };
   const html = render(ready({ detail }));
