@@ -29,8 +29,9 @@ export function parseNewsRow(row: Element): NewsItem {
   return {
     title: squash(link?.textContent),
     category: squash(dl.querySelector("span.keijiCategory")?.textContent),
-    source: meta?.[1] ?? "",
-    date: meta?.[2] ?? "",
+    // 旧版が先に整形していると、文字は span.mu-from / span.mu-date(MM/DD)に作り替えられている
+    source: meta?.[1] ?? squash(dl.querySelector("span.mu-from")?.textContent),
+    date: meta?.[2] ?? squash(dl.querySelector("span.mu-date")?.textContent),
     important: visible(dl.querySelector("i.fa-exclamation-circle")),
     isNew: visible(dl.querySelector("i.fa-lightbulb-o")),
     unread: !!read && squash(read.textContent).includes("既読にする"),

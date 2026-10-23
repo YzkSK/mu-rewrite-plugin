@@ -40,6 +40,12 @@ test("タブ・検索欄・選択中のパネルの平らな一覧と、操作�
   expect(p.detail).toBeNull();
 });
 
+// 実機の確認: 旧版(muscat.js)の整形が先に動いていると、`[発信元] 2026/10/12` の文字は span.mu-from / span.mu-date(MM/DD)に作り替えられている
+test("旧版が作り替えた発信元・日付(span.mu-from / span.mu-date)も読める", () => {
+  const d = page(["", row({ title: "a", meta: `<span class="mu-from">テスト部署</span><span class="mu-date">10/12</span>` })]);
+  expect(parseNews(d).items[0]).toMatchObject({ source: "テスト部署", date: "10/12" });
+});
+
 test("行の各項目: 分類・発信元・日付・アイコン・既読/フラグの文言・ref", () => {
   const d = page(["", row({ title: "a", imp: true, cat: "分類X" }) + row({ title: "b", neu: true, flag: "フラグを外す", read: "未読にする" }) + row({ title: "c", imp: true, neu: true, meta: "" })]);
   const items = parseNews(d).items;
