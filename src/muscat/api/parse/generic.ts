@@ -9,7 +9,11 @@ const MESSAGE = ".ui-messages, .ui-message, .ui-growl-message";
 const TAB = ".ui-tabs-nav li";
 const ACTION = 'input:not([type="hidden"]), select, textarea, button, a[onclick]';
 const INNER = `table, dl, ${ACTION}, ${HEADING}, ${MESSAGE}, ${TAB}`;
-const IGNORE = `${SKIP}, label, .ui-outputlabel, input[type="hidden"]`;
+const INLINE = new Set(["SPAN", "A", "I", "B", "EM", "STRONG", "SMALL", "U", "FONT", "CODE", "SUB", "SUP"]);
+const BLOCKISH = "div, p, ul, ol, li, table, dl, section, br, h1, h2, h3, h4, h5, h6";
+/** 文字だけのインライン要素(操作部品・見出し・メッセージ・ブロックを含まない) */
+const isInline = (el: Element) => INLINE.has(el.tagName) && !el.matches(INNER) && !el.querySelector(`${INNER}, ${BLOCKISH}`);
+const IGNORE =`${SKIP}, label, .ui-outputlabel, input[type="hidden"]`;
 
 /**
  * #funcForm の中を文書順に読み、見出し・表・項目・メッセージ・操作部品の並びにする。
@@ -43,14 +47,28 @@ export function parseGenericPage(root: ParentNode): GenericPage {
     else if (el.matches(ACTION)) pending.push(...controlsIn(el));
     else if (el.tagName === "DL") push(dlBlock(el));
     else if (el.tagName === "TABLE" && !el.querySelector("table")) push(el.classList.contains("ui-panelgrid") ? gridBlock(el) : tableBlock(el));
-    else if (!el.querySelector(INNER)) text("message", textOf(el)); // 文字だけのブロック
-    else visitChildren(el); // 入れ子の外枠の表などは、その中を読む
+    else visitChildren(el); // 文字だけのブロックも、入れ子の外枠の表も、中を読む
   }
+  /** 同じ親の中で連続するインラインの断片(テキストノードと span/a など)は、空白でつないで 1 つの message にする */
   function visitChildren(el: Element) {
+    let run: string[] = [];
+    const end = () => {
+      text("message", run.filter(Boolean).join(" "));
+      run = [];
+    };
     for (const n of el.childNodes) {
-      if (n.nodeType === 1) visit(n as Element);
-      else if (n.nodeType === 3) text("message", squash(n.textContent));
+      if (n.nodeType === 3) run.push(squash(n.textContent));
+      else if (n.nodeType === 1) {
+        const c = n as Element;
+        if (c.matches(IGNORE)) continue;
+        if (isInline(c)) run.push(textOf(c));
+        else {
+          end();
+          visit(c);
+        }
+      }
     }
+    end();
   }
   visitChildren(form);
   flush();
