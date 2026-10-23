@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import { AttendanceScreen } from "@/muscat/screens/attendance/AttendanceScreen";
+import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 
 export type ScreenDef = { title: string; render(client: MuscatClient, doc: Document): ReactNode };
@@ -15,4 +16,5 @@ export const SCREENS: Record<string, ScreenDef> = {
     },
   },
   Atb005: { title: "出席確認", render: (client) => <AttendanceScreen client={client} /> },
+  Kmg006: { title: "成績照会", render: (client) => <GradesScreen client={client} /> },
 };

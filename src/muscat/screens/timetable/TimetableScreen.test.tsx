@@ -4,7 +4,8 @@ import type { MuscatClient } from "@/muscat/api/client";
 import type { Timetable } from "@/muscat/api/types";
 import { TimetableScreen } from "./TimetableScreen";
 
-const client: MuscatClient = { getTimetable: () => new Promise(() => {}), getAttendance: () => new Promise(() => {}) };
+const never = () => new Promise<never>(() => {});
+const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never };
 
 const timetable: Timetable = {
   year: 2026,

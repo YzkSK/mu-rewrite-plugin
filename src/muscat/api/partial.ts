@@ -1,7 +1,7 @@
 export function buildPartialRequest(
   form: HTMLFormElement,
   source: string,
-  extra: Record<string, string> = {},
+  extra: Record<string, string | null> = {}, // null のキーは本文から除く(外したチェックボックス)
   render: string = form.id,
 ): { url: string; body: URLSearchParams; headers: Record<string, string> } {
   const body = new URLSearchParams();
@@ -11,7 +11,10 @@ export function buildPartialRequest(
   body.set("jakarta.faces.partial.execute", "@all");
   body.set("jakarta.faces.partial.render", render);
   body.set(source, source);
-  for (const [k, v] of Object.entries(extra)) body.set(k, v);
+  for (const [k, v] of Object.entries(extra)) {
+    if (v === null) body.delete(k);
+    else body.set(k, v);
+  }
   return {
     url: new URL(form.getAttribute("action") ?? "", location.href).href,
     body,

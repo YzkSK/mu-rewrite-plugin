@@ -28,3 +28,37 @@ export type AttendanceCourse = {
 };
 export type TermOption = { key: string; label: string };
 export type Attendance = { termKey: string; baseDate: string; terms: TermOption[]; courses: AttendanceCourse[] };
+
+/** mark は印のセルの生の文字。online は `*`、inProgress は `※` を含むとき */
+export type GradeCourse = {
+  mark: string;
+  online: boolean;
+  inProgress: boolean;
+  name: string;
+  credits: number | null;
+  grade: string;
+  gpaTarget: boolean;
+  gpaTargetYear: boolean;
+  year: number | null;
+  term: string;
+  teacher: string;
+};
+/** course が null なら科目分類の見出し。depth は 0 始まり */
+export type GradeEntry = { depth: number; name: string; course: GradeCourse | null };
+export type GpaRow = { label: string; value: number | null };
+export type CreditRow = {
+  depth: number;
+  name: string;
+  required: number | null;
+  earned: number | null;
+  inProgress: number | null;
+  total: number | null;
+};
+export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
+export type Grades = {
+  entries: GradeEntry[];
+  gpa: { byTerm: GpaRow[]; byYear: GpaRow[]; cumulative: GpaRow[] };
+  credits: CreditRow[];
+  totals: { inProgress: number | null; online: number | null };
+  filter: GradeFilter;
+};
