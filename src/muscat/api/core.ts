@@ -14,7 +14,7 @@ export type Ctx = {
   partial(
     formId: string,
     source: string,
-    opts?: { render?: string; extra?: Record<string, string> },
+    opts?: { render?: string; extra?: Record<string, string | null> },
   ): Promise<boolean>;
 };
 

@@ -16,6 +16,13 @@ test("render を指定できる", () => {
   expect(buildPartialRequest(form, "s", {}, "a b").body.get("jakarta.faces.partial.render")).toBe("a b");
 });
 
+test("extra の null はキーを本文から除く", () => {
+  const form = makeDoc().getElementById("funcForm") as HTMLFormElement;
+  const b = buildPartialRequest(form, "s", { "funcForm:nendo_input": null, a: "b" }).body;
+  expect(b.has("funcForm:nendo_input")).toBe(false);
+  expect(b.get("a")).toBe("b");
+});
+
 test("request", () => {
   const form = makeDoc().getElementById("funcForm") as HTMLFormElement;
   const r = buildPartialRequest(form, "funcForm:search", { a: "b" });
