@@ -63,6 +63,28 @@ test("年度が違えば部分更新 1 回、同じなら 0 回", async () => {
   expect(calls.length).toBe(1);
 });
 
+// MUSCAT は、開いた直後の最初の年度変更しか受け付けない。部分更新のあとに年度を変えるときは、メニューから開き直す
+test("部分更新のあとの年度変更: 開き直してから部分更新する", async () => {
+  const kinds: string[] = [];
+  const f: Fetch = async (_url, init) => {
+    const b = new URLSearchParams(String(init?.body));
+    if (b.get("jakarta.faces.partial.ajax")) {
+      kinds.push("partial:" + b.get("funcForm:nendo_input"));
+      return new Response(`<partial-response><changes><update id="funcForm"><![CDATA[${ttForm(Number(b.get("funcForm:nendo_input")))}]]></update></changes></partial-response>`);
+    }
+    kinds.push("menu");
+    return new Response(menu + ttForm(2026)); // 開き直すと既定の年度に戻る
+  };
+  const c = createMuscatClient({ fetch: f, doc: pageDoc(ttForm(2026)), ids, now });
+  expect((await c.getTimetable(2027)).year).toBe(2027);
+  expect(kinds).toEqual(["partial:2027"]); // 最初の変更は開き直さない
+  expect((await c.getTimetable(2026)).year).toBe(2026);
+  expect(kinds).toEqual(["partial:2027", "menu"]); // 既定の年度に戻るだけなので部分更新は不要
+  expect((await c.getTimetable(2025)).year).toBe(2025);
+  expect((await c.getTimetable(2024)).year).toBe(2024);
+  expect(kinds).toEqual(["partial:2027", "menu", "partial:2025", "menu", "partial:2024"]);
+});
+
 test("最初の応答が空 → 復帰して 1 回やり直し成功", async () => {
   const { f, calls } = router([() => "", () => relay, () => home, () => menu + ttForm(2026)]);
   const c = createMuscatClient({ fetch: f, doc: pageDoc("<p>x</p>"), ids, now });

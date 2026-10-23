@@ -24,6 +24,7 @@ export function createMuscatClient(deps: {
 }): MuscatClient {
   const session = createSession(deps.doc, deps.ids);
   const queue = createQueue();
+  let dirty = false; // 部分更新を送ったあとか(開き直すまで、年度の変更は受け付けられない)
 
   /** POST して本文を返す。状態喪失なら null。 */
   async function post(
@@ -42,10 +43,14 @@ export function createMuscatClient(deps: {
 
   /** 一連の操作。状態を失ったら false。 */
   async function attempt(year?: number): Promise<boolean> {
-    if (!hasTimetable(session.doc)) {
+    const wantsChange = year !== undefined && year !== currentYear(session.doc);
+    // MUSCAT は、メニューから開いた直後の最初の年度変更しか受け付けない(2 回目以降は元の年度のまま返す。実機で確認)。
+    // 部分更新のあとに年度を変えるときは、先にメニューから開き直して新しい状態にする
+    if (!hasTimetable(session.doc) || (dirty && wantsChange)) {
       const text = await post("page", session.menuRequest("学生時間割表"));
       if (text === null) return false;
       session.adopt(toDoc(text));
+      dirty = false;
     }
     if (year !== undefined && year !== currentYear(session.doc)) {
       const form = session.doc.getElementById("funcForm") as HTMLFormElement | null;
@@ -56,6 +61,7 @@ export function createMuscatClient(deps: {
       );
       if (text === null) return false;
       applyPartialResponse(session.doc, text);
+      dirty = true;
     }
     return true;
   }
