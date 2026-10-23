@@ -54,6 +54,11 @@ export type CreditRow = {
   inProgress: number | null;
   total: number | null;
 };
+/** 情報画面(学籍・健康診断・個人設定)の共通形。セルは trim して連続空白を 1 つに */
+export type InfoGrid = { rows: string[][] };
+export type InfoTable = { headers: string[]; rows: string[][] };
+export type InfoSection = { title: string; grids: InfoGrid[]; tables: InfoTable[] };
+export type InfoPage = { sections: InfoSection[] };
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];
