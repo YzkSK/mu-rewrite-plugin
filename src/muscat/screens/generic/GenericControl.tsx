@@ -20,23 +20,17 @@ function useLocal<T>(source: T) {
  * 元の画面と同じ動き: select / checkbox / radio は変えたらすぐ、text は入力を終えたとき(change)に、
  * 元の部品へ値を入れる。button は click。
  */
-export function GenericControl({ control: c, run, bare }: { control: GControl; run: Run; bare?: boolean }) {
+export function GenericControl({ control: c, run }: { control: GControl; run: Run }) {
   const [text, setText] = useLocal(c.kind === "text" || c.kind === "textarea" || c.kind === "select" ? c.value : "");
   const [checked, setChecked] = useLocal(c.kind === "checkbox" || c.kind === "radio" ? c.checked : false);
   const commit = (value: string) => value !== (c as { value: string }).value && run([{ kind: "set", ref: c.ref, value }]);
-  const field = (node: React.ReactNode) =>
-    bare || !("label" in c) || !c.label ? node : (
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs text-muted-foreground">{c.label}</span>
-        {node}
-      </label>
-    );
+  // 項目名は隣の文字(line の text / fields の label)が出すので、ここでは aria-label だけ
   switch (c.kind) {
     case "text":
     case "textarea":
-      return field(<TextInput label={c.label} value={text} multiline={c.kind === "textarea"} disabled={c.disabled} onChange={setText} onCommit={() => commit(text)} />);
+      return <TextInput label={c.label} value={text} multiline={c.kind === "textarea"} disabled={c.disabled} onChange={setText} onCommit={() => commit(text)} />;
     case "select":
-      return field(
+      return (
         <Select
           label={c.label}
           value={text}
@@ -46,7 +40,7 @@ export function GenericControl({ control: c, run, bare }: { control: GControl; r
             setText(v);
             commit(v);
           }}
-        />,
+        />
       );
     case "checkbox":
       return (
@@ -74,9 +68,13 @@ export function GenericControl({ control: c, run, bare }: { control: GControl; r
         />
       );
     case "button":
-      return (
-        <Button disabled={c.disabled} onClick={() => run([{ kind: "click", ref: c.ref }])}>
-          {c.label || "実行"}
+      return c.as === "link" ? (
+        <button type="button" disabled={c.disabled} onClick={() => run([{ kind: "click", ref: c.ref }])} className="cursor-pointer text-left text-sm text-primary underline disabled:cursor-default disabled:opacity-50">
+          {c.label}
+        </button>
+      ) : (
+        <Button variant="ghost" disabled={c.disabled} onClick={() => run([{ kind: "click", ref: c.ref }])}>
+          {c.label}
         </Button>
       );
   }

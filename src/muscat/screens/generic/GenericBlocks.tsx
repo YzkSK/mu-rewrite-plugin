@@ -1,47 +1,23 @@
-import type { GBlock, GCell } from "@/muscat/api/types";
+import type { GBlock } from "@/muscat/api/types";
 import { DataTable } from "@/ui/DataTable";
-import { Notice } from "@/ui/Notice";
-import { GenericControl, type Run } from "./GenericControl";
+import { GenericCell } from "./GenericCell";
+import type { Run } from "./GenericControl";
+import { GenericFields } from "./GenericFields";
+import { GenericLine } from "./GenericLine";
+import { GenericTabs } from "./GenericTabs";
 
-function Cell({ cell, run }: { cell: Pick<GCell, "text" | "controls">; run: Run }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {cell.text && <span>{cell.text}</span>}
-      {cell.controls.map((c) => (
-        <GenericControl key={c.ref} control={c} run={run} bare />
-      ))}
-    </div>
-  );
-}
-
+/** 1 つのブロック。level 1〜2 の見出しは GenericSections がカードの題にするので、ここに来るのは 3〜4(小見出し) */
 export function GenericBlock({ block, run }: { block: GBlock; run: Run }) {
   switch (block.kind) {
     case "heading":
-      return <h2 className="mt-2 text-base font-semibold">{block.text}</h2>;
-    case "message":
-      return <Notice>{block.text}</Notice>;
+      return <h3 className={`font-semibold ${block.level <= 3 ? "text-base" : "text-sm"}`}>{block.text}</h3>;
+    case "line":
+      return <GenericLine block={block} run={run} />;
+    case "tabs":
+      return <GenericTabs block={block} run={run} />;
     case "fields":
-      return (
-        <dl className="grid grid-cols-[minmax(6rem,1fr)_2fr] items-center gap-x-3 gap-y-2 text-sm">
-          {block.rows.map((r, i) => (
-            <div key={i} className="contents">
-              <dt className="text-xs text-muted-foreground">{r.label}</dt>
-              <dd>
-                <Cell cell={r} run={run} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-      );
+      return <GenericFields block={block} run={run} />;
     case "table":
-      return <DataTable headers={block.headers} rows={block.rows.map((r) => r.map((c, j) => <Cell key={j} cell={c} run={run} />))} />;
-    case "controls":
-      return (
-        <div className="flex flex-wrap items-center gap-2">
-          {block.controls.map((c) => (
-            <GenericControl key={c.ref} control={c} run={run} />
-          ))}
-        </div>
-      );
+      return <DataTable compact headers={block.headers} rows={block.rows.map((r) => r.map((c, j) => <GenericCell key={j} cell={c} run={run} />))} />;
   }
 }
