@@ -8,8 +8,9 @@ const heading = (level: number, name: string) =>
 const course = (level: number, mark: string, name: string, credits: string, grade: string, year: string, term: string, teacher = "教員A") =>
   `<tr><td>${mark}</td><td class="colTani kamokuLevel${level}">${name}</td><td class="colTani">${credits}</td><td class="colTani">${grade}</td><td class="colTani">${grade ? "○" : ""}</td><td class="colTani"></td><td class="colTani">${year}</td><td class="colTani">${term}</td><td class="colTani">${teacher}</td></tr>`;
 
+// 実機の構造: 見出し行 + 値の表が入れ子で入った 1 セルの行(入れ子の中の見出しは th、値の行は td)
 const gpaTable = (title: string, rows: [string, string][]) =>
-  `<table><tr><td>${title}</td></tr></table><table><tr><th>年度</th><th>GPA</th></tr>${rows.map(([l, v]) => `<tr><td>${l}</td><td>${v}</td></tr>`).join("")}</table>`;
+  `<table class="gpaListArea"><tr><th>${title}</th></tr><tr><td><table><tr><th></th><th>GPA</th></tr>${rows.map(([l, v]) => `<tr><td class="colNendoGakki">${l}</td><td class="colGpa">${v}</td></tr>`).join("")}</table></td></tr></table>`;
 const creditRow = (level: number, name: string, ...nums: string[]) =>
   `<tr><td class="kamokuLevel${level}">${name}</td>${nums.map((n) => `<td>${n}</td>`).join("")}</tr>`;
 

@@ -1,12 +1,17 @@
 import type { CreditRow, GpaRow, GradeFilter, Grades } from "../types";
 import { depthOf, headerOf, num, squash, tds } from "./gradeCells";
 
-/** 見出しだけのテーブルの、次のテーブルが値。行は ラベル と GPA の 2 セル */
+/**
+ * 実機の構造: `table.gpaListArea` の 1 行目が見出し(「年度学期GPA」など)、2 行目の 1 セルに、値の表が入れ子で入っている。
+ * 値の表の行は ラベル と GPA の 2 セル(見出し行は th)
+ */
 function gpaRows(tables: Element[], title: string): GpaRow[] {
-  const i = tables.findIndex((t) => squash(t.textContent) === title);
-  const next = i < 0 ? undefined : tables[i + 1];
-  if (!next) return [];
-  return [...next.querySelectorAll("tr")].flatMap((tr) => {
+  const area = tables.find(
+    (t) => t.classList.contains("gpaListArea") && squash(t.querySelector("tr")?.textContent) === title,
+  );
+  const values = area?.querySelector("table");
+  if (!values) return [];
+  return [...values.querySelectorAll("tr")].flatMap((tr) => {
     const c = tds(tr);
     if (c.length < 2 || squash(c[1]!.textContent) === "GPA") return [];
     return [{ label: (c[0]!.textContent ?? "").trim(), value: num(c[1]!.textContent) }];
