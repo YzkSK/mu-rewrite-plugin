@@ -11,6 +11,11 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?><partial-response><changes>
 <update id="nothing"><![CDATA[<div>x</div>]]></update>
 </changes></partial-response>`;
 
+test("render を指定できる", () => {
+  const form = makeDoc().getElementById("funcForm") as HTMLFormElement;
+  expect(buildPartialRequest(form, "s", {}, "a b").body.get("jakarta.faces.partial.render")).toBe("a b");
+});
+
 test("request", () => {
   const form = makeDoc().getElementById("funcForm") as HTMLFormElement;
   const r = buildPartialRequest(form, "funcForm:search", { a: "b" });

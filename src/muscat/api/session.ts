@@ -1,4 +1,14 @@
-export type MenuLabel = "学生時間割表" | "出席確認" | "成績照会";
+export type MenuLabel =
+  | "掲示板"
+  | "学生時間割表"
+  | "出席確認"
+  | "成績照会"
+  | "シラバス"
+  | "教員スケジュール"
+  | "学籍情報照会"
+  | "健康診断情報照会"
+  | "安否確認回答"
+  | "教室予約(参照のみ)";
 export type MenuIds = Partial<Record<MenuLabel, string>>;
 
 export type Session = {

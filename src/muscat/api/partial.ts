@@ -2,13 +2,14 @@ export function buildPartialRequest(
   form: HTMLFormElement,
   source: string,
   extra: Record<string, string> = {},
+  render: string = form.id,
 ): { url: string; body: URLSearchParams; headers: Record<string, string> } {
   const body = new URLSearchParams();
   for (const [k, v] of new FormData(form)) if (typeof v === "string") body.set(k, v);
   body.set("jakarta.faces.partial.ajax", "true");
   body.set("jakarta.faces.source", source);
   body.set("jakarta.faces.partial.execute", "@all");
-  body.set("jakarta.faces.partial.render", form.id);
+  body.set("jakarta.faces.partial.render", render);
   body.set(source, source);
   for (const [k, v] of Object.entries(extra)) body.set(k, v);
   return {
