@@ -1,11 +1,10 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { MuscatClient } from "@/muscat/api/client";
 import type { Attendance } from "@/muscat/api/types";
+import { fakeClient } from "../fakeClient";
 import { AttendanceScreen } from "./AttendanceScreen";
 
-const never = () => new Promise<never>(() => {});
-const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never, getStudentInfo: never };
+const client = fakeClient();
 
 const terms = [2019, 2020, 2025, 2026, 2027, 2028].map((y) => ({ key: `${y}|03`, label: `${y}年度 3学期` }));
 const base: Attendance = { termKey: "2026|03", baseDate: "2026/10/24", terms, courses: [] };

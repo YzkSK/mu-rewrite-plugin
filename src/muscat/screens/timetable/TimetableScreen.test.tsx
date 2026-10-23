@@ -1,11 +1,10 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { MuscatClient } from "@/muscat/api/client";
 import type { Timetable } from "@/muscat/api/types";
+import { fakeClient } from "../fakeClient";
 import { TimetableScreen } from "./TimetableScreen";
 
-const never = () => new Promise<never>(() => {});
-const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never, getStudentInfo: never };
+const client = fakeClient();
 
 const timetable: Timetable = {
   year: 2026,

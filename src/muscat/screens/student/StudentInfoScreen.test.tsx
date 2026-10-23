@@ -1,11 +1,10 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { MuscatClient } from "@/muscat/api/client";
 import type { InfoPage } from "@/muscat/api/types";
+import { fakeClient } from "../fakeClient";
 import { StudentInfoScreen } from "./StudentInfoScreen";
 
-const never = () => new Promise<never>(() => {});
-const client = { getTimetable: never, getAttendance: never, getGrades: never, getStudentInfo: never } as MuscatClient;
+const client = fakeClient();
 const page: InfoPage = {
   sections: [
     { title: "学生基本情報", grids: [{ rows: [["氏名", "テスト 太郎"], ["備考", ""]] }], tables: [] },
