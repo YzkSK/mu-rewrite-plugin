@@ -1,35 +1,96 @@
 import { expect, test } from "bun:test";
 import { ParseError } from "../errors";
-import type { GBlock, GControl } from "../types";
+import type { GBlock, GInline } from "../types";
 import { parseGenericPage } from "./generic";
 
 const page = (inner: string) => new DOMParser().parseFromString(`<form id="funcForm">${inner}</form>`, "text/html");
 const blocks = (inner: string) => parseGenericPage(page(inner)).blocks;
 const kinds = (b: GBlock[]) => b.map((x) => x.kind);
+const items = (b: GBlock | undefined) => (b as Extract<GBlock, { kind: "line" }>).items;
 
 test("#funcForm が無ければ ParseError", () => {
   expect(() => parseGenericPage(new DOMParser().parseFromString("<p>x</p>", "text/html"))).toThrow(ParseError);
 });
 
-test("見出し(アコーディオン・h3・panel title・legend)と、文字だけのブロックは message", () => {
-  const b = blocks(`<h3 class="ui-accordion-header"><span class="ui-icon"></span>基本</h3><div>x</div><h3>見出し</h3><span class="ui-panel-title">パネル</span><legend class="ui-fieldset-legend">凡例</legend><div>対象のデータが存在しません。</div>`);
-  expect(b.map((x) => (x as { text: string }).text)).toEqual(["基本", "x", "見出し", "パネル", "凡例", "対象のデータが存在しません。"]);
-  expect(kinds(b)).toEqual(["heading", "message", "heading", "heading", "heading", "message"]);
+test("見出しの level", () => {
+  const b = blocks(`<h3 class="ui-accordion-header"><span class="ui-icon"></span>基本</h3><span class="ui-panel-title">パネル</span><legend class="ui-fieldset-legend">凡例</legend><h1>一</h1><h2>二</h2><h3>三</h3><h4>四</h4>`);
+  expect(b).toEqual([
+    { kind: "heading", text: "基本", level: 2 },
+    { kind: "heading", text: "パネル", level: 3 },
+    { kind: "heading", text: "凡例", level: 3 },
+    { kind: "heading", text: "一", level: 1 },
+    { kind: "heading", text: "二", level: 2 },
+    { kind: "heading", text: "三", level: 3 },
+    { kind: "heading", text: "四", level: 4 },
+  ]);
 });
 
-test("同じ親の中のインラインの断片は 1 つの message、div で区切れば別", () => {
-  const b = blocks(`<div><span>掲示</span> <span>2026/10/19</span><a class="ui-commandlink" href="#">タイトル</a> [<span>発信元</span>]</div><div><div>一</div><div>二</div></div>`);
-  expect(b).toEqual([{ kind: "message", text: "掲示 2026/10/19 タイトル [ 発信元 ]" }, { kind: "message", text: "一" }, { kind: "message", text: "二" }]);
+test("文字と操作部品は 1 つの line に並ぶ", () => {
+  const b = blocks(`<div><span>ラベル</span><input name="a" value="1"><button type="button">追加</button></div>`);
+  expect(b.length).toBe(1);
+  expect(items(b[0])).toMatchObject([{ kind: "text", text: "ラベル" }, { kind: "text", value: "1" }, { kind: "button", label: "追加", as: "button" }]);
 });
 
-test("見出し・操作部品の境目で区切る", () => {
-  const b = blocks(`<div>前 <span>文</span><input name="a" value="1"> 後 <span>文</span></div>`);
-  expect(b).toMatchObject([{ kind: "message", text: "前 文" }, { kind: "controls" }, { kind: "message", text: "後 文" }]);
+test("div の境目と br で行が分かれ、同じ親の続く文字は 1 つの text", () => {
+  const b = blocks(`<div><span>掲示</span> <span>2026/10/19</span> [<span>発信元</span>]</div><div><div>一</div><div>二<br>三</div></div>`);
+  expect(kinds(b)).toEqual(["line", "line", "line", "line"]);
+  expect(items(b[0])).toEqual([{ kind: "text", text: "掲示 2026/10/19 [ 発信元 ]" }]);
+  expect(b.slice(1).map((x) => items(x))).toEqual([[{ kind: "text", text: "一" }], [{ kind: "text", text: "二" }], [{ kind: "text", text: "三" }]]);
 });
 
-test("ui-button の文字は拾わない(ボタンの label にも使わない)", () => {
-  const b = blocks(`<div><a class="ui-button" href="#"><span class="ui-button-text">ui-button</span></a>実文</div><button type="button" title="開く"><span class="ui-button-text">ui-button</span></button>`);
-  expect(b).toMatchObject([{ kind: "message", text: "実文" }, { kind: "controls", controls: [{ kind: "button", label: "開く" }] }]);
+test("ラジオ・チェックの label と同じ text は捨てる(text 入力の label は残す)", () => {
+  const b = blocks(`<div class="ui-chkbox"><div class="ui-helper-hidden-accessible"><input type="checkbox" id="c1" checked></div><div class="ui-chkbox-box"><span class="ui-icon"></span></div></div><label for="c1">通知</label>
+    <input type="radio" id="r1" name="g" value="a" checked><label for="r1">甲</label><input type="radio" id="r2" name="g" value="b" disabled><label for="r2">乙</label>
+    <label for="t">氏名</label><input id="t" name="t" value="v">`);
+  expect(b.length).toBe(1);
+  expect(items(b[0])).toMatchObject([
+    { kind: "checkbox", label: "通知", checked: true },
+    { kind: "radio", name: "g", value: "a", label: "甲", checked: true, disabled: false },
+    { kind: "radio", value: "b", label: "乙", checked: false, disabled: true },
+    { kind: "text", text: "氏名" },
+    { kind: "text", label: "氏名", value: "v" },
+  ]);
+});
+
+test("table で組まれたラジオの並びは表にせず 1 行", () => {
+  const b = blocks(`<table class="ui-selectoneradio"><tr><td><input type="radio" id="r1" name="g" value="a"><label for="r1">甲</label></td><td><input type="radio" id="r2" name="g" value="b"><label for="r2">乙</label></td></tr></table>`);
+  expect(kinds(b)).toEqual(["line"]);
+  expect(items(b[0]).length).toBe(2);
+});
+
+test("a.ui-commandlink / a[onclick] は link、button / input[type=submit] は button", () => {
+  const b = blocks(`<a class="ui-commandlink" href="#">タイトル</a><a href="#" onclick="x()">開く</a><button type="button">ボタン</button><input type="submit" value="登録">`);
+  expect(items(b[0]).map((i) => (i as { as: string }).as)).toEqual(["link", "link", "button", "button"]);
+});
+
+test("アイコンだけのボタンの label は title、無ければ •", () => {
+  const b = blocks(`<button type="button" title="開く"><span class="ui-button-text">ui-button</span></button><button type="button"><span class="ui-icon"></span></button><a class="ui-button" href="#"><span class="ui-button-text">ui-button</span></a>実文`);
+  expect(items(b[0])).toMatchObject([{ kind: "button", label: "開く" }, { kind: "button", label: "•" }, { kind: "text", text: "実文" }]);
+});
+
+test("空の div / span は行にならない", () => {
+  expect(blocks(`<div>  </div><span> </span><div><span></span><div class="ui-panel">\n</div></div><div>文</div>`)).toEqual([{ kind: "line", items: [{ kind: "text", text: "文" }] }]);
+});
+
+test("message 系は notice の line", () => {
+  const b = blocks(`<div class="ui-messages"><ul><li>保存しました</li></ul></div><div class="ui-message"></div>`);
+  expect(b).toEqual([{ kind: "line", items: [{ kind: "text", text: "保存しました" }], tone: "notice" }]);
+});
+
+const TABS = `<div class="ui-tabs"><ul class="ui-tabs-nav"><li><a href="#t1">一</a></li><li class="ui-tabs-selected"><a href="#t2">二</a></li><li>飾り</li></ul>
+  <div class="ui-tabs-panels"><div class="ui-tabs-panel"><div>パネル一</div></div><div class="ui-tabs-panel"><div>パネル二</div></div></div></div>`;
+
+test("タブは 1 つの tabs ブロックで、選択中のパネルだけ読む", () => {
+  const b = blocks(TABS);
+  expect(b).toMatchObject([{ kind: "tabs", tabs: [{ label: "一", selected: false }, { label: "二", selected: true }] }, { kind: "line", items: [{ text: "パネル二" }] }]);
+  const ref = (b[0] as Extract<GBlock, { kind: "tabs" }>).tabs[1]!.ref;
+  expect(ref).toMatch(/^c\d+$/);
+});
+
+test("選択中が分からなければ最初のパネル", () => {
+  const b = blocks(TABS.replace("ui-tabs-selected", ""));
+  expect(b.length).toBe(2);
+  expect(b[1]).toMatchObject({ kind: "line", items: [{ text: "パネル一" }] });
 });
 
 test("panelgrid: 2 セルの行は fields(値の中の部品つき)、3 セル以上は table", () => {
@@ -42,60 +103,32 @@ test("panelgrid: 2 セルの行は fields(値の中の部品つき)、3 セル�
   expect(b[1]).toMatchObject({ headers: ["a", "b", "c"], rows: [[{ text: "1" }, { text: "2" }, { text: "3" }]] });
 });
 
-test("dl は fields", () => {
-  const b = blocks(`<dl><dt>項目</dt><dd>値</dd></dl>`);
-  expect(b).toEqual([{ kind: "fields", rows: [{ label: "項目", text: "値", controls: [] }] }]);
-});
-
-test("th つきの表: headers と、セルの中の controls", () => {
-  const b = blocks(`<table><tr><th>名</th><th>操作</th></tr><tr><td>甲</td><td><button type="button">削除</button></td></tr></table>`);
-  expect(b).toMatchObject([{ kind: "table", headers: ["名", "操作"], rows: [[{ text: "甲", controls: [] }, { text: "", controls: [{ kind: "button", label: "削除" }] }]] }]);
-});
-
-test("入れ子の外枠の表は作らず、中を走査する", () => {
-  const b = blocks(`<table class="outer"><tr><td><table><tr><th>x</th></tr><tr><td>1</td></tr></table></td></tr></table>`);
-  expect(b).toMatchObject([{ kind: "table", headers: ["x"], rows: [[{ text: "1" }]] }]);
+test("dl は fields、th つきの表は table、入れ子の外枠の表は作らない", () => {
+  expect(blocks(`<dl><dt>項目</dt><dd>値</dd></dl>`)).toEqual([{ kind: "fields", rows: [{ label: "項目", text: "値", controls: [] }] }]);
+  expect(blocks(`<table><tr><th>名</th><th>操作</th></tr><tr><td>甲</td><td><button type="button">削除</button></td></tr></table>`)).toMatchObject([
+    { kind: "table", headers: ["名", "操作"], rows: [[{ text: "甲", controls: [] }, { text: "", controls: [{ kind: "button", label: "削除" }] }]] },
+  ]);
+  expect(blocks(`<table><tr><td><table><tr><th>x</th></tr><tr><td>1</td></tr></table></td></tr></table>`)).toMatchObject([{ kind: "table", headers: ["x"], rows: [[{ text: "1" }]] }]);
 });
 
 test("selectOneMenu は隠し select を使う(見た目の label・panel は読まない)", () => {
   const b = blocks(`<label for="f:s_input">学部</label><div class="ui-selectonemenu"><div class="ui-helper-hidden-accessible"><select id="f:s_input" name="f:s_input"><option value="1">文学部</option><option value="2" selected>理学部</option></select><input id="f:s_focus" readonly></div>
     <label class="ui-selectonemenu-label">理学部</label><div class="ui-selectonemenu-panel"><ul><li>文学部</li></ul></div></div>`);
-  expect(b).toMatchObject([{ kind: "controls", controls: [{ kind: "select", label: "学部", value: "2", options: [{ value: "1", label: "文学部" }, { value: "2", label: "理学部" }] }] }]);
-});
-
-test("checkbox / radio は中の input が本体で、label[for] を拾う", () => {
-  const b = blocks(`<div class="ui-chkbox"><div class="ui-helper-hidden-accessible"><input type="checkbox" id="c1" checked></div><div class="ui-chkbox-box"><span class="ui-icon"></span></div></div><label for="c1">通知</label>
-    <input type="radio" id="r1" name="g" value="a" checked><label for="r1">甲</label><input type="radio" id="r2" name="g" value="b" disabled><label for="r2">乙</label>`);
-  const cs = (b[0] as Extract<GBlock, { kind: "controls" }>).controls;
+  expect(items(b[0]) as GInline[]).toMatchObject([{ kind: "text", text: "学部" }, { kind: "select", label: "学部", value: "2", options: [{ value: "1", label: "文学部" }, { value: "2", label: "理学部" }] }]);
   expect(b.length).toBe(1);
-  expect(cs).toMatchObject([
-    { kind: "checkbox", label: "通知", checked: true },
-    { kind: "radio", name: "g", value: "a", label: "甲", checked: true, disabled: false },
-    { kind: "radio", value: "b", label: "乙", checked: false, disabled: true },
-  ]);
-});
-
-test("タブ: onclick があれば button、無い a にも ref を付けて button", () => {
-  const b = blocks(`<ul class="ui-tabs-nav"><li><a href="#t1">一</a></li><li class="ui-state-disabled"><a href="#t2" onclick="x()">二</a></li><li>三</li></ul>`);
-  expect(b).toMatchObject([{ kind: "controls", controls: [{ kind: "button", label: "一" }, { kind: "button", label: "二", disabled: true }] }, { kind: "heading", text: "三" }]);
 });
 
 test("除外: hidden / rx- / ViewState / display:none / ui-helper-hidden / script / style", () => {
   const b = blocks(`<input type="hidden" name="a"><input name="rx-token" value="t"><input name="javax.faces.ViewState"><input name="v" style="display: none"><div class="ui-helper-hidden"><input name="w"></div><script>1</script><style>a{}</style><input name="ok" value="1">`);
-  expect(b).toMatchObject([{ kind: "controls", controls: [{ kind: "text", value: "1" }] }]);
-  expect((b[0] as Extract<GBlock, { kind: "controls" }>).controls.length).toBe(1);
+  expect(b).toMatchObject([{ kind: "line", items: [{ kind: "text", value: "1" }] }]);
+  expect(items(b[0]).length).toBe(1);
 });
 
 test("ref が付き、DOM から引け、再読みしても同じ", () => {
   const d = page(`<input name="a"><button type="button">go</button>`);
-  const first = parseGenericPage(d).blocks[0] as { controls: GControl[] };
-  const again = parseGenericPage(d).blocks[0] as { controls: GControl[] };
-  expect(first.controls.map((c) => c.ref)).toEqual(again.controls.map((c) => c.ref));
-  expect(new Set(first.controls.map((c) => c.ref)).size).toBe(2);
-  expect(d.querySelector(`[data-mu-ref="${first.controls[1]!.ref}"]`)?.tagName).toBe("BUTTON");
-});
-
-test("message 系のクラスと、操作部品の連続は 1 つの controls", () => {
-  const b = blocks(`<div class="ui-messages"><ul><li>保存しました</li></ul></div><input type="submit" value="登録"><input type="button" value="戻る"><textarea name="t">本文</textarea>`);
-  expect(b).toMatchObject([{ kind: "message", text: "保存しました" }, { kind: "controls", controls: [{ label: "登録" }, { label: "戻る" }, { kind: "textarea", value: "本文" }] }]);
+  const first = items(parseGenericPage(d).blocks[0]) as { ref: string }[];
+  const again = items(parseGenericPage(d).blocks[0]) as { ref: string }[];
+  expect(first.map((c) => c.ref)).toEqual(again.map((c) => c.ref));
+  expect(new Set(first.map((c) => c.ref)).size).toBe(2);
+  expect(d.querySelector(`[data-mu-ref="${first[1]!.ref}"]`)?.tagName).toBe("BUTTON");
 });

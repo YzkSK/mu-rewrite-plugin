@@ -66,14 +66,17 @@ export type GControl =
   | { kind: "select"; ref: string; label: string; value: string; options: { value: string; label: string }[]; disabled: boolean }
   | { kind: "checkbox"; ref: string; label: string; checked: boolean; disabled: boolean }
   | { kind: "radio"; ref: string; name: string; label: string; value: string; checked: boolean; disabled: boolean }
-  | { kind: "button"; ref: string; label: string; disabled: boolean };
+  /** as: 元の要素が <a> なら "link"、<button> / input なら "button" */
+  | { kind: "button"; ref: string; label: string; disabled: boolean; as: "button" | "link" };
 export type GCell = { text: string; controls: GControl[] };
+/** 文字(ref を持たない)か操作部品(ref を持つ)。kind "text" は両方にあるので、見分けは "ref" in x */
+export type GInline = { kind: "text"; text: string } | GControl;
 export type GBlock =
-  | { kind: "heading"; text: string }
-  | { kind: "message"; text: string }
+  | { kind: "heading"; text: string; level: 1 | 2 | 3 | 4 }
+  | { kind: "line"; items: GInline[]; tone?: "notice" }
+  | { kind: "tabs"; tabs: { label: string; ref: string; selected: boolean }[] }
   | { kind: "fields"; rows: { label: string; text: string; controls: GControl[] }[] }
-  | { kind: "table"; headers: string[]; rows: GCell[][] }
-  | { kind: "controls"; controls: GControl[] };
+  | { kind: "table"; headers: string[]; rows: GCell[][] };
 export type GenericPage = { blocks: GBlock[] };
 /** 掲示板。ref は driver の data-mu-ref(取れなければ "") */
 export type NewsItem = {

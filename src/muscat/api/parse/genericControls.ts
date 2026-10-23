@@ -3,6 +3,9 @@ import type { GControl } from "../types";
 /** assignRefs が操作できる要素に付けた印(= 操作部品の全部) */
 const REF_SEL = "[data-mu-ref]";
 
+/** 文字も title も無いボタン(アイコンだけ)の表示 */
+const ICON = "•";
+
 export const squash = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
 
 /** 画面に出さない要素(隠し・PrimeFaces が作る補助の見た目) */
@@ -54,10 +57,10 @@ function controlOf(el: Element): GControl | null {
     if (t === "hidden" || el.closest(".ui-selectonemenu")) return null; // 見た目の補助(_focus)。本体は中の select
     if (t === "checkbox") return { kind: "checkbox", ref, label, checked: el.checked, disabled };
     if (t === "radio") return { kind: "radio", ref, name: el.name, label, value: el.value, checked: el.checked, disabled };
-    if (["submit", "button", "image", "reset"].includes(t)) return { kind: "button", ref, label: squash(el.value || el.alt) || label, disabled };
+    if (["submit", "button", "image", "reset"].includes(t)) return { kind: "button", ref, label: squash(el.value || el.alt) || label || ICON, disabled, as: "button" };
     return { kind: "text", ref, label, value: el.value, disabled };
   }
-  return { kind: "button", ref, label: textOf(el) || label, disabled };
+  return { kind: "button", ref, label: textOf(el) || label || ICON, disabled, as: el.tagName === "A" ? "link" : "button" };
 }
 
 /** root の中(root 自身を含む)の操作部品を文書順に */
