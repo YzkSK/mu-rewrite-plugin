@@ -1,25 +1,32 @@
 import { expect, test } from "bun:test";
 import { readMenuIds } from "./menuIds";
 
-// happy-dom は onclick 属性を実行しないので、同じ動作のリスナーを付ける
-function link(id: string, label: string) {
-  const a = document.createElement("a");
-  a.setAttribute("onclick", "confirmIfModified()");
-  a.textContent = label;
-  a.addEventListener("click", () => {
-    const f = a.closest("form") as HTMLFormElement;
-    (f.elements.namedItem("menuForm:mainMenu_menuid") as HTMLInputElement).value = id;
-    f.submit();
-  });
-  return a;
-}
+const cmd = (id: string) =>
+  `syncTransition('menuForm:mainMenu');PrimeFaces.addSubmitParam('menuForm',{'menuForm:mainMenu':'menuForm:mainMenu','menuForm:mainMenu_menuid':'${id}'}).submit`;
 
-test("リンクのテキストごとにメニュー ID を返し、submit は復元される", async () => {
+test("リンクのテキストごとにメニュー ID を返す(\\- を - に戻す)", () => {
+  document.body.innerHTML = `<form id="menuForm">
+    <a data-pfconfirmcommand="${cmd("aaaa\\-bbbb|1_0_0_0")}">学生時間割表</a>
+    <a data-pfconfirmcommand="${cmd("cccc\\-dddd|1_0_0_2")}"> 成績照会 </a>
+    <a>属性なし</a></form>`;
+  expect(readMenuIds(document)).toEqual({ 学生時間割表: "aaaa-bbbb|1_0_0_0", 成績照会: "cccc-dddd|1_0_0_2" });
+});
+
+test("リンクをクリックせず、submit も呼ばない", () => {
   const original = HTMLFormElement.prototype.submit;
-  document.body.innerHTML = `<form id="menuForm"><input type="hidden" name="rx-token" value="t1"><input type="hidden" name="menuForm:mainMenu_menuid" value=""></form>`;
-  const form = document.getElementById("menuForm")!;
-  form.append(link("A|1", "学生時間割表"), link("B|2", "成績照会"));
-  const ids = await readMenuIds(document);
-  expect(ids).toEqual({ 学生時間割表: "A|1", 成績照会: "B|2" });
-  expect(HTMLFormElement.prototype.submit).toBe(original);
+  let called = false;
+  HTMLFormElement.prototype.submit = () => { called = true; };
+  try {
+    document.body.innerHTML = `<form id="menuForm"><a data-pfconfirmcommand="${cmd("x|1")}">出席確認</a></form>`;
+    document.querySelector("a")!.addEventListener("click", () => { called = true; });
+    readMenuIds(document);
+    expect(called).toBe(false);
+  } finally {
+    HTMLFormElement.prototype.submit = original;
+  }
+});
+
+test("メニューが無い DOM では空のオブジェクト", () => {
+  document.body.innerHTML = "<p>no menu</p>";
+  expect(readMenuIds(document)).toEqual({});
 });
