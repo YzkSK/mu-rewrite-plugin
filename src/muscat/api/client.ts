@@ -35,7 +35,6 @@ export function createMuscatClient(deps: {
     getStudentInfo: () => getInfoPage(core, "学籍情報照会", "Bsb004"),
     getHealthInfo: () => getInfoPage(core, "健康診断情報照会", "Bsb007"),
     readLivePage: () => core.runLive(async (live) => parseGenericPage(live.doc)),
-    // 通信は click と同時に始まるので、始まりの待ちは短くてよい(通信が無い操作で画面の更新を遅らせない)
-    driveLive: (steps) => core.runLive((live) => live.drive(steps, { startMs: 250 })),
+    driveLive: (steps) => core.runLive((live) => live.drive(steps)),
   };
 }
