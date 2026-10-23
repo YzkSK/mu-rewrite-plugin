@@ -5,9 +5,10 @@ import type { MenuIds } from "./session";
 import { getGrades } from "./grades";
 import { getInfoPage } from "./info";
 import { getTimetable } from "./timetable";
+import { readNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
-import type { Attendance, GenericPage, GradeFilter, Grades, InfoPage, Timetable } from "./types";
+import type { Attendance, GenericPage, GradeFilter, Grades, InfoPage, NewsPage, Timetable } from "./types";
 
 export type MuscatClient = {
   getTimetable(year?: number): Promise<Timetable>;
@@ -19,6 +20,8 @@ export type MuscatClient = {
   readLivePage(): Promise<GenericPage>;
   /** 生きたページの元の入力欄・ボタンを操作して、通信の終わりを待つ */
   driveLive(steps: DriveStep[]): Promise<"done" | "none" | "timeout">;
+  /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
+  readNews(): Promise<NewsPage>;
 };
 
 export function createMuscatClient(deps: {
@@ -36,5 +39,6 @@ export function createMuscatClient(deps: {
     getHealthInfo: () => getInfoPage(core, "健康診断情報照会", "Bsb007"),
     readLivePage: () => core.runLive(async (live) => parseGenericPage(live.doc)),
     driveLive: (steps) => core.runLive((live) => live.drive(steps)),
+    readNews: () => readNews(core),
   };
 }
