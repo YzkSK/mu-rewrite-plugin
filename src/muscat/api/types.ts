@@ -114,6 +114,18 @@ export type NewsPage = {
   empty: boolean;
   detail: NewsDetail | null;
 };
+/** ホーム。date は "2026/10/19" か ""。ref は driver の data-mu-ref(取れなければ "") */
+export type HomeNotice = { date: string; title: string; source: string; openRef: string };
+export type HomeNoticeTab = { name: string; ref: string; selected: boolean; items: HomeNotice[]; empty: boolean };
+export type HomeLesson = { slots: { weekday: string; period: number }[]; title: string; teachers: string[]; room: string; keijiCount: number };
+export type HomePage = {
+  unreadKeiji: number | null;
+  keijiRef: string;
+  timetableChangeRef: string;
+  notices: HomeNoticeTab[];
+  lessons: HomeLesson[];
+  detail: NewsDetail | null;
+};
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];

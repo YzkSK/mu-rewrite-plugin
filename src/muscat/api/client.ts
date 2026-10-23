@@ -8,7 +8,8 @@ import { getTimetable } from "./timetable";
 import { readNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
-import type { Attendance, GenericPage, GradeFilter, Grades, InfoPage, NewsPage, Timetable } from "./types";
+import { parseHome } from "./parse/home";
+import type { Attendance, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, Timetable } from "./types";
 
 export type MuscatClient = {
   getTimetable(year?: number): Promise<Timetable>;
@@ -22,6 +23,8 @@ export type MuscatClient = {
   driveLive(steps: DriveStep[]): Promise<"done" | "none" | "timeout">;
   /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
   readNews(): Promise<NewsPage>;
+  /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
+  readHome(): Promise<HomePage>;
 };
 
 export function createMuscatClient(deps: {
@@ -40,5 +43,6 @@ export function createMuscatClient(deps: {
     readLivePage: () => core.runLive(async (live) => parseGenericPage(live.doc)),
     driveLive: (steps) => core.runLive((live) => live.drive(steps)),
     readNews: () => readNews(core),
+    readHome: () => core.runLive(async (live) => parseHome(live.doc)),
   };
 }
