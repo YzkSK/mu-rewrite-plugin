@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import { MuscatDownError, ParseError, SsoRequiredError } from "@/muscat/api/errors";
 import type { Timetable } from "@/muscat/api/types";
+import { errorMessage } from "../errorMessage";
 
 /** blocked: サーバーが受け付けず、別の年度に戻された年度(その学生の範囲の外) */
 export type TimetableState = { status: "loading" | "ready" | "error"; timetable?: Timetable; error?: string; blocked?: number[] };
-
-export function errorMessage(e: unknown): string {
-  if (e instanceof ParseError) return "読み取れませんでした";
-  if (e instanceof SsoRequiredError) return "ログインが切れました。MUSCAT にログインし直してください";
-  if (e instanceof MuscatDownError) return "MUSCAT が応答しません。しばらくして再読み込みしてください";
-  return "読み取れませんでした";
-}
 
 /** initial はテスト用(effect が動かない描画で状態を固定する)。 */
 export function useTimetable(client: MuscatClient, year0: number, initial?: TimetableState) {

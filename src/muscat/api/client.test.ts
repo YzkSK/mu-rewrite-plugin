@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { createMuscatClient } from "./client";
 import { MuscatDownError } from "./errors";
 import type { Fetch } from "./recover";
+import { now } from "./testClock";
 
 const table = `<table class="classTable"><tr><th></th><th>月曜日</th><th>火曜日</th></tr><tr><td>1</td><td><div class="jugyo-info"><div class="fontB">合成科目</div><div>教員A</div><div><span>101</span><span>本館</span></div><div>0000000001</div><div class="taniSu">2.0単位</div></div></td><td><div class="jugyo-info"><div class="fontB"></div></div></td></tr></table>`;
 const ttForm = (year: number) =>
@@ -10,9 +11,6 @@ const menu = `<form id="menuForm" action="/m"><input name="rx-token" value="t"><
 const pageDoc = (inner: string) => new DOMParser().parseFromString(menu + inner, "text/html");
 const ids = { 学生時間割表: "A|1" };
 
-// recover の 30 秒制限はモジュール内に残るため、他のテストファイルの時計と重ならない値から始める
-let clock = 10_000_000;
-const now = () => (clock += 100_000);
 
 const relay = `<form id="loginForm" action="/login"></form>`;
 const home = `<form id="menuForm" action="/m"></form>`;
