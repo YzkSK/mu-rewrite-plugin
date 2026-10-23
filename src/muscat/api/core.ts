@@ -1,3 +1,5 @@
+import type { WaitOpts, WaitResult } from "./driver/busy";
+import { drive, type DriveStep } from "./driver/drive";
 import { MuscatDownError } from "./errors";
 import { isStateLost, type ResponseKind } from "./expired";
 import { applyPartialResponse, buildPartialRequest } from "./partial";
@@ -18,7 +20,14 @@ export type Ctx = {
   ): Promise<boolean>;
 };
 
-export type Core = { run<T>(op: (ctx: Ctx) => Promise<T | null>): Promise<T> };
+/** 生きたページ(拡張機能が動いている document)そのものを読み、操作する */
+export type LiveCtx = { doc: Document; drive(steps: DriveStep[], opts?: WaitOpts): Promise<WaitResult> };
+
+export type Core = {
+  run<T>(op: (ctx: Ctx) => Promise<T | null>): Promise<T>;
+  /** 直列キューに積むだけ。復帰もやり直しもしない(生きたページが壊れたら、エラーをそのまま投げる) */
+  runLive<T>(op: (live: LiveCtx) => Promise<T>): Promise<T>;
+};
 
 const toDoc = (text: string) => new DOMParser().parseFromString(text, "text/html");
 
@@ -61,6 +70,7 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
   };
 
   return {
+    runLive: (op) => queue(() => op({ doc: deps.doc, drive: (steps, opts) => drive(deps.doc, steps, opts) })),
     run: (op) =>
       queue(async () => {
         const first = await op(ctx);
