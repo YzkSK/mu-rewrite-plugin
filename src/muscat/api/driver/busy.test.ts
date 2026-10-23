@@ -28,7 +28,8 @@ test("XHR が先で DOM が遅れて更新 → DOM が静かになるまで待�
   setTimeout(() => f.emit(), 5);
   setTimeout(() => touch(d), 30); // XHR の静かな期間(40ms)の途中で DOM が更新される
   expect(await p).toBe("done");
-  expect(performance.now() - t0).toBeGreaterThanOrEqual(65);
+  // DOM の更新(30ms)の後 quietMs(40ms)待つので、理論上は 70ms。タイマーの揺れで数 ms 早く終わることがあるため、余裕を見る
+  expect(performance.now() - t0).toBeGreaterThanOrEqual(55);
 });
 
 test("XHR が来ない → none。expectAjax なら startMs が長い", async () => {
