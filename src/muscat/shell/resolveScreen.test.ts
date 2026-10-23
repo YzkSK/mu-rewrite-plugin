@@ -18,9 +18,9 @@ test("未登録のログイン済み画面は汎用画面。題名は見出し�
   expect(screenTitleOf(page(""))).toBe("MUSCAT");
 });
 
-test("ホーム(Pky001 / コード無しの #portalCont)は「ホーム」", () => {
-  expect(resolveScreen("Pky001", page("[Pky001] ポータル"))?.title).toBe("ホーム");
-  expect(resolveScreen("", page("", '<div id="portalCont"></div>'))?.title).toBe("ホーム");
+test("ホーム(Pky001 / コード無しの #portalCont)は、登録されたホーム画面", () => {
+  expect(resolveScreen("Pky001", page("[Pky001] ポータル"))).toBe(SCREENS.Pky001!);
+  expect(resolveScreen("", page("", '<div id="portalCont"></div>'))).toBe(SCREENS.Pky001!);
   expect(resolveScreen("", page(""))?.title).toBe("MUSCAT");
 });
 

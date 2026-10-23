@@ -18,5 +18,6 @@ export function screenTitleOf(doc: Document): string {
 export function resolveScreen(code: string, doc: Document): ScreenDef | null {
   if (Object.hasOwn(SCREENS, code)) return SCREENS[code] ?? null;
   if (!isLoggedIn(doc)) return null;
-  return genericScreen(isHomeScreen(code, doc) ? "ホーム" : screenTitleOf(doc));
+  if (isHomeScreen(code, doc)) return SCREENS.Pky001 ?? genericScreen("ホーム"); // コードが取れないホームも、登録された画面を使う
+  return genericScreen(screenTitleOf(doc));
 }
