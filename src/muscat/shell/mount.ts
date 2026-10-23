@@ -2,6 +2,12 @@ const HOST_ID = "mu-react-host";
 const HIDE_ID = "mu-react-hide";
 const FONT_ID = "mu-react-font";
 
+/** ホストと本文を隠す style を取り除く(@property と Murecho の link は残す) */
+export function unmountShadowRoot(doc: Document): void {
+  doc.getElementById(HOST_ID)?.remove();
+  doc.getElementById(HIDE_ID)?.remove();
+}
+
 /**
  * Shadow DOM のルートを作り、元の本文を隠す。2 回呼んでも 1 つだけ。
  * css を渡すと shadow 内の <style> に入れる。Shadow DOM 内では Tailwind v4 の @property が効かないので、

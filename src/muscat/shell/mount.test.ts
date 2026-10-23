@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mountShadowRoot } from "./mount";
+import { mountShadowRoot, unmountShadowRoot } from "./mount";
 import { nativeNav } from "./nativeNav";
 
 const fresh = () => new DOMParser().parseFromString("<html><head></head><body><div id=wrap></div></body></html>", "text/html");
@@ -27,6 +27,17 @@ test("css の @property だけをページ側の head にも入れる", () => {
   expect(doc.head.textContent).toContain("@property --x");
   expect(doc.head.textContent).not.toContain(".a {");
   expect(root.textContent).toContain(".a { color: red }");
+});
+
+test("unmount でホストと隠す style が消え、再マウントで 1 つだけ作られる", () => {
+  const doc = fresh();
+  mountShadowRoot(doc);
+  unmountShadowRoot(doc);
+  expect(doc.getElementById("mu-react-host")).toBeNull();
+  expect(doc.getElementById("mu-react-hide")).toBeNull();
+  mountShadowRoot(doc);
+  expect(doc.querySelectorAll("#mu-react-host")).toHaveLength(1);
+  expect(doc.querySelectorAll("#mu-react-hide")).toHaveLength(1);
 });
 
 test("nativeNav: 一致するリンクを click、無ければ何もしない", () => {
