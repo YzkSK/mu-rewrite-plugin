@@ -1,6 +1,7 @@
 export type Ref = string;
 
-const ACTIONABLE = "input, select, textarea, button, a[onclick]";
+// タブの切り替えは jQuery が a に結び付けていて onclick が無いので、タブの a も操作できる要素にする
+export const ACTIONABLE = "input, select, textarea, button, a[onclick], .ui-tabs-nav a";
 const REF = /^c(\d+)$/;
 const counters = new WeakMap<Document, number>();
 
