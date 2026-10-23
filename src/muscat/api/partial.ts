@@ -25,6 +25,30 @@ function setAll(doc: Document, name: string, value: string) {
   for (const el of doc.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`)) el.value = value;
 }
 
+/**
+ * PrimeFaces と同じ: 値を trim し、method=post のすべてのフォームに ViewState を入れる。
+ * フォームの差し替えで ViewState の項目が消えているので、無いフォームには追加する(追加しないと次の送信に ViewState が付かず、
+ * サーバーは 2 回目以降の変更を受け付けない。実機で確認)。
+ */
+function setViewState(doc: Document, value: string) {
+  const v = value.trim();
+  for (const form of doc.querySelectorAll("form")) {
+    if ((form.getAttribute("method") ?? "").toLowerCase() !== "post") continue;
+    const el = [...form.children].find(
+      (c): c is HTMLInputElement => c instanceof HTMLInputElement && c.name === "jakarta.faces.ViewState",
+    );
+    if (el) el.value = v;
+    else {
+      const input = doc.createElement("input");
+      input.type = "hidden";
+      input.name = "jakarta.faces.ViewState";
+      input.value = v;
+      input.setAttribute("autocomplete", "off");
+      form.appendChild(input);
+    }
+  }
+}
+
 /** 部分更新の XML を doc に反映する。rx-token は menuForm を含む全フォームに揃える。 */
 export function applyPartialResponse(doc: Document, xml: string): void {
   // DOMParser の XML は CDATA の扱いが環境で違うため、<update> を直接読む
@@ -32,7 +56,7 @@ export function applyPartialResponse(doc: Document, xml: string): void {
     const id = m[1] ?? "";
     const content = (m[2] ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
     if (id.includes("ViewState")) {
-      setAll(doc, "jakarta.faces.ViewState", content);
+      setViewState(doc, content);
       continue;
     }
     const target = doc.getElementById(id);

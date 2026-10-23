@@ -5,7 +5,7 @@ import type { Fetch } from "./recover";
 
 const table = `<table class="classTable"><tr><th></th><th>月曜日</th><th>火曜日</th></tr><tr><td>1</td><td><div class="jugyo-info"><div class="fontB">合成科目</div><div>教員A</div><div><span>101</span><span>本館</span></div><div>0000000001</div><div class="taniSu">2.0単位</div></div></td><td><div class="jugyo-info"><div class="fontB"></div></div></td></tr></table>`;
 const ttForm = (year: number) =>
-  `<form id="funcForm" action="/f"><input name="rx-token" value="t"><input name="funcForm:nendo_input" value="${year}">${table}</form>`;
+  `<form id="funcForm" action="/f" method="post"><input name="rx-token" value="t"><input name="funcForm:nendo_input" value="${year}">${table}</form>`;
 const menu = `<form id="menuForm" action="/m"><input name="rx-token" value="t"></form>`;
 const pageDoc = (inner: string) => new DOMParser().parseFromString(menu + inner, "text/html");
 const ids = { 学生時間割表: "A|1" };
@@ -63,26 +63,26 @@ test("年度が違えば部分更新 1 回、同じなら 0 回", async () => {
   expect(calls.length).toBe(1);
 });
 
-// MUSCAT は、開いた直後の最初の年度変更しか受け付けない。部分更新のあとに年度を変えるときは、メニューから開き直す
-test("部分更新のあとの年度変更: 開き直してから部分更新する", async () => {
-  const kinds: string[] = [];
+// 実機の MUSCAT は、直前の応答の ViewState が付いていない送信では年度を変えず、元の年度を返す。
+// 応答のフォーム差し替えで ViewState の項目が消えるので、取り込みで足し直さないと 2 回目以降が通らない
+test("年度を続けて変える: 部分更新 1 回ずつで毎回通る", async () => {
+  let vs = 0;
+  let year = 2026;
+  const calls: string[] = [];
   const f: Fetch = async (_url, init) => {
     const b = new URLSearchParams(String(init?.body));
-    if (b.get("jakarta.faces.partial.ajax")) {
-      kinds.push("partial:" + b.get("funcForm:nendo_input"));
-      return new Response(`<partial-response><changes><update id="funcForm"><![CDATA[${ttForm(Number(b.get("funcForm:nendo_input")))}]]></update></changes></partial-response>`);
-    }
-    kinds.push("menu");
-    return new Response(menu + ttForm(2026)); // 開き直すと既定の年度に戻る
+    calls.push("partial:" + b.get("funcForm:nendo_input"));
+    if (b.get("jakarta.faces.ViewState") === "vs" + vs) year = Number(b.get("funcForm:nendo_input"));
+    vs++;
+    return new Response(
+      `<partial-response><changes><update id="funcForm"><![CDATA[${ttForm(year)}]]></update><update id="j_id1:jakarta.faces.ViewState:0"><![CDATA[ vs${vs}\n]]></update></changes></partial-response>`,
+    );
   };
-  const c = createMuscatClient({ fetch: f, doc: pageDoc(ttForm(2026)), ids, now });
-  expect((await c.getTimetable(2027)).year).toBe(2027);
-  expect(kinds).toEqual(["partial:2027"]); // 最初の変更は開き直さない
-  expect((await c.getTimetable(2026)).year).toBe(2026);
-  expect(kinds).toEqual(["partial:2027", "menu"]); // 既定の年度に戻るだけなので部分更新は不要
-  expect((await c.getTimetable(2025)).year).toBe(2025);
-  expect((await c.getTimetable(2024)).year).toBe(2024);
-  expect(kinds).toEqual(["partial:2027", "menu", "partial:2025", "menu", "partial:2024"]);
+  const doc = pageDoc(ttForm(2026));
+  doc.getElementById("funcForm")!.insertAdjacentHTML("afterbegin", `<input name="jakarta.faces.ViewState" value="vs0">`);
+  const c = createMuscatClient({ fetch: f, doc, ids, now });
+  for (const y of [2027, 2026, 2025, 2024]) expect((await c.getTimetable(y)).year).toBe(y);
+  expect(calls).toEqual(["partial:2027", "partial:2026", "partial:2025", "partial:2024"]);
 });
 
 test("最初の応答が空 → 復帰して 1 回やり直し成功", async () => {

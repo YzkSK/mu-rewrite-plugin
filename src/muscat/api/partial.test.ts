@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
 import { applyPartialResponse, buildPartialRequest } from "./partial";
 
-const html = `<form id="menuForm" action="/m"><input name="rx-token" value="old"><input name="jakarta.faces.ViewState" value="vs1"></form>
-<form id="funcForm" action="/f"><input name="rx-token" value="old"><input name="jakarta.faces.ViewState" value="vs1"><input name="funcForm:nendo_input" value="2026"><p id="body">旧</p></form>`;
+const html = `<form id="menuForm" action="/m" method="post"><input name="rx-token" value="old"><input name="jakarta.faces.ViewState" value="vs1"></form>
+<form id="funcForm" action="/f" method="post"><input name="rx-token" value="old"><input name="jakarta.faces.ViewState" value="vs1"><input name="funcForm:nendo_input" value="2026"><p id="body">旧</p></form>`;
 const makeDoc = () => new DOMParser().parseFromString(html, "text/html");
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?><partial-response><changes>
-<update id="funcForm"><![CDATA[<form id="funcForm" action="/f"><input name="rx-token" value="new"><input name="funcForm:nendo_input" value="2025"><p id="body">新</p></form>]]></update>
+<update id="funcForm"><![CDATA[<form id="funcForm" action="/f" method="post"><input name="rx-token" value="new"><input name="funcForm:nendo_input" value="2025"><p id="body">新</p></form>]]></update>
 <update id="j_id1:jakarta.faces.ViewState:0"><![CDATA[vs2]]></update>
 <update id="nothing"><![CDATA[<div>x</div>]]></update>
 </changes></partial-response>`;
@@ -23,6 +23,16 @@ test("request", () => {
   expect(r.body.get("a")).toBe("b");
   expect(r.headers["Faces-Request"]).toBe("partial/ajax");
   expect(r.headers["Content-Type"]).toBe("application/x-www-form-urlencoded");
+});
+
+test("apply: 差し替えで消えた ViewState の項目を、method=post のフォームに足し直す(値は trim)", () => {
+  const doc = makeDoc();
+  const padded = xml.replace("[CDATA[vs2]]", "[CDATA[ vs2\n]]");
+  applyPartialResponse(doc, padded);
+  const func = doc.getElementById("funcForm")!;
+  const vs = [...func.querySelectorAll('input[name="jakarta.faces.ViewState"]')] as HTMLInputElement[];
+  expect(vs.length).toBe(1); // 差し替えた応答には無かったので、足された
+  expect(vs[0]!.value).toBe("vs2");
 });
 
 test("apply: 差し替え・ViewState・menuForm の rx-token", () => {
