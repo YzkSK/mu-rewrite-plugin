@@ -4,7 +4,8 @@ import type { MuscatClient } from "@/muscat/api/client";
 import type { Attendance } from "@/muscat/api/types";
 import { AttendanceScreen } from "./AttendanceScreen";
 
-const client: MuscatClient = { getTimetable: () => new Promise(() => {}), getAttendance: () => new Promise(() => {}) };
+const never = () => new Promise<never>(() => {});
+const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never };
 
 const terms = [2019, 2020, 2025, 2026, 2027, 2028].map((y) => ({ key: `${y}|03`, label: `${y}年度 3学期` }));
 const base: Attendance = { termKey: "2026|03", baseDate: "2026/10/24", terms, courses: [] };
