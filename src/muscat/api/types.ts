@@ -75,6 +75,45 @@ export type GBlock =
   | { kind: "table"; headers: string[]; rows: GCell[][] }
   | { kind: "controls"; controls: GControl[] };
 export type GenericPage = { blocks: GBlock[] };
+/** 掲示板。ref は driver の data-mu-ref(取れなければ "") */
+export type NewsItem = {
+  title: string;
+  category: string;
+  source: string;
+  /** "2026/10/12" か "" */
+  date: string;
+  important: boolean;
+  isNew: boolean;
+  unread: boolean;
+  flagged: boolean;
+  openRef: string;
+  flagRef: string;
+  readRef: string;
+};
+export type NewsGroup = { title: string; items: NewsItem[] };
+export type NewsTab = { name: string; ref: string; selected: boolean };
+export type NewsDetail = {
+  title: string;
+  fields: { label: string; text: string; html: string }[];
+  flagged: boolean;
+  flagRef: string;
+  prevRef: string;
+  nextRef: string;
+  closeRef: string;
+};
+/** groups はグループのタブのときだけ(そのとき items は全部をつないだもの)。empty は「データが存在しません」で行が 0 */
+export type NewsPage = {
+  tabs: NewsTab[];
+  keyword: string;
+  course: string;
+  keywordRef: string;
+  courseRef: string;
+  searchRef: string;
+  groups: NewsGroup[] | null;
+  items: NewsItem[];
+  empty: boolean;
+  detail: NewsDetail | null;
+};
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];

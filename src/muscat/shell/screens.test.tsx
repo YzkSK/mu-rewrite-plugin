@@ -4,6 +4,7 @@ import { fakeClient } from "@/muscat/screens/fakeClient";
 import { GenericScreen } from "@/muscat/screens/generic/GenericScreen";
 import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
+import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 import { SCREENS } from "./screens";
@@ -19,6 +20,7 @@ const EXPECTED = {
   Bsb004: ["学籍情報照会", StudentInfoScreen],
   Bsb007: ["健康診断情報照会", HealthInfoScreen],
   Bsa004: ["個人設定", GenericScreen],
+  Bsd007: ["掲示板", NewsScreen],
 } as const;
 
 test("登録されている画面が、期待の一覧と一致する", () => {

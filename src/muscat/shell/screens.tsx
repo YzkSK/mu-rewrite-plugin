@@ -4,6 +4,7 @@ import { AttendanceScreen } from "@/muscat/screens/attendance/AttendanceScreen";
 import { GenericScreen } from "@/muscat/screens/generic/GenericScreen";
 import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
+import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 
@@ -26,4 +27,5 @@ export const SCREENS: Record<string, ScreenDef> = {
   Bsb004: { title: "学籍情報照会", render: (client) => <StudentInfoScreen client={client} /> },
   Bsb007: { title: "健康診断情報照会", render: (client) => <HealthInfoScreen client={client} /> },
   Bsa004: genericScreen("個人設定"),
+  Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },
 };
