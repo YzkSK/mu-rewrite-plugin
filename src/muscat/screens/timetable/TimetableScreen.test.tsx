@@ -36,6 +36,14 @@ test("エラー: 文言が出る", () => {
   expect(render({ initial: { status: "error", error: "MUSCAT が応答しません。しばらくして再読み込みしてください" } })).toContain("応答しません");
 });
 
+test("範囲外の年度が分かっているとき: そのボタンは押せず、理由が出る", () => {
+  const html = render({ initial: { status: "ready", timetable, blocked: [2025] } });
+  expect(html).toContain("これより前の年度はありません");
+  expect(html).not.toContain("これより後の年度はありません");
+  expect(/disabled[^>]*>前の年度/.test(html)).toBe(true);
+  expect(/disabled[^>]*>次の年度/.test(html)).toBe(false);
+});
+
 test("読み込み中は表示が出る", () => {
   expect(render({})).toContain("読み込み中");
 });
