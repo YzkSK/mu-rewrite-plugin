@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
-  "version": "0.5.1",
+  "version": "0.6.1",
+  "permissions": ["webRequest", "storage"],
   "host_permissions": [
     "https://portal.musashino-u.ac.jp/*",
     "https://musashino-u.myopenlms.net/*",
@@ -12,6 +13,11 @@
       "matches": ["https://portal.musashino-u.ac.jp/*"],
       "js": ["lib.js", "content.js"],
       "css": ["content.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://unipa.m-muscat.musashino-u.ac.jp/uprx/*"],
+      "js": ["dist/muscat-react.js"],
       "run_at": "document_start"
     }
   ],

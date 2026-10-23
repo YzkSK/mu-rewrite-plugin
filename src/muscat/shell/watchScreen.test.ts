@@ -36,6 +36,27 @@ test("コードが変わると通知される", async () => {
   stop();
 });
 
+test("メニューがありコードが空のまま unknownAfterMs たつと、空コードを 1 回だけ通知する", async () => {
+  const doc = fresh("");
+  doc.body.insertAdjacentHTML("beforeend", '<ul id="menuForm:mainMenu"></ul>');
+  const got: string[] = [];
+  const stop = watchScreen(doc, (c) => got.push(c), { unknownAfterMs: 50 });
+  expect(got).toEqual([]);
+  await sleep(WAIT);
+  doc.body.appendChild(doc.createElement("p"));
+  await sleep(WAIT);
+  expect(got).toEqual([""]);
+  stop();
+});
+
+test("メニューが無ければ、空のままでも通知しない", async () => {
+  const got: string[] = [];
+  const stop = watchScreen(fresh(""), (c) => got.push(c), { unknownAfterMs: 50 });
+  await sleep(WAIT);
+  expect(got).toEqual([]);
+  stop();
+});
+
 test("空に変わっても通知しない", async () => {
   const doc = fresh("Kmd008");
   const got: string[] = [];
