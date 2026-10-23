@@ -6,7 +6,7 @@ import { GradesScreen } from "./GradesScreen";
 import { GradeList } from "./GradeList";
 
 const never = () => new Promise<never>(() => {});
-const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never };
+const client: MuscatClient = { getTimetable: never, getAttendance: never, getGrades: never, getStudentInfo: never };
 
 const course = (o: Partial<GradeCourse>): GradeCourse => ({
   mark: "", online: false, inProgress: false, name: "科目", credits: 2, grade: "B", gpaTarget: true, gpaTargetYear: true,
