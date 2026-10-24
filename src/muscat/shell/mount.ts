@@ -2,7 +2,7 @@ const HOST_ID = "mu-react-host";
 const HIDE_ID = "mu-react-hide";
 const FONT_ID = "mu-react-font";
 
-/** ホストと本文を隠す style を取り除く(@property と Murecho の link は残す) */
+/** ホストと本文を隠す style を取り除く(@property と IBM Plex Sans JP の link は残す) */
 export function unmountShadowRoot(doc: Document): void {
   doc.getElementById(HOST_ID)?.remove();
   doc.getElementById(HIDE_ID)?.remove();
@@ -11,7 +11,7 @@ export function unmountShadowRoot(doc: Document): void {
 /**
  * Shadow DOM のルートを作り、元の本文を隠す。2 回呼んでも 1 つだけ。
  * css を渡すと shadow 内の <style> に入れる。Shadow DOM 内では Tailwind v4 の @property が効かないので、
- * @property だけはページ側の head にも入れる。Murecho も shadow 内の @font-face では読めないので head に <link> を足す。
+ * @property だけはページ側の head にも入れる。IBM Plex Sans JP も shadow 内の @font-face では読めないので head に <link> を足す。
  */
 export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
   const existing = doc.getElementById(HOST_ID);
@@ -42,7 +42,7 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
     const link = doc.createElement("link");
     link.id = FONT_ID;
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Murecho:wght@400;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap";
     doc.head.appendChild(link);
   }
   return root;

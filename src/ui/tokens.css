@@ -51,24 +51,24 @@
 :root,
 :host {
   --mu-primary: #541b86;
-  --mu-primary-soft: #f1e9f8;
+  --mu-primary-soft: #eee8f4;
   --mu-alert: #b3261e;
-  --mu-font: "Murecho", system-ui, sans-serif;
+  --mu-font: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
 
-  --background: #ffffff;
-  --foreground: var(--color-neutral-950);
+  --background: #f3f2f5;
+  --foreground: #1f1a24;
   --card: #ffffff;
-  --card-foreground: var(--color-neutral-950);
+  --card-foreground: #1f1a24;
   --popover: #ffffff;
-  --popover-foreground: var(--color-neutral-950);
+  --popover-foreground: #1f1a24;
   --primary: var(--mu-primary);
   --primary-foreground: #ffffff;
   --primary-accent: var(--mu-primary);
   --secondary: var(--mu-primary-soft);
   --secondary-foreground: var(--mu-primary);
   --secondary-accent: var(--mu-primary);
-  --muted: var(--color-neutral-100);
-  --muted-foreground: var(--color-neutral-600);
+  --muted: #f4f2f6;
+  --muted-foreground: #6b6474;
   --accent: var(--mu-primary-soft);
   --accent-foreground: var(--mu-primary);
   --info: var(--color-sky-300);
@@ -79,16 +79,16 @@
   --warning-foreground: var(--color-amber-950);
   --error: var(--mu-alert);
   --error-foreground: #ffffff;
-  --border: var(--color-neutral-200);
-  --input: var(--color-neutral-200);
+  --border: #d9d4df;
+  --input: #c9c3d1;
   --outline: var(--mu-primary);
-  --radius: 0.625rem;
-  --sidebar: #f8f6fb;
+  --radius: 0.25rem;
+  --sidebar: #ffffff;
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--mu-primary);
-  --sidebar-accent: var(--mu-primary-soft);
-  --sidebar-accent-foreground: #3b1260;
-  --sidebar-border: #e7e2ee;
+  --sidebar-accent: #eee8f4;
+  --sidebar-accent-foreground: #541b86;
+  --sidebar-border: #d9d4df;
   --sidebar-ring: var(--mu-primary);
 
   font-family: var(--mu-font);

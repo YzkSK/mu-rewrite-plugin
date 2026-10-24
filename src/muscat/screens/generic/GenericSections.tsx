@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GBlock } from "@/muscat/api/types";
 import { CollapsibleCard } from "@/ui/CollapsibleCard";
+import { Panel } from "@/ui/Panel";
 import { GenericBlock } from "./GenericBlocks";
 import type { Run } from "./GenericControl";
 
@@ -30,8 +31,26 @@ function GenericSection({ section, run }: { section: Section; run: Run }) {
   );
 }
 
+/** 開いているダイアログ。閉じる操作は元の OK・キャンセルが担う(押すと元が閉じ、読み直しで消える) */
+function GenericDialog({ title, blocks, run }: { title: string; blocks: GBlock[]; run: Run }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-auto bg-[rgb(34_27_43/.35)] p-4">
+      <div role="dialog" aria-modal="true" aria-label={title} className="max-h-full w-full max-w-lg overflow-auto">
+        <Panel title={title}>
+          <div className="flex flex-col gap-2">
+            {blocks.map((b, i) => (
+              <GenericBlock key={i} block={b} run={run} />
+            ))}
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
 export function GenericSections({ blocks, run }: { blocks: GBlock[]; run: Run }) {
-  const { head, sections } = split(blocks);
+  const dialogs = blocks.filter((b) => b.kind === "dialog");
+  const { head, sections } = split(blocks.filter((b) => b.kind !== "dialog"));
   return (
     <>
       {head.map((b, i) => (
@@ -39,6 +58,9 @@ export function GenericSections({ blocks, run }: { blocks: GBlock[]; run: Run })
       ))}
       {sections.map((s, i) => (
         <GenericSection key={i} section={s} run={run} />
+      ))}
+      {dialogs.map((d, i) => (
+        <GenericDialog key={i} title={d.title} blocks={d.blocks} run={run} />
       ))}
     </>
   );

@@ -19,5 +19,7 @@ export function GenericBlock({ block, run }: { block: GBlock; run: Run }) {
       return <GenericFields block={block} run={run} />;
     case "table":
       return <DataTable compact headers={block.headers} rows={block.rows.map((r) => r.map((c, j) => <GenericCell key={j} cell={c} run={run} />))} />;
+    case "dialog":
+      return null; // GenericSections が画面の上に重ねて出す
   }
 }

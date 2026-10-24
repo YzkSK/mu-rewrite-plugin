@@ -12,6 +12,34 @@ test("#funcForm が無ければ ParseError", () => {
   expect(() => parseGenericPage(new DOMParser().parseFromString("<p>x</p>", "text/html"))).toThrow(ParseError);
 });
 
+test("閉じた .ui-dialog の中身は出ない", () => {
+  const b = blocks(`<div>本文</div><div class="ui-dialog" aria-hidden="true"><div class="ui-dialog-titlebar"><span class="ui-dialog-title">確認</span></div><div class="ui-dialog-content"><button type="button">OK</button></div></div>`);
+  expect(JSON.stringify(b)).not.toContain("OK");
+  expect(kinds(b)).toEqual(["line"]);
+});
+
+test("開いた .ui-dialog は最後の dialog ブロックになり、題名とボタンを持つ", () => {
+  const b = blocks(`<div class="ui-dialog" aria-hidden="false"><div class="ui-dialog-titlebar"><span class="ui-dialog-title">確認</span></div><div class="ui-dialog-content"><div>よろしいですか</div><button type="button">OK</button></div></div><div>後ろの本文</div>`);
+  expect(kinds(b)).toEqual(["line", "dialog"]);
+  const d = b[1] as Extract<GBlock, { kind: "dialog" }>;
+  expect(d.title).toBe("確認");
+  expect(kinds(d.blocks)).toEqual(["line", "line"]);
+  expect(items(d.blocks[1])).toMatchObject([{ kind: "button", label: "OK" }]);
+});
+
+test("フォームの外に移された開いたダイアログも拾い、ref を付ける。上の段・メニューのものと閉じたものは拾わない", () => {
+  const dlg = (t: string, hidden: string) => `<div class="ui-dialog" aria-hidden="${hidden}"><div class="ui-dialog-titlebar"><span class="ui-dialog-title">${t}</span></div><div class="ui-dialog-content"><button type="button">OK</button></div></div>`;
+  const doc = new DOMParser().parseFromString(
+    `<form id="headerForm">${dlg("上の段", "false")}</form><form id="funcForm"><div>本文</div></form>${dlg("エラーがあります。", "false")}${dlg("閉じた", "true")}`,
+    "text/html",
+  );
+  const b = parseGenericPage(doc).blocks;
+  expect(kinds(b)).toEqual(["line", "dialog"]);
+  const d = b[1] as Extract<GBlock, { kind: "dialog" }>;
+  expect(d.title).toBe("エラーがあります。");
+  expect(items(d.blocks[0])).toMatchObject([{ kind: "button", label: "OK", ref: expect.stringMatching(/^c\d+$/) }]);
+});
+
 test("見出しの level", () => {
   const b = blocks(`<h3 class="ui-accordion-header"><span class="ui-icon"></span>基本</h3><span class="ui-panel-title">パネル</span><legend class="ui-fieldset-legend">凡例</legend><h1>一</h1><h2>二</h2><h3>三</h3><h4>四</h4>`);
   expect(b).toEqual([

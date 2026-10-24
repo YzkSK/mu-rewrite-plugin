@@ -32,7 +32,8 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   const form = root.querySelector("#funcForm");
   if (!form) throw new ParseError("funcForm がありません");
   assignRefs(form);
-  const blocks: GBlock[] = [];
+  let blocks: GBlock[] = [];
+  const dialogs: Element[] = [];
   const line = makeLine();
   const emit = (b: GBlock | null) => {
     const l = line.close();
@@ -43,6 +44,7 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   function visit(el: Element) {
     if (el.matches(SKIP) || (el.matches(".ui-button-text") && squash(el.textContent) === "ui-button")) return;
     if (el.matches(".ui-tabs-panel") && !isSelectedPanel(el)) return;
+    if (el.matches(".ui-dialog")) return void dialogs.push(el); // 閉じたものは SKIP 済み。開いたものは最後にまとめて読む
     const heading = HEADINGS.find(([sel]) => el.matches(sel));
     if (el.matches(".ui-tabs-nav")) emit(tabsBlock(el));
     else if (heading) {
@@ -71,5 +73,20 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   }
   visitChildren(form);
   emit(null);
-  return { blocks };
+  // body の直下に移されたダイアログ(例:「エラーがあります。」)も拾う。上の段・メニューのものは画面の中身ではない
+  for (const d of root.querySelectorAll('.ui-dialog:not([aria-hidden="true"])')) {
+    if (form.contains(d) || d.closest("#headerForm, #menuForm")) continue;
+    assignRefs(d);
+    dialogs.push(d);
+  }
+  const main = blocks;
+  const open: GBlock[] = [];
+  for (const d of dialogs) {
+    blocks = [];
+    visitChildren(d);
+    emit(null);
+    const t = d.querySelector(".ui-dialog-title");
+    open.push({ kind: "dialog", title: t ? textOf(t) : "", blocks });
+  }
+  return { blocks: [...main, ...open] };
 }

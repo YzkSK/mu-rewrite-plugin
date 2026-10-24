@@ -8,14 +8,14 @@ import { useSidebarState } from "@/ui/useSidebarState";
 import type { NavModel } from "./drawerItems";
 import { useBusy } from "./useBusy";
 
-type Props = { title: string; model: NavModel; user?: string; children: ReactNode };
+type Props = { title: string; model: NavModel; user?: string; lastLogin?: string; children: ReactNode };
 
 const PENDING_MS = 8000;
 
-const FRAME_STYLE = { "--sidebar-width": "17rem", "--bar-h": "69px" } as CSSProperties;
+const FRAME_STYLE = { "--sidebar-width": "15rem", "--bar-h": "56px" } as CSSProperties;
 
 /** 上の段 + サイドバー + 本文。広い画面は押し出し、狭い画面は本文に重ねて幕を出す(Sheet は body に出てしまうので使わない)。 */
-export function App({ title, model, user, children }: Props) {
+export function App({ title, model, user, lastLogin, children }: Props) {
   const { narrow, open, change } = useSidebarState();
   const busy = useBusy();
   // 移動が終わると新しい画面として作り直されるので、ここで戻すのは移動が起きなかったときの保険
@@ -43,7 +43,7 @@ export function App({ title, model, user, children }: Props) {
       style={FRAME_STYLE}
       className={`${mounting ? "mu-noanim " : ""}group/frame relative h-screen min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
-      <Header title={title} user={user} />
+      <Header title={title} user={user} lastLogin={lastLogin} />
       <TopProgress busy={busy || pending !== null} />
       <div className="relative flex min-h-0 flex-1">
         {narrow ? (
