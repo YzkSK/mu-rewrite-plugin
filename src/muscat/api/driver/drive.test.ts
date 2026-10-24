@@ -56,6 +56,18 @@ test("ajax でない click は短く待って none。step の ajax: true なら�
   expect(await drive(d, [{ kind: "click", ref: ref("pf") }], { ...fast, expectAjax: false, observeXhr: f.observeXhr })).toBe("none");
 });
 
+// ページサイズの select は change で ajax が走る。set だけでも、ajax: true なら一覧の書き換えまで待つ
+test("set は既定で ajax を待たず、ajax: true なら長く待つ", async () => {
+  const { d, ref } = page();
+  const f = fake();
+  expect(await drive(d, [{ kind: "set", ref: ref("t"), value: "v" }], { ...fast, observeXhr: f.observeXhr })).toBe("none");
+  const slow = await Promise.race([
+    drive(d, [{ kind: "set", ref: ref("t"), value: "w", ajax: true }], { ...fast, timeoutMs: 400, observeXhr: f.observeXhr }),
+    new Promise((res) => setTimeout(() => res("pending"), 350)),
+  ]);
+  expect(slow).toBe("pending");
+});
+
 test("ref が無ければ Error(何も操作しない)", async () => {
   const { d, ref } = page();
   await expect(drive(d, [{ kind: "set", ref: ref("t"), value: "x" }, { kind: "click", ref: "c999" }], fast)).rejects.toThrow();

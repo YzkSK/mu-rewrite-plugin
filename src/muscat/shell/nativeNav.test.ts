@@ -21,6 +21,15 @@ test("メニューの項目は #menuForm のリンクを click。無ければ何
   expect(hits).toEqual(["m1"]);
 });
 
+// 実機で「シラバスに飛べない」: グループの見出し「シラバス」を押していた
+test("項目と同名のグループの見出しは押さず、項目を押す", () => {
+  const d = doc(`<form id="menuForm"><ul><li class="ui-menuitem ui-menu-parent"><a id="g">シラバス</a><ul><li class="ui-menuitem"><a id="leaf">シラバス</a></li></ul></li></ul></form>`);
+  const hits: string[] = [];
+  d.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => hits.push(a.id)));
+  expect(nativeNav(d, "シラバス")).toBe(true);
+  expect(hits).toEqual(["leaf"]);
+});
+
 test("ホームとログアウトは、元のヘッダーの要素を click", () => {
   const d = doc(`<form id="headerForm"><header><a class="ui-link" id="home">H</a></header><button id="headerForm:logoutButton"></button></form>`);
   const hits: string[] = [];

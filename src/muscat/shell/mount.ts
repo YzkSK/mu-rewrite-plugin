@@ -28,7 +28,8 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
   if (!doc.getElementById(HIDE_ID)) {
     const hide = doc.createElement("style");
     hide.id = HIDE_ID;
-    hide.textContent = `body > *:not(#${HOST_ID}) { display: none !important }`;
+    // 元の body の下余白(80px)でページごとスクロールし、サイドバーまで動くので、ホストを画面に固定する
+    hide.textContent = `body > *:not(#${HOST_ID}) { display: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
     doc.head.appendChild(hide);
   }
   const props = css.match(/@property[^{]+\{[^}]*\}/g);

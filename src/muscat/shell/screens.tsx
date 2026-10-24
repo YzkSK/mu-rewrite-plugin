@@ -6,6 +6,8 @@ import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { HomeScreen } from "@/muscat/screens/home/HomeScreen";
 import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
+import { SyllabusScreen } from "@/muscat/screens/syllabus/SyllabusScreen";
+import { TeacherScheduleScreen } from "@/muscat/screens/teacherSchedule/TeacherScheduleScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 
@@ -29,5 +31,7 @@ export const SCREENS: Record<string, ScreenDef> = {
   Bsb007: { title: "健康診断情報照会", render: (client) => <HealthInfoScreen client={client} /> },
   Bsa004: genericScreen("個人設定"),
   Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },
+  Kmh006: { title: "シラバス", render: (client, doc) => <SyllabusScreen client={client} doc={doc} /> },
+  Bsa011: { title: "教員スケジュール", render: (client, doc) => <TeacherScheduleScreen client={client} doc={doc} /> },
   Pky001: { title: "ホーム", render: (client, doc) => <HomeScreen client={client} doc={doc} /> },
 };

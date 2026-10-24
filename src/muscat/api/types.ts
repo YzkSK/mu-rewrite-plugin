@@ -129,6 +129,60 @@ export type HomePage = {
   lessons: HomeLesson[];
   detail: NewsDetail | null;
 };
+/** 生きたページの入力欄。ref は driver の data-mu-ref(見つからなければ "") */
+export type TextField = { ref: string; value: string };
+export type SelectField = { ref: string; value: string; options: { value: string; label: string }[] };
+export type CheckOption = { label: string; ref: string; checked: boolean };
+export type PagerLink = { n: number; ref: string; current: boolean };
+/** 一覧の件数と送り。first/prev/next/last の ref は、押せないとき "" */
+export type ListPager = {
+  total: number;
+  page: number;
+  pages: number;
+  pageLinks: PagerLink[];
+  firstRef: string;
+  prevRef: string;
+  nextRef: string;
+  lastRef: string;
+  size: SelectField | null;
+};
+export type ListResult<R> = { pager: ListPager; rows: R[]; empty: boolean };
+
+export type SyllabusRow = { time: string; code: string; title: string; teachers: string; kind: string; terms: string[]; credit: string; openRef: string };
+export type SyllabusPage = {
+  year: TextField;
+  term: SelectField;
+  subject: TextField;
+  teacher: TextField;
+  keyword: TextField;
+  dept: SelectField;
+  category: SelectField;
+  campus: SelectField;
+  days: CheckOption[];
+  grades: CheckOption[];
+  kinds: CheckOption[];
+  periods: CheckOption[];
+  searchRef: string;
+  clearRef: string;
+  noteRef: string;
+  /** 検索前は null */
+  result: ListResult<SyllabusRow> | null;
+};
+
+export type TeacherRow = { name: string; kana: string; english: string; dept: string; openRef: string };
+export type CalendarEvent = { time: string; title: string };
+/** date は "2026-10-02"(読めなければ "")。other は表示中の月の外 */
+export type CalendarDay = { day: number; date: string; other: boolean; today: boolean; events: CalendarEvent[] };
+export type TeacherCalendar = { title: string; prevRef: string; nextRef: string; todayRef: string; days: CalendarDay[] };
+export type TeacherSearch = { name: TextField; sort: SelectField; ascending: boolean; toggleRef: string; clearRef: string; searchRef: string };
+/** 検索欄(search)・一覧(list)・選んだ教員の月カレンダー(calendar)のうち、いま画面にあるもの */
+export type TeacherSchedulePage = {
+  teacher: string;
+  search: TeacherSearch | null;
+  list: ListResult<TeacherRow> | null;
+  calendar: TeacherCalendar | null;
+  backRef: string;
+};
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];

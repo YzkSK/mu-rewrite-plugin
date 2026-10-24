@@ -40,6 +40,13 @@ test("unmount でホストと隠す style が消え、再マウントで 1 つ�
   expect(doc.querySelectorAll("#mu-react-hide")).toHaveLength(1);
 });
 
+// 実機で「サイドバーがスクロールで動く」: 元の body の下余白でページごと動いていた
+test("ホストは画面に固定(ページごとスクロールしない)", () => {
+  const doc = fresh();
+  mountShadowRoot(doc);
+  expect(doc.getElementById("mu-react-hide")!.textContent).toContain("#mu-react-host { position: fixed; inset: 0");
+});
+
 test("nativeNav: 一致するリンクを click、無ければ何もしない", () => {
   const doc = new DOMParser().parseFromString(
     '<form id="menuForm"><a id="x">出席確認</a><a id="y">成績照会</a></form>',
