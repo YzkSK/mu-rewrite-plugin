@@ -34,9 +34,8 @@ function searchSteps(p: SyllabusPage, v: Values): DriveStep[] {
 const TWO = "grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2";
 
 /** 条件の欄。値はここで持ち、「検索」を押したときに初めて元の画面へ入れて検索する */
-export function SyllabusForm({ page, busy, act, onSearch, onNote }: { page: SyllabusPage; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onNote: () => void }) {
-  const [start] = useState(() => initial(page));
-  const [v, setV] = useState(start);
+export function SyllabusForm({ page, busy, act, onSearch, onNote, onClear }: { page: SyllabusPage; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onNote: () => void; onClear: () => void }) {
+  const [v, setV] = useState(() => initial(page));
   const [more, setMore] = useState(false);
   const up = <K extends keyof Values>(k: K, value: Values[K]) => setV((x) => ({ ...x, [k]: value }));
   const toggle = (g: Group, label: string) => up("picked", { ...v.picked, [g]: v.picked[g].includes(label) ? v.picked[g].filter((l) => l !== label) : [...v.picked[g], label] });
@@ -96,7 +95,7 @@ export function SyllabusForm({ page, busy, act, onSearch, onNote }: { page: Syll
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="secondary" disabled={busy} loading={act === "note"} onClick={onNote}>ふせんを貼った授業一覧</Button>
         <span className="flex-1" />
-        <Button variant="ghost" disabled={busy} onClick={() => setV(start)}>クリア</Button>
+        <Button variant="ghost" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
         <Button disabled={busy} loading={act === "search"} onClick={search}>検索</Button>
       </div>
     </Card>

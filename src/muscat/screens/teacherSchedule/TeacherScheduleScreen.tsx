@@ -15,10 +15,9 @@ import { TeacherList } from "./TeacherList";
 
 const read = (c: MuscatClient) => c.readTeacherSchedule();
 
-function SearchForm({ search, busy, act, onSearch, onToggle }: { search: TeacherSearch; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onToggle: () => void }) {
-  const [start] = useState(() => ({ name: search.name.value, sort: search.sort.value }));
-  const [name, setName] = useState(start.name);
-  const [sort, setSort] = useState(start.sort);
+function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search: TeacherSearch; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onToggle: () => void; onClear: () => void }) {
+  const [name, setName] = useState(search.name.value);
+  const [sort, setSort] = useState(search.sort.value);
   const submit = () =>
     onSearch([
       ...(search.name.ref ? [{ kind: "set", ref: search.name.ref, value: name } as const] : []),
@@ -42,7 +41,7 @@ function SearchForm({ search, busy, act, onSearch, onToggle }: { search: Teacher
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="flex-1" />
-        <Button variant="ghost" disabled={busy} onClick={() => { setName(start.name); setSort(start.sort); }}>クリア</Button>
+        <Button variant="ghost" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
         <Button disabled={busy} loading={act === "search"} onClick={submit}>検索</Button>
       </div>
     </Card>
@@ -59,6 +58,9 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
     setAct(null);
   };
   const click = (ref: string) => void go(ref, [{ kind: "click", ref }]);
+  // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
+  const [gen, setGen] = useState(0);
+  const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
@@ -66,7 +68,7 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
       {page && (
         <>
           {page.search && (
-            <SearchForm search={page.search} busy={busy} act={act} onSearch={(steps) => void go("search", steps)} onToggle={() => void go("toggle", [{ kind: "click", ref: page.search!.toggleRef }])} />
+            <SearchForm key={gen} onClear={() => clear(page.search!.clearRef)} search={page.search} busy={busy} act={act} onSearch={(steps) => void go("search", steps)} onToggle={() => void go("toggle", [{ kind: "click", ref: page.search!.toggleRef }])} />
           )}
           <BusyOverlay busy={busy}>
             <div className="flex flex-col gap-3">

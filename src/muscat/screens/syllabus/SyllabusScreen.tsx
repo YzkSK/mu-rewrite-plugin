@@ -21,13 +21,16 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
     setAct(null);
   };
   const click = (ref: string) => void go(ref, [{ kind: "click", ref }]);
+  // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
+  const [gen, setGen] = useState(0);
+  const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>
-          <SyllabusForm page={page} busy={busy} act={act} onSearch={(steps) => void go("search", steps)} onNote={() => void go("note", [{ kind: "click", ref: page.noteRef }])} />
+          <SyllabusForm key={gen} onClear={() => clear(page.clearRef)} page={page} busy={busy} act={act} onSearch={(steps) => void go("search", steps)} onNote={() => void go("note", [{ kind: "click", ref: page.noteRef }])} />
           <BusyOverlay busy={busy}>
             <SyllabusResult
               page={page}
