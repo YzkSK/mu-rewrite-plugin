@@ -3,6 +3,7 @@ import {
   IconSearch, IconUser,
 } from "@tabler/icons-react";
 import { useState, type ComponentType } from "react";
+import { flushSync } from "react-dom";
 import { Spinner } from "@/components/starwind/spinner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
@@ -34,11 +35,9 @@ function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pen
     <SidebarMenuItem>
       <Collapsible defaultOpen className={touched ? undefined : "mu-still"}>
         <CollapsibleTrigger asChild>
-          {/* 見出しだけで、開閉より先に印を外す(後だと最初の 1 回が動かない。項目を押したときに外すと、開いたままの所に開く動きが出る) */}
+          {/* 見出しの click(開閉が確定)で、開閉より先に印を DOM から外す。後だと最初の 1 回が動かず、項目や押し下げで外すと開いたままの所に開く動きが出る */}
           <SidebarMenuButton
-            onPointerDownCapture={() => setTouched(true)}
-            onKeyDownCapture={() => setTouched(true)}
-            onClickCapture={() => setTouched(true)}
+            onClickCapture={() => flushSync(() => setTouched(true))}
             size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
             <Icon className="text-primary" />
             <span>{group.title}</span>
