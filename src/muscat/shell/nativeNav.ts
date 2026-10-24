@@ -16,6 +16,9 @@ export const nativeLogout = (doc: Document): boolean => clickOf(doc.getElementBy
 /** 元の #menuForm のリンクのうち、表示テキストが label のものをクリックして画面を移る。個人設定はヘッダーのリンク。見つからなければ何もせず false。 */
 export function nativeNav(doc: Document, label: string): boolean {
   if (label === SETTING_LABEL) return clickOf(findSetting(doc));
-  const a = [...doc.querySelectorAll<HTMLElement>("#menuForm a")].find((x) => (x.textContent ?? "").trim() === label);
+  // グループの見出し(「シラバス」>「シラバス」のように項目と同名がある)は開閉するだけなので除く
+  const a = [...doc.querySelectorAll<HTMLElement>("#menuForm a")].find(
+    (x) => (x.textContent ?? "").trim() === label && !x.parentElement?.classList.contains("ui-menu-parent"),
+  );
   return clickOf(a);
 }
