@@ -15,7 +15,7 @@ type Props = {
 
 const SEGMENTS: [label: string, tab: string][] = [["未読", "未読"], ["重要", "重要"], ["フラグ", "フラグつき"]];
 const KINDS = ["授業", "時間割変更", "申込", "新着", "既読"];
-const KIND_OPTIONS = [{ value: "", label: "すべて" }, ...KINDS.map((k) => ({ value: k, label: k }))];
+const KIND_OPTIONS = [{ value: "", label: "すべての種類" }, ...KINDS.map((k) => ({ value: k, label: k }))];
 
 /** 検索(件名・差出人・本文と授業科目)と絞り込み。タブの切り替えは通信なし */
 export function NewsToolbar({ page, busy, onSearch, onTab }: Props) {
@@ -34,8 +34,8 @@ export function NewsToolbar({ page, busy, onSearch, onTab }: Props) {
     <Panel title="掲示板">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && onSearch({ keyword, course })}>
-          <div className="min-w-[200px] flex-[2]"><TextInput label="件名・差出人・本文で探す" value={keyword} onChange={setKeyword} disabled={busy} /></div>
-          <div className="min-w-[140px] flex-1"><TextInput label="授業科目" value={course} onChange={setCourse} disabled={busy} /></div>
+          <div className="min-w-[200px] flex-[2]"><TextInput label="件名・差出人・本文で探す" placeholder="件名・差出人・本文で探す" value={keyword} onChange={setKeyword} disabled={busy} /></div>
+          <div className="min-w-[140px] flex-1"><TextInput label="授業科目(コード・名称)" placeholder="授業科目(コード・名称)" value={course} onChange={setCourse} disabled={busy} /></div>
           <Button disabled={busy} onClick={() => onSearch({ keyword, course })}>検索</Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">

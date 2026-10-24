@@ -62,6 +62,14 @@ export const isSameDay = (date: string, now: Date) => {
   return !!m && Number(m[1]) === now.getFullYear() && Number(m[2]) === now.getMonth() + 1 && Number(m[3]) === now.getDate();
 };
 
+/** 画面の日付が now から何日先か(前なら負)。読めなければ 0 */
+export const daysFrom = (date: string, now: Date) => {
+  const m = DATE.exec(date);
+  if (!m) return 0;
+  const day = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Math.round((day - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86_400_000);
+};
+
 /** "10:40" → 分 */
 export const minutes = (t: string) => {
   const [h, m] = t.split(":");

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { AttendanceMark, CourseDetail } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
@@ -42,10 +42,11 @@ function Attendance({ course }: { course: CourseDetail }) {
         <b className="text-xl">{a.rate === null ? "-" : `${a.rate}%`}</b>
         <span className="text-sm text-muted-foreground">{`${held} 回中 欠席 ${absent}`}</span>
       </p>
-      <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+      {/* 広い引き出し(480px)では 1 行に収まる幅。狭い画面では折り返す */}
+      <ul className="m-0 flex list-none flex-wrap gap-[3px] p-0">
         {a.sessions.map((m, i) => (
-          <li key={i} className="flex w-9 flex-col items-center gap-0.5">
-            <span className={`inline-flex size-[22px] items-center justify-center rounded-[4px] text-xs ${markTone(m.kind)}`}>{m.kind === "none" ? "−" : m.label}</span>
+          <li key={i} className="flex w-[26px] flex-col items-center gap-0.5">
+            <span className={`inline-flex size-[22px] items-center justify-center rounded-[4px] text-xs ${m.kind === "none" ? "border border-[#ECE9EF]" : markTone(m.kind)}`}>{m.kind === "none" ? "" : m.label}</span>
             <small className="text-[10px] text-muted-foreground">{m.date}</small>
           </li>
         ))}
@@ -91,12 +92,20 @@ function Body({ client, course, onNav, toast }: { client: MuscatClient; course: 
   const slots = slotLabel(course.slots);
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        {(slots || course.room) && (
-          <p className="m-0 text-base font-semibold">{[slots, course.room].filter(Boolean).join("  ")}</p>
+      <dl className="m-0 grid grid-cols-[3.5rem_1fr] gap-x-3 gap-y-1">
+        {[
+          ["時限", slots, "text-sm"],
+          ["教室", course.room, "text-[15px] font-semibold"],
+          ["教員", course.teachers.join("、"), "text-sm"],
+        ].map(([name, value, tone]) =>
+          value ? (
+            <Fragment key={name}>
+              <dt className="text-xs leading-5 text-muted-foreground">{name}</dt>
+              <dd className={`m-0 ${tone}`}>{value}</dd>
+            </Fragment>
+          ) : null,
         )}
-        {course.teachers.length > 0 && <p className="m-0 text-sm text-muted-foreground">{course.teachers.join("、")}</p>}
-      </div>
+      </dl>
       <Panel title="出席">
         <Attendance course={course} />
       </Panel>

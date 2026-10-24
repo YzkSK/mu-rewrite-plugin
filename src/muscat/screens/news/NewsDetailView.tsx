@@ -31,7 +31,8 @@ export function NewsDetailView({ detail, busy, onClick, onUnread }: Props) {
       <div className="flex flex-col gap-3">
         <h2 className="m-0 text-base font-bold">{detail.title}</h2>
         <dl className="m-0 flex flex-col gap-2 text-sm">
-          {detail.fields.map((f, i) => (
+          {/* 件名は見出しに出しているので、項目には並べない */}
+          {detail.fields.filter((f) => f.label !== "件名").map((f, i) => (
             <div key={`${f.label}-${i}`}>
               <dt className="text-xs text-muted-foreground">{f.label}</dt>
               {f.label === "本文" ? (

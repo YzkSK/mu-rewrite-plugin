@@ -41,7 +41,8 @@ test("dialog、授業名、コード、時限・教室・教員", () => {
 
 test("出席: 率・回数・印と日付。欠席だけ赤地", () => {
   const html = render(ready());
-  for (const s of ["66.7%", "3 回中 欠席 1", "10/06", "10/13", "10/27", "−"]) expect(html).toContain(s);
+  for (const s of ["66.7%", "3 回中 欠席 1", "10/06", "10/13", "10/27", "border-[#ECE9EF]"]) expect(html).toContain(s);
+  expect(html).not.toContain("−");
   expect(html.match(/bg-error/g)).toHaveLength(1);
 });
 

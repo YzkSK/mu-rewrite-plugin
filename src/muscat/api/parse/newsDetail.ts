@@ -1,21 +1,26 @@
 import { assignRef } from "../driver/locator";
 import type { NewsDetail } from "../types";
 import { squash } from "./genericControls";
-import { visible } from "./newsRows";
 
 const ref = (el: Element | null) => (el ? assignRef(el) : "");
 
-/** 詳細ダイアログ。開いている(display が none でない)ときだけ。項目名と値のペアは全部拾う */
+/**
+ * 詳細ダイアログ。開いている(aria-hidden="false")ときだけ。項目名と値のペアは全部拾う。
+ * 見た目の display では判断しない(拡張が元の画面を CSS で隠すので、開いていても none になる。実機で確認)
+ */
 export function parseNewsDetail(doc: Document): NewsDetail | null {
   const dialog = doc.getElementById("bsd00702:dialog");
-  if (!dialog || !visible(dialog)) return null;
+  if (!dialog || dialog.getAttribute("aria-hidden") !== "false") return null;
   const fields: NewsDetail["fields"] = [];
-  for (const head of dialog.querySelectorAll("table.ui-panelgrid.singleTable td.ui-panelgrid-cell.-header")) {
+  // 実ページの項目名のセルは .ui-widget-header(実機で確認)
+  for (const head of dialog.querySelectorAll("table.ui-panelgrid.singleTable td.ui-panelgrid-cell.ui-widget-header")) {
     const cell = head.nextElementSibling;
     if (!cell) continue;
     const body = cell.querySelector("div.fr-view") ?? cell;
     fields.push({ label: squash(head.querySelector("label.ui-outputlabel")?.textContent ?? head.textContent), text: squash(body.textContent), html: body.innerHTML });
   }
+  // ✕ で閉じると中身は消えるが、aria-hidden は false のまま残る(拡張が元の画面を隠すため閉じる動きが終わらない。実機で確認)
+  if (fields.length === 0) return null;
   const flag = dialog.querySelector("div.ui-selectbooleanbutton");
   return {
     title: fields.find((f) => f.label === "件名")?.text ?? "",

@@ -6,20 +6,22 @@ type Props = {
   label: string;
   disabled?: boolean;
   multiline?: boolean;
+  placeholder?: string;
 };
 
 const CLASS = "w-full rounded-md border border-input bg-background px-2 py-1 text-sm";
 
 /** 素の input / textarea を包んだだけの薄い部品 */
-export function TextInput({ value, onChange, onCommit, label, disabled, multiline }: Props) {
+export function TextInput({ value, onChange, onCommit, label, disabled, multiline, placeholder }: Props) {
   if (multiline) {
-    return <textarea aria-label={label} className={CLASS} rows={3} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} onBlur={onCommit} />;
+    return <textarea aria-label={label} className={CLASS} rows={3} placeholder={placeholder} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} onBlur={onCommit} />;
   }
   return (
     <input
       type="text"
       aria-label={label}
       className={CLASS}
+      placeholder={placeholder}
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}

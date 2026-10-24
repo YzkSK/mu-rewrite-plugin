@@ -51,5 +51,5 @@ export function useHome(client: MuscatClient, doc: Document, initial?: HomeState
     },
     [client, read],
   );
-  return { ...state, run };
+  return { ...state, run, read };
 }

@@ -54,7 +54,7 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const stateOf = (r: DayRow) => (!today ? "later" : nowMin >= minutes(r.end) ? "past" : nowMin >= minutes(r.start) ? "now" : "later");
   return (
-    <Panel title={day ? dateTitle(day.date) : "今日"} actions={actions}>
+    <Panel title={day ? dateTitle(day.date) : "今日"} titleClassName="text-[20px] font-bold" actions={actions}>
       <div className="flex flex-col gap-3">
         <button
           type="button"

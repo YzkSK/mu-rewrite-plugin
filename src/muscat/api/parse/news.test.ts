@@ -98,14 +98,15 @@ test("データなし: 行が 0 で文言があれば empty", () => {
   expect(parseNews(page(["", "出力対象のデータが存在しません。"], 1)).empty).toBe(true);
 });
 
-const dialog = (style: string) => `<div id="bsd00702:dialog" class="ui-dialog" style="${style}"><a class="ui-dialog-titlebar-close" href="#"></a>
+const dialog = (hidden: string, style = "") => `<div id="bsd00702:dialog" class="ui-dialog" aria-hidden="${hidden}" style="${style}"><a class="ui-dialog-titlebar-close" href="#"></a>
   <button title="前の掲示情報を表示">前</button><button title="次の掲示情報を表示">次</button><button title="印刷">印刷</button><div class="ui-selectbooleanbutton">フラグを外す</div>
-  <table class="ui-panelgrid singleTable"><tr><td class="ui-panelgrid-cell -header"><label class="ui-outputlabel">件名</label></td><td>詳細の件名</td></tr>
-  <tr><td class="ui-panelgrid-cell -header"><label class="ui-outputlabel">本文</label></td><td><div class="fr-box fr-view"><p>本文 <a href="https://example.com">リンク</a></p></div></td></tr>
-  <tr><td class="ui-panelgrid-cell -header"><label class="ui-outputlabel">添付ファイル</label></td><td>file.pdf</td></tr></table></div>`;
+  <table class="ui-panelgrid singleTable"><tr><td class="ui-panelgrid-cell ui-widget-header"><label class="ui-outputlabel"><span class="ui-outputlabel-label">件名</span></label></td><td class="ui-panelgrid-cell">詳細の件名</td></tr>
+  <tr><td class="ui-panelgrid-cell ui-widget-header"><label class="ui-outputlabel"><span class="ui-outputlabel-label">本文</span></label></td><td class="ui-panelgrid-cell"><div class="fr-box fr-view"><p>本文 <a href="https://example.com">リンク</a></p></div></td></tr>
+  <tr><td class="ui-panelgrid-cell ui-widget-header"><label class="ui-outputlabel"><span class="ui-outputlabel-label">添付ファイル</span></label></td><td class="ui-panelgrid-cell">file.pdf</td></tr></table></div>`;
 
-test("詳細ダイアログ: 開いていれば項目名と値・html・ボタンの ref、閉じていれば null", () => {
-  const d = page([], 1, "", dialog("display:flex"));
+// 拡張が元の画面を隠すので、開いていても display は none になる。aria-hidden で判断する(実機で確認)
+test("詳細ダイアログ: aria-hidden=false なら(display が none でも)項目名と値・html・ボタンの ref、true なら null", () => {
+  const d = page([], 1, "", dialog("false", "display:none"));
   const det = parseNews(d).detail!;
   expect(det.title).toBe("詳細の件名");
   expect(det.fields.map((f) => f.label)).toEqual(["件名", "本文", "添付ファイル"]);
@@ -114,5 +115,7 @@ test("詳細ダイアログ: 開いていれば項目名と値・html・ボタ�
   expect(resolveRef(d, det.prevRef)?.getAttribute("title")).toContain("前の");
   expect(resolveRef(d, det.nextRef)?.getAttribute("title")).toContain("次の");
   expect(resolveRef(d, det.closeRef)?.className).toBe("ui-dialog-titlebar-close");
-  expect(parseNews(page([], 1, "", dialog("display:none"))).detail).toBeNull();
+  expect(parseNews(page([], 1, "", dialog("true", "display:block"))).detail).toBeNull();
+  // ✕ のあと、aria-hidden は false のまま中身だけ消える
+  expect(parseNews(page([], 1, "", `<div id="bsd00702:dialog" class="ui-dialog" aria-hidden="false"><table class="ui-panelgrid singleTable"></table></div>`)).detail).toBeNull();
 });
