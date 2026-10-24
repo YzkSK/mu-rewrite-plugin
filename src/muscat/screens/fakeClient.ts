@@ -15,5 +15,6 @@ export const fakeClient = (over: Partial<MuscatClient> = {}): MuscatClient => ({
   readHome: never,
   readSyllabus: never,
   readTeacherSchedule: never,
+  readRoom: never,
   ...over,
 });

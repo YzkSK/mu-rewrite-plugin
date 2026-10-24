@@ -169,6 +169,42 @@ export type SyllabusPage = {
   result: ListResult<SyllabusRow> | null;
 };
 
+/** kind は元の画面の種類 class(zoneJugyo → "jugyo", zoneResOther → "resOther")。start/end は 0:00 からの分、lane は重なったときの段 */
+export type RoomBar = { kind: string; text: string; title: string; start: number; end: number; lane: number; openRef: string };
+export type RoomRow = { name: string; capacity: string; infoRef: string; bars: RoomBar[] };
+export type RoomLegend = { kind: string; label: string };
+/** 検索後のタイムライン。from/to はタイムラインの時刻(分)。date は「2026/10/24(土)」 */
+export type RoomResult = {
+  date: string;
+  dates: SelectField;
+  moveRef: string;
+  prevRef: string;
+  nextRef: string;
+  legend: RoomLegend[];
+  from: number;
+  to: number;
+  rooms: RoomRow[];
+};
+export type RoomRange = { from: TextField; to: TextField };
+export type RoomPage = {
+  period: RoomRange;
+  targets: CheckOption[];
+  /** 空き教室。box は見える枠(操作先)、on は入っているか */
+  free: { boxRef: string; on: boolean; time: RoomRange; hour: TextField; minute: TextField } | null;
+  days: CheckOption[];
+  campus: SelectField;
+  building: SelectField;
+  floor: SelectField;
+  capacity: { regular: RoomRange; exam: RoomRange; entrance: RoomRange };
+  /** 一覧に収容人数の列を(表示しない / 表示する)と、その種類(平常時 / 試験時) */
+  showCapacity: CheckOption[];
+  capacityKind: SelectField;
+  searchRef: string;
+  clearRef: string;
+  /** 検索前は null */
+  result: RoomResult | null;
+};
+
 export type TeacherRow = { name: string; kana: string; english: string; dept: string; openRef: string };
 export type CalendarEvent = { time: string; title: string };
 /** date は "2026-10-02"(読めなければ "")。other は表示中の月の外 */
