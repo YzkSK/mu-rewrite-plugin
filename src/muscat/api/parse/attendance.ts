@@ -1,7 +1,8 @@
 import { ParseError } from "../errors";
 import type { Attendance, AttendanceCourse, AttendanceKind, AttendanceMark } from "../types";
 
-const KINDS: Record<string, AttendanceKind> = { attendance: "present", absence: "absent", earlyLate: "late" };
+// クラス名は 3 種しか確認できていないので、種類は印の文字で決める
+const KINDS: Record<string, AttendanceKind> = { 出: "present", 欠: "absent", 遅: "late", 早: "early", 特: "official", 休: "cancelled", "－": "excluded", "−": "excluded", "-": "excluded" };
 
 function parseMark(td: Element): AttendanceMark {
   const date = td.querySelector(".jugyoDate")?.textContent?.trim() ?? "";
@@ -9,8 +10,7 @@ function parseMark(td: Element): AttendanceMark {
   const label = span ? ((span.querySelector(".syuketsuKbnMark") ?? span).textContent?.trim() ?? "") : "";
   // 実施前の回は span.jugyoList が空で入っている(実機で確認)。記号が無ければ未実施
   if (!span || !label) return { kind: "none", label: "", date };
-  const cls = [...span.classList].find((c) => c in KINDS);
-  return { kind: cls ? KINDS[cls]! : "other", label, date };
+  return { kind: KINDS[label] ?? "other", label, date };
 }
 
 function parseCourse(tr: Element): AttendanceCourse | null {

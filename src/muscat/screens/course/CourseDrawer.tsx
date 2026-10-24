@@ -27,14 +27,15 @@ const slotLabel = (slots: CourseDetail["slots"]) => {
 function markTone(kind: AttendanceMark["kind"]) {
   if (kind === "absent") return "bg-error text-white font-semibold";
   if (kind === "present") return "text-primary font-semibold";
-  if (kind === "late") return "border border-border text-muted-foreground";
+  if (kind === "late" || kind === "early") return "border border-border text-muted-foreground";
+  if (kind === "other") return "";
   return "text-muted-foreground";
 }
 
 function Attendance({ course }: { course: CourseDetail }) {
   const a = course.attendance;
   if (!a) return <p className="m-0 text-sm text-muted-foreground">出席の記録はありません</p>;
-  const held = a.sessions.filter((m) => m.kind !== "none").length;
+  const held = a.sessions.filter((m) => !["none", "cancelled", "excluded"].includes(m.kind)).length; // 休講・授業対象外は実施した回に数えない
   const absent = a.sessions.filter((m) => m.kind === "absent").length;
   return (
     <div className="flex flex-col gap-3">

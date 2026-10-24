@@ -1,3 +1,5 @@
+import { NativeSelect, NativeSelectOption } from "@/components/starwind/native-select";
+
 type Props = {
   value: string;
   options: { value: string; label: string }[];
@@ -6,21 +8,23 @@ type Props = {
   label: string;
 };
 
-/** 素の <select> を包んだだけの薄い部品 */
+/** Starwind の NativeSelect(ブラウザの選択欄に枠と ▼ を付けたもの)。白地・高さ 32px・角 4px にそろえる。
+ * 上下の余白があると高さに収まらず下の枠が欠けた(py-0)。拡張は明るい配色だけなので、dark の地は打ち消す */
 export function Select({ value, options, onChange, disabled, label }: Props) {
   return (
-    <select
+    <NativeSelect
       aria-label={label}
-      className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+      size="sm"
+      className="h-8 min-w-36 cursor-pointer rounded-[4px] bg-card py-0 dark:bg-card"
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
     >
       {options.map((o) => (
-        <option key={o.value} value={o.value}>
+        <NativeSelectOption key={o.value} value={o.value}>
           {o.label}
-        </option>
+        </NativeSelectOption>
       ))}
-    </select>
+    </NativeSelect>
   );
 }

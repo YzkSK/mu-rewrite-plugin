@@ -75,7 +75,7 @@ test("fields の格子と表", () => {
 });
 
 test("line の中の部品とボタン(link / button)", () => {
-  for (const s of ["文学部", "理学部", "長文", "保存"]) expect(html).toContain(s);
+  for (const s of ["理学部", "長文", "保存"]) expect(html).toContain(s); // 選ばれていない選択肢は、一覧を開くまで描かれない
   expect(html).toMatch(/type="radio"[^>]*checked/);
   expect(html).toMatch(/<button[^>]*disabled[^>]*>削除/);
   expect(html).toMatch(/<button[^>]*underline[^>]*>詳細リンク/);

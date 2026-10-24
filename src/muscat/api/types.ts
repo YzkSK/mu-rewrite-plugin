@@ -19,7 +19,7 @@ export type TimetableTerm = { term: 1 | 2 | 3 | 4; entries: TimetableEntry[]; cr
 
 export type Timetable = { year: number; terms: TimetableTerm[] };
 
-export type AttendanceKind = "present" | "absent" | "late" | "other" | "none";
+export type AttendanceKind = "present" | "absent" | "late" | "early" | "official" | "cancelled" | "excluded" | "other" | "none";
 /** none は label "" 。date は "10/06" など(無ければ "") */
 export type AttendanceMark = { kind: AttendanceKind; label: string; date: string };
 export type AttendanceCourse = {

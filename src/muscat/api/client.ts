@@ -17,7 +17,7 @@ import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomePa
 
 export type MuscatClient = {
   getTimetable(year?: number): Promise<Timetable>;
-  getAttendance(termKey?: string): Promise<Attendance>;
+  getAttendance(termKey?: string, baseDate?: string): Promise<Attendance>;
   getGrades(filter?: GradeFilter): Promise<Grades>;
   getStudentInfo(): Promise<InfoPage>;
   getHealthInfo(): Promise<InfoPage>;
@@ -50,7 +50,7 @@ export function createMuscatClient(deps: {
   const core = createCore(deps);
   return {
     getTimetable: (year) => getTimetable(core, year),
-    getAttendance: (termKey) => getAttendance(core, termKey),
+    getAttendance: (termKey, baseDate) => getAttendance(core, termKey, baseDate),
     getGrades: (filter) => getGrades(core, filter),
     getStudentInfo: () => getInfoPage(core, "学籍情報照会", "Bsb004"),
     getHealthInfo: () => getInfoPage(core, "健康診断情報照会", "Bsb007"),

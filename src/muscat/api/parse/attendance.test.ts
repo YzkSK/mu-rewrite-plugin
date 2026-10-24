@@ -47,10 +47,16 @@ test("出席・欠席・遅刻・その他・未実施と出席率", () => {
     { kind: "present", label: "出", date: "10/06" },
     { kind: "absent", label: "欠", date: "10/13" },
     { kind: "late", label: "遅", date: "10/20" },
-    { kind: "other", label: "公", date: "10/27" },
+    { kind: "other", label: "公", date: "10/27" }, // 公は凡例に無い文字
     { kind: "none", label: "", date: "11/03" },
     { kind: "none", label: "", date: "" },
   ]);
+});
+
+test("印の文字で種類を決める(クラスは見ない)", () => {
+  const marks = ["出", "早", "遅", "欠", "特", "休", "－", "?"];
+  const a = parse(page(row(`5300100033<span class="ml-2">合成演習</span>`, "", marks.map((m) => cell("jugyoList", m, "")).join("") + `<td class="colSizeFixed"><span class="jugyoList"></span></td>`)));
+  expect(a.courses[0]!.sessions.map((s) => s.kind)).toEqual(["present", "early", "late", "absent", "official", "cancelled", "excluded", "other", "none"]);
 });
 
 test("出席率 0.0％ は 0、空は null、教員が無い科目は teacher が空", () => {
