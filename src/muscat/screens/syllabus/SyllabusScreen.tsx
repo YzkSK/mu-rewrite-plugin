@@ -4,6 +4,7 @@ import type { DriveStep } from "@/muscat/api/driver/drive";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
 import { PageLoading } from "@/ui/PageLoading";
+import { GenericScreen } from "../generic/GenericScreen";
 import { useLiveScreen, type LiveState } from "../useLiveScreen";
 import type { SyllabusPage } from "@/muscat/api/types";
 import { SyllabusForm } from "./SyllabusForm";
@@ -24,6 +25,8 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
   const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
+  // 授業を開くと同じ Kmh006 のまま詳細に変わる。検索欄が無ければ汎用画面で見せる
+  if (page && !page.searchRef) return <GenericScreen client={client} doc={doc} />;
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}

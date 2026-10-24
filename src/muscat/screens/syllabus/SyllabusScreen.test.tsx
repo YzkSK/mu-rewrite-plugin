@@ -50,6 +50,13 @@ test("通信中: 結果は薄く(inert)・丸いアイコン、条件は押せ�
   expect(html).toMatch(/disabled=""[^>]*>検索</);
 });
 
+// 授業を開くと Kmh006 のまま詳細に変わる: 空の検索フォームを出さず、汎用画面に任せる
+test("検索欄が無い(詳細)ときは汎用画面", () => {
+  const html = render(ready({ searchRef: "" }));
+  expect(html).not.toContain("詳細条件");
+  expect(html).toContain("読み込んでいます");
+});
+
 test("初回の読み込み中・エラー", () => {
   expect(render()).toContain("読み込んでいます");
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
