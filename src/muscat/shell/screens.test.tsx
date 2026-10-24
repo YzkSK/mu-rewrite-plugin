@@ -27,7 +27,7 @@ const EXPECTED = {
   Bsd007: ["掲示板", NewsScreen],
   Kmh006: ["シラバス", SyllabusScreen],
   Bsa011: ["教員スケジュール", TeacherScheduleScreen],
-  Bsa001: ["教室予約(参照のみ)", RoomScreen],
+  Ksa008: ["教室予約(参照のみ)", RoomScreen],
   Pky001: ["ホーム", HomeScreen],
 } as const;
 
