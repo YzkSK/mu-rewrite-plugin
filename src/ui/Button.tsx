@@ -4,7 +4,7 @@ import StarwindButton from "@/components/starwind/button/Button";
 type Props = {
   children: ReactNode;
   onClick?: () => void;
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost";
   disabled?: boolean;
 };
 

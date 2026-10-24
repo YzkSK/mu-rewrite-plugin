@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
 /** 見出し + 行。セルの中身は任意の ReactNode */
-export function DataTable({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
+export function DataTable({ headers, rows, compact }: { headers: string[]; rows: ReactNode[][]; compact?: boolean }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className={`w-full ${compact ? "text-xs" : "text-sm"}`}>
         {headers.length > 0 && (
           <thead>
             <tr className="text-left text-xs text-muted-foreground">

@@ -1,22 +1,31 @@
 import { assignRefs } from "../driver/locator";
 import { ParseError } from "../errors";
-import type { GBlock, GControl, GenericPage } from "../types";
+import type { GBlock, GenericPage } from "../types";
 import { controlsIn, SKIP, squash, textOf } from "./genericControls";
+import { lineOf, makeLine } from "./genericLine";
 import { dlBlock, gridBlock, tableBlock } from "./genericTables";
+import { isSelectedPanel, tabsBlock } from "./genericTabs";
 
-const HEADING = ".ui-accordion-header, h1, h2, h3, h4, .ui-panel-title, .ui-fieldset-legend";
+const HEADINGS: [string, 1 | 2 | 3 | 4][] = [
+  [".ui-accordion-header", 2],
+  [".ui-panel-title, .ui-fieldset-legend, .ui-panel-titlebar", 3],
+  ["h1", 1],
+  ["h2", 2],
+  ["h3", 3],
+  ["h4", 4],
+];
 const MESSAGE = ".ui-messages, .ui-message, .ui-growl-message";
-const TAB = ".ui-tabs-nav li";
-const ACTION = 'input:not([type="hidden"]), select, textarea, button, a[onclick]';
-const INNER = `table, dl, ${ACTION}, ${HEADING}, ${MESSAGE}, ${TAB}`;
-const INLINE = new Set(["SPAN", "A", "I", "B", "EM", "STRONG", "SMALL", "U", "FONT", "CODE", "SUB", "SUP"]);
-const BLOCKISH = "div, p, ul, ol, li, table, dl, section, br, h1, h2, h3, h4, h5, h6";
-/** 文字だけのインライン要素(操作部品・見出し・メッセージ・ブロックを含まない) */
-const isInline = (el: Element) => INLINE.has(el.tagName) && !el.matches(INNER) && !el.querySelector(`${INNER}, ${BLOCKISH}`);
-const IGNORE =`${SKIP}, label, .ui-outputlabel, input[type="hidden"]`;
+const ACTION = 'input:not([type="hidden"]), select, textarea, button, a[onclick], a.ui-commandlink, div.ui-selectbooleanbutton';
+/** 前後で行を閉じる要素(span / a / label などの inline は含めない) */
+const BLOCK = new Set(["DIV", "P", "LI", "UL", "OL", "SECTION", "FORM", "FIELDSET", "TABLE", "TBODY", "THEAD", "TR", "TD", "TH", "DL", "DT", "DD", "H5", "H6", "HEADER", "FOOTER", "NAV", "ARTICLE", "PRE", "BLOCKQUOTE", "CENTER"]);
+
+/** div でも、画面では文字や隣の部品と同じ行に並ぶ部品の枠 */
+const WIDGET = ".ui-chkbox, .ui-radiobutton, .ui-selectonemenu, .ui-selectbooleanbutton, .ui-helper-hidden-accessible, .ui-inputfield, .ui-button";
+/** table で組まれたラジオ・チェックの並び。表にせず、中の部品を 1 行に出す */
+const CHOICES = ".ui-selectoneradio, .ui-selectmanycheckbox";
 
 /**
- * #funcForm の中を文書順に読み、見出し・表・項目・メッセージ・操作部品の並びにする。
+ * #funcForm の中を文書順に読み、見出し・タブ・表・項目と、文字と操作部品が並ぶ行にする。
  * 副作用: 操作できる要素に data-mu-ref を付ける(driver が引く)。
  */
 export function parseGenericPage(root: ParentNode): GenericPage {
@@ -24,53 +33,43 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   if (!form) throw new ParseError("funcForm がありません");
   assignRefs(form);
   const blocks: GBlock[] = [];
-  let pending: GControl[] = [];
-  const flush = () => {
-    if (pending.length > 0) blocks.push({ kind: "controls", controls: pending });
-    pending = [];
+  const line = makeLine();
+  const emit = (b: GBlock | null) => {
+    const l = line.close();
+    if (l) blocks.push(l);
+    if (b) blocks.push(b);
   };
-  const push = (b: GBlock | null) => {
-    if (!b) return;
-    flush();
-    blocks.push(b);
-  };
-  const text = (kind: "heading" | "message", t: string) => t && push({ kind, text: t });
 
   function visit(el: Element) {
-    if (el.matches(IGNORE)) return;
-    if (el.matches(TAB)) {
-      const buttons = controlsIn(el);
-      if (buttons.length > 0) pending.push(...buttons);
-      else text("heading", textOf(el));
-    } else if (el.matches(HEADING)) text("heading", textOf(el));
-    else if (el.matches(MESSAGE)) text("message", textOf(el));
-    else if (el.matches(ACTION)) pending.push(...controlsIn(el));
-    else if (el.tagName === "DL") push(dlBlock(el));
-    else if (el.tagName === "TABLE" && !el.querySelector("table")) push(el.classList.contains("ui-panelgrid") ? gridBlock(el) : tableBlock(el));
-    else visitChildren(el); // 文字だけのブロックも、入れ子の外枠の表も、中を読む
-  }
-  /** 同じ親の中で連続するインラインの断片(テキストノードと span/a など)は、空白でつないで 1 つの message にする */
-  function visitChildren(el: Element) {
-    let run: string[] = [];
-    const end = () => {
-      text("message", run.filter(Boolean).join(" "));
-      run = [];
-    };
-    for (const n of el.childNodes) {
-      if (n.nodeType === 3) run.push(squash(n.textContent));
-      else if (n.nodeType === 1) {
-        const c = n as Element;
-        if (c.matches(IGNORE)) continue;
-        if (isInline(c)) run.push(textOf(c));
-        else {
-          end();
-          visit(c);
-        }
-      }
+    if (el.matches(SKIP) || (el.matches(".ui-button-text") && squash(el.textContent) === "ui-button")) return;
+    if (el.matches(".ui-tabs-panel") && !isSelectedPanel(el)) return;
+    const heading = HEADINGS.find(([sel]) => el.matches(sel));
+    if (el.matches(".ui-tabs-nav")) emit(tabsBlock(el));
+    else if (heading) {
+      const text = textOf(el);
+      emit(text ? { kind: "heading", text, level: heading[1] } : null);
+    } else if (el.matches(MESSAGE)) {
+      const text = textOf(el);
+      emit(text ? lineOf([{ kind: "text", text }], "notice") : null);
+    } else if (el.matches(ACTION)) line.controls(controlsIn(el));
+    else if (el.tagName === "BR" || el.tagName === "HR") emit(null);
+    else {
+      // dl / 表は、項目や行として読めたときだけ 1 つのブロックにする。読めなければ、捨てずに中身を読む
+      const special = el.tagName === "DL" ? dlBlock(el) : el.tagName === "TABLE" && !el.querySelector("table") && !el.matches(CHOICES) ? (el.classList.contains("ui-panelgrid") ? gridBlock(el) : tableBlock(el)) : null;
+      if (special) return emit(special);
+      const block = BLOCK.has(el.tagName) && !el.matches(WIDGET) && !el.closest(CHOICES);
+      if (block) emit(null);
+      visitChildren(el);
+      if (block) emit(null);
     }
-    end();
+  }
+  function visitChildren(el: Element) {
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3) line.text(n.textContent);
+      else if (n.nodeType === 1) visit(n as Element);
+    }
   }
   visitChildren(form);
-  flush();
+  emit(null);
   return { blocks };
 }

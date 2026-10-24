@@ -112,7 +112,7 @@ test("readLivePage / driveLive: 生きた doc を通信 0 回で読み、ref で
   const doc = pageDoc(`<form id="funcForm"><input name="a" value="1"><button type="button" onclick="this.dataset.hit='1'">go</button></form>`);
   const c = createMuscatClient({ fetch: r.f, doc, ids, now });
   const page = await c.readLivePage();
-  const controls = (page.blocks[0] as { controls: { ref: string }[] }).controls;
+  const controls = (page.blocks[0] as { items: { ref: string }[] }).items;
   expect(controls.length).toBe(2);
   expect(await c.driveLive([{ kind: "set", ref: controls[0]!.ref, value: "2" }])).toBe("none");
   expect(doc.querySelector<HTMLInputElement>('[name="a"]')!.value).toBe("2");
