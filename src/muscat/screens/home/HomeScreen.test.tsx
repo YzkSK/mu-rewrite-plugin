@@ -32,9 +32,11 @@ test("2 列(狭い画面は 1 列)で、説明文は無い", () => {
   expect(html).not.toContain("ひと目で");
 });
 
-test("今日: 題名は日付、前の日・次の日・今日、時間割変更、終日", () => {
+test("今日: 題名は日付と授業の要約、前の日・次の日・今日、時間割変更。終日の予定は出さない", () => {
   const html = render(ready());
-  for (const s of ["10月27日(火)", "前の日", "次の日", "今日", "時間割変更", "全体連絡"]) expect(html).toContain(s);
+  for (const s of ["10月27日(火)", "今日の授業 2 科目(1、3・4限)", "前の日", "次の日", "今日", "時間割変更"]) expect(html).toContain(s);
+  expect(html).not.toContain("全体連絡");
+  expect(html.match(/border-dashed/g)).toHaveLength(1);
 });
 
 test("時限: 続く同じ授業は 1 行、空きは「空き」、教室・教員・終了時刻", () => {
@@ -45,11 +47,11 @@ test("時限: 続く同じ授業は 1 行、空きは「空き」、教室・教
 
 test("今の時限だけ紫の枠、終わった時限は薄く", () => {
   const html = render(ready());
-  expect(html.match(/border-primary/g)).toHaveLength(1);
+  expect(html.match(/border-primary bg-accent/g)).toHaveLength(1);
   expect(html).toContain("opacity-45");
   // 別の日は、今も終わった時限も無い
   const other = render(ready({ day: { ...day, date: "2026/10/28(水)" } }));
-  expect(other).not.toContain("border-primary");
+  expect(other).not.toContain("border-primary bg-accent");
   expect(other).not.toContain("opacity-45");
 });
 

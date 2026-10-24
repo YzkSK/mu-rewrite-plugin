@@ -1,6 +1,7 @@
 const HOST_ID = "mu-react-host";
 const HIDE_ID = "mu-react-hide";
 const FONT_ID = "mu-react-font";
+const PROPS_ID = "mu-react-props";
 
 /** ホストと本文を隠す style を取り除く(@property と IBM Plex Sans JP の link は残す) */
 export function unmountShadowRoot(doc: Document): void {
@@ -33,8 +34,9 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
     doc.head.appendChild(hide);
   }
   const props = css.match(/@property[^{]+\{[^}]*\}/g);
-  if (props) {
+  if (props && !doc.getElementById(PROPS_ID)) {
     const s = doc.createElement("style");
+    s.id = PROPS_ID;
     s.textContent = props.join("\n");
     doc.head.appendChild(s);
   }

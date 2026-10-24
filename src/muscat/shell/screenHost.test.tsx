@@ -55,3 +55,38 @@ test("同じ key の再 mount は何もしない。汎用画面も key で出せ
   await flush();
   expect(text()).toContain("ホーム");
 });
+
+test("元のサイトが body ごと差し替えてホストが消えても、どの画面でもすぐ戻り、今の画面が見えたまま", async () => {
+  for (const [def, key, title] of [[SCREENS.Atb005!, "Atb005", "出席確認"], [genericScreen("何かの画面"), "Xxx001", "何かの画面"]] as const) {
+    mountScreen(def, key);
+    await flush();
+    document.head.innerHTML = "";
+    document.body.innerHTML = "<div id='menuForm:mainMenu'></div><div id='wrap'>元の画面</div>";
+    await flush();
+    expect(host()?.isConnected).toBe(true);
+    expect(document.getElementById("mu-react-hide")?.isConnected).toBe(true);
+    expect(text()).toContain(title);
+    unmountScreen();
+    expect(host()).toBeNull();
+  }
+});
+
+test("エラー画面(メニューが無い)への差し替えでは戻さず、元の画面を見せる", async () => {
+  mountScreen(SCREENS.Atb005!, "Atb005");
+  await flush();
+  document.body.innerHTML = "<p>システムエラーが発生しました</p>";
+  await flush();
+  expect(host()).toBeNull();
+  expect(document.getElementById("mu-react-hide")).toBeNull();
+});
+
+test("同じ画面のままの差し替えでは、新しい DOM で描き直す(古い DOM を見張り続けない)", async () => {
+  mountScreen(SCREENS.Atb005!, "Atb005");
+  await flush();
+  const before = host();
+  document.body.innerHTML = "<div id='menuForm:mainMenu'></div><div id='wrap'><div id='mainWrapTop'>出席確認 [Atb005]</div></div>";
+  await flush();
+  expect(host()).not.toBeNull();
+  expect(host()).not.toBe(before);
+  expect(text()).toContain("出席確認");
+});

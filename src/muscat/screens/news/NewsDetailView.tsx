@@ -7,17 +7,14 @@ type Props = {
   detail: NewsDetail;
   busy: boolean;
   onClick: (ref: string, ajax: boolean) => void;
-  /** 「未読に戻す」。渡されなければ出さない(ホームでは使わない) */
-  onUnread?: () => void;
 };
 
 /** 開いている詳細。前後・フラグは ajax、閉じるは元のダイアログの閉じるボタン(通信なし) */
-export function NewsDetailView({ detail, busy, onClick, onUnread }: Props) {
+export function NewsDetailView({ detail, busy, onClick }: Props) {
   const actions = (
     <div className="flex flex-wrap items-center gap-1">
       <Button variant="ghost" disabled={busy || !detail.prevRef} onClick={() => onClick(detail.prevRef, true)}>前の掲示</Button>
       <Button variant="ghost" disabled={busy || !detail.nextRef} onClick={() => onClick(detail.nextRef, true)}>次の掲示</Button>
-      {onUnread && <Button variant="ghost" disabled={busy} onClick={onUnread}>未読に戻す</Button>}
       <Button variant={detail.flagged ? "primary" : "ghost"} disabled={busy || !detail.flagRef} onClick={() => onClick(detail.flagRef, true)}>
         {detail.flagged ? "フラグを外す" : "フラグ"}
       </Button>

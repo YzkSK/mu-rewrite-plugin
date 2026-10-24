@@ -39,7 +39,7 @@ export function watchScreen(doc: Document, onChange: (code: string) => void, opt
     clearTimeout(timer);
     timer = setTimeout(check, QUIET_MS);
   });
-  observer.observe(doc.body, { subtree: true, childList: true });
+  observer.observe(doc.documentElement, { subtree: true, childList: true }); // body ごと替わっても見失わない
   check();
   return () => {
     clearTimeout(timer);

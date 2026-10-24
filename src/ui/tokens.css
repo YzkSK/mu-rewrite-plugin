@@ -94,6 +94,9 @@
   font-family: var(--mu-font);
 }
 
+/* 元のページの CSS がホストの要素に書体を当てて :host の指定に勝つので、shadow の中の要素に当てる(実機で確認) */
+:host > * { font-family: var(--mu-font); }
+
 @keyframes mu-down { from { height: 0; opacity: 0; } to { height: var(--starwind-collapsible-panel-height); opacity: 1; } }
 @keyframes mu-up { from { height: var(--starwind-collapsible-panel-height); opacity: 1; } to { height: 0; opacity: 0; } }
 

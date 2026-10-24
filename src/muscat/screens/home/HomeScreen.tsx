@@ -6,6 +6,7 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { CourseDrawer } from "../course/CourseDrawer";
 import { NewsDetailView } from "../news/NewsDetailView";
+import { rememberUnread } from "../news/unreadCount";
 import { NoticePanel } from "./NoticePanel";
 import { daysFrom } from "./dayRows";
 import { TodayPanel } from "./TodayPanel";
@@ -16,6 +17,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
   const { status, page, error, busy = false, run, read } = useHome(client, doc, initial);
   const [course, setCourse] = useState<string | null>(null);
   const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
+  if (page?.unreadKeiji != null) rememberUnread(page.unreadKeiji); // 掲示板の未読ボタンも同じ数にする
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
     <div className="flex flex-col gap-3 p-4">

@@ -6,8 +6,9 @@ export function BusyOverlay({ busy, children }: { busy: boolean; children: React
   return (
     <div className="relative" aria-busy={busy}>
       <div inert={busy} className={`transition-opacity duration-200 ${busy ? "pointer-events-none opacity-45" : ""}`}>{children}</div>
-      <div aria-hidden="true" className={`pointer-events-none absolute inset-0 grid place-content-center transition-opacity duration-200 ${busy ? "opacity-100" : "opacity-0"}`}>
-        <span className="rounded-full border border-border bg-background p-2 shadow-md"><Spinner className="size-5 text-primary" /></span>
+      <div aria-hidden="true" className={`pointer-events-none absolute inset-0 flex justify-center transition-opacity duration-200 ${busy ? "opacity-100" : "opacity-0"}`}>
+        {/* 中身が短くても長くても、画面の縦の真ん中に出す(fixed で left を決めないと、横は親の真ん中のまま) */}
+        <span className="fixed top-1/2 -translate-y-1/2 rounded-full border border-border bg-background p-2 shadow-md"><Spinner className="size-5 text-primary" /></span>
       </div>
     </div>
   );
