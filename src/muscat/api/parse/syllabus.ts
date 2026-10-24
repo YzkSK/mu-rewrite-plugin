@@ -3,9 +3,11 @@ import type { SyllabusPage, SyllabusRow } from "../types";
 import { squash } from "./genericControls";
 import { parseDataTable } from "./dataTable";
 import { buttonByText, checkOptions, refOf, selectField, textField } from "./liveFields";
+import { parseSyllabusDetail } from "./syllabusDetail";
 
-function parseRow(tr: Element): SyllabusRow {
-  const td = [...tr.children];
+/** skip: 先頭の余分な列の数(ふせん一覧は先頭に見出しの無い列が 1 つ多い) */
+function parseRow(tr: Element, skip = 0): SyllabusRow {
+  const td = [...tr.children].slice(skip);
   const a = td[1]?.querySelector("a");
   const full = squash(td[1]?.textContent);
   const m = /^(\S+)\s+(.+)$/.exec(full);
@@ -31,7 +33,14 @@ export function parseSyllabus(root: Document): SyllabusPage {
   if (!form) throw new ParseError("funcForm がありません");
   const id = (s: string) => root.getElementById(`funcForm:${s}`);
   const table = parseDataTable(id("table"));
+  // 「ふせんを貼った授業一覧」は同じ画面コードで、検索ボタンの id が違い、上の見出しに「シラバス検索」へ戻るリンクがある(実機で確認)
+  const notes = !id("search");
+  const th = id("table")?.querySelector("thead th");
+  const skip = th && squash(th.textContent) === "" ? 1 : 0;
+  const back = [...(root.getElementById("mainWrapTop")?.querySelectorAll("a") ?? [])].find((a) => squash(a.textContent) === "シラバス検索");
   return {
+    mode: notes ? "notes" : "search",
+    backRef: refOf(back),
     year: textField(id("kaikoNendo_input")),
     term: selectField(id("kaikoGakki_input")),
     subject: textField(id("jugyoKamoku")),
@@ -44,9 +53,10 @@ export function parseSyllabus(root: Document): SyllabusPage {
     grades: checkOptions(form, "funcForm:gakunenList"),
     kinds: checkOptions(form, "funcForm:jugyoKbnList"),
     periods: checkOptions(form, "funcForm:jigenList"),
-    searchRef: refOf(id("search")),
+    searchRef: refOf(id("search") ?? buttonByText(form, "検索")),
     clearRef: refOf(buttonByText(form, "クリア")),
     noteRef: refOf(id("create")),
-    result: table && { pager: table.pager, rows: table.rows.map(parseRow), empty: table.rows.length === 0 },
+    result: table && { pager: table.pager, rows: table.rows.map((tr) => parseRow(tr, skip)), empty: table.rows.length === 0 },
+    detail: parseSyllabusDetail(root),
   };
 }

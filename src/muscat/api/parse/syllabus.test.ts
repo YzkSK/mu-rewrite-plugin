@@ -66,3 +66,16 @@ test("0 件: 行が無く empty", () => {
   const r = parseSyllabus(page(table)).result!;
   expect([r.pager.total, r.rows.length, r.empty]).toEqual([0, 0, true]);
 });
+
+test("ふせんを貼った授業一覧: 検索ボタンの id が違い、戻るリンクがあり、表は先頭に見出しの無い列が 1 つ多い", () => {
+  const d = new DOMParser().parseFromString(
+    `<div id="mainWrapTop"><a>シラバス検索</a> ふせんを貼った授業一覧</div><form id="funcForm"><input id="funcForm:kaikoNendo_input" value="2026"><button id="funcForm:j_id_2w">検索</button>` +
+      `<div id="funcForm:table" class="ui-datatable"><table><thead><tr><th></th><th>曜日時限</th></tr></thead><tbody class="ui-datatable-data"><tr><td><input type="checkbox"></td><td>月1</td><td><a class="ui-commandlink">0010010101 仏教</a></td><td>教員</td><td>週間授業</td><td><div>2026年度 3学期</div></td><td>2.0単位</td></tr></tbody></table></div></form>`,
+    "text/html",
+  );
+  const p = parseSyllabus(d);
+  expect(p.mode).toBe("notes");
+  expect(p.backRef).not.toBe("");
+  expect(p.searchRef).not.toBe("");
+  expect(p.result!.rows[0]).toMatchObject({ time: "月1", code: "0010010101", title: "仏教", teachers: "教員", credit: "2.0単位" });
+});

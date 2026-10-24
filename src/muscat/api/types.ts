@@ -178,6 +178,9 @@ export type ListResult<R> = { pager: ListPager; rows: R[]; empty: boolean };
 
 export type SyllabusRow = { time: string; code: string; title: string; teachers: string; kind: string; terms: string[]; credit: string; openRef: string };
 export type SyllabusPage = {
+  /** notes は「ふせんを貼った授業一覧」(年度・学期と一覧だけ) */
+  mode: "search" | "notes";
+  backRef: string;
   year: TextField;
   term: SelectField;
   subject: TextField;
@@ -195,7 +198,12 @@ export type SyllabusPage = {
   noteRef: string;
   /** 検索前は null */
   result: ListResult<SyllabusRow> | null;
+  /** 科目を開いている間だけ。検索の画面は下に残る */
+  detail: SyllabusDetail | null;
 };
+/** 詳細の 1 行。section は見出し、head は表の見出し(セルが 2 つ以上)、field は項目名と値(表の行では値が複数) */
+export type SyllabusDetailRow = { kind: "section"; title: string } | { kind: "head"; cells: string[] } | { kind: "field"; label: string; values: string[] };
+export type SyllabusDetail = { title: string; code: string; rows: SyllabusDetailRow[]; noteOn: boolean; noteRef: string; printRef: string; closeRef: string };
 
 /** kind は元の画面の種類 class(zoneJugyo → "jugyo", zoneResOther → "resOther")。start/end は 0:00 からの分、lane は重なったときの段 */
 export type RoomBar = { kind: string; text: string; title: string; start: number; end: number; lane: number; openRef: string };

@@ -44,7 +44,8 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   function visit(el: Element) {
     if (el.matches(SKIP) || (el.matches(".ui-button-text") && squash(el.textContent) === "ui-button")) return;
     if (el.matches(".ui-tabs-panel") && !isSelectedPanel(el)) return;
-    if (el.matches(".ui-dialog")) return void dialogs.push(el); // 閉じたものは SKIP 済み。開いたものは最後にまとめて読む
+    // 開いているのは aria-hidden="false" のものだけ(属性の無い確認ダイアログが、いつも隠れて置かれている。実機で確認)。開いたものは最後にまとめて読む
+    if (el.matches(".ui-dialog")) return void (el.getAttribute("aria-hidden") === "false" && dialogs.push(el));
     const heading = HEADINGS.find(([sel]) => el.matches(sel));
     if (el.matches(".ui-tabs-nav")) emit(tabsBlock(el));
     else if (heading) {
@@ -74,7 +75,7 @@ export function parseGenericPage(root: ParentNode): GenericPage {
   visitChildren(form);
   emit(null);
   // body の直下に移されたダイアログ(例:「エラーがあります。」)も拾う。上の段・メニューのものは画面の中身ではない
-  for (const d of root.querySelectorAll('.ui-dialog:not([aria-hidden="true"])')) {
+  for (const d of root.querySelectorAll('.ui-dialog[aria-hidden="false"]')) {
     if (form.contains(d) || d.closest("#headerForm, #menuForm")) continue;
     assignRefs(d);
     dialogs.push(d);

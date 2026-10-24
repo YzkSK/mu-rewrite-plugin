@@ -18,6 +18,12 @@ test("閉じた .ui-dialog の中身は出ない", () => {
   expect(kinds(b)).toEqual(["line"]);
 });
 
+// 実機で「サーバー一括処理 終了通知の監視を停止しますか？」が出っぱなしになった: aria-hidden の無いダイアログは閉じている
+test("aria-hidden の無い .ui-dialog も閉じているとみなす", () => {
+  const b = blocks(`<div>本文</div><div class="ui-dialog"><div class="ui-dialog-titlebar"><span class="ui-dialog-title">確認</span></div><div class="ui-dialog-content"><div>監視を停止しますか？</div></div></div>`);
+  expect(JSON.stringify(b)).not.toContain("監視を停止");
+});
+
 test("開いた .ui-dialog は最後の dialog ブロックになり、題名とボタンを持つ", () => {
   const b = blocks(`<div class="ui-dialog" aria-hidden="false"><div class="ui-dialog-titlebar"><span class="ui-dialog-title">確認</span></div><div class="ui-dialog-content"><div>よろしいですか</div><button type="button">OK</button></div></div><div>後ろの本文</div>`);
   expect(kinds(b)).toEqual(["line", "dialog"]);

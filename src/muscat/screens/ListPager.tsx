@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ListPager as Pager } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { Select } from "@/ui/Select";
@@ -12,12 +13,13 @@ type Props = {
 };
 
 /** 一覧の上の「N 件 / 1 ページの件数」の段と、下のページ送り。元の画面のページャーのリンクを押す */
-export function ListHead({ pager, busy, note, onSize }: Omit<Props, "onClick">) {
+export function ListHead({ pager, busy, note, actions, onSize }: Omit<Props, "onClick"> & { actions?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b border-border px-3.5 py-2.5">
       <b key={pager.total} className="mu-fade text-[15px]">{`${pager.total} 件`}</b>
       {note && <span className="text-[13px] text-muted-foreground">{note}</span>}
       <span className="flex-1" />
+      {actions}
       {pager.size && (
         <>
           <span className="text-[13px] text-muted-foreground">1 ページ</span>
