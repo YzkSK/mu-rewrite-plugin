@@ -28,10 +28,9 @@ export function NewsToolbar({ page, busy, onSearch, onTab }: Props) {
   const view = selected === "グループ" ? true : selected === "全表示" ? false : grouped;
   const viewTab = view ? "グループ" : "全表示";
   // 「すべて」は分類ごとに数件しか出さないので、数えるのは検索なしの「未読」タブだけ(実機で確認)
-  // shortcut: 掲示板の「未読」タブは未読があっても空で出ることがあるので(実機で確認)、0 では上書きしない。全部読んだ後はホームを開くまで古い数が残る
-  const counted = selected === "未読" && !page.keyword && !page.course ? page.items.filter((i) => i.unread).length : 0;
-  if (counted > 0) rememberUnread(counted);
-  const unread = counted || rememberedUnread();
+  const full = selected === "未読" && !page.keyword && !page.course;
+  const unread = full ? page.items.filter((i) => i.unread).length : rememberedUnread();
+  if (full) rememberUnread(unread);
   const segment = (label: string, tab: string) => (
     <Button key={label} variant={selected === tab ? "primary" : "secondary"} disabled={busy} onClick={() => onTab(tab)}>{label}</Button>
   );
