@@ -33,7 +33,7 @@ function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pen
   return (
     <SidebarMenuItem>
       {/* 開閉より先に印を外す(開閉の後だと、閉じる動きの有無を判定する時点でまだ止まっていて、最初の 1 回が動かない) */}
-      <Collapsible defaultOpen className={touched ? undefined : "mu-still"} onPointerDownCapture={() => setTouched(true)} onKeyDownCapture={() => setTouched(true)}>
+      <Collapsible defaultOpen className={touched ? undefined : "mu-still"} onPointerDownCapture={() => setTouched(true)} onKeyDownCapture={() => setTouched(true)} onClickCapture={() => setTouched(true)}>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
             <Icon className="text-primary" />
