@@ -32,10 +32,14 @@ function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pen
   const [touched, setTouched] = useState(false);
   return (
     <SidebarMenuItem>
-      {/* 開閉より先に印を外す(開閉の後だと、閉じる動きの有無を判定する時点でまだ止まっていて、最初の 1 回が動かない) */}
-      <Collapsible defaultOpen className={touched ? undefined : "mu-still"} onPointerDownCapture={() => setTouched(true)} onKeyDownCapture={() => setTouched(true)} onClickCapture={() => setTouched(true)}>
+      <Collapsible defaultOpen className={touched ? undefined : "mu-still"}>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
+          {/* 見出しだけで、開閉より先に印を外す(後だと最初の 1 回が動かない。項目を押したときに外すと、開いたままの所に開く動きが出る) */}
+          <SidebarMenuButton
+            onPointerDownCapture={() => setTouched(true)}
+            onKeyDownCapture={() => setTouched(true)}
+            onClickCapture={() => setTouched(true)}
+            size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
             <Icon className="text-primary" />
             <span>{group.title}</span>
             <IconChevronDown className="ml-auto size-4 -rotate-90 text-muted-foreground transition-transform duration-200 group-aria-expanded/ghead:rotate-0" />
