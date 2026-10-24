@@ -1,37 +1,53 @@
-import { useState } from "react";
 import type { NewsGroup, NewsItem, NewsPage } from "@/muscat/api/types";
-import { Card } from "@/ui/Card";
-import { CollapsibleCard } from "@/ui/CollapsibleCard";
+import { Button } from "@/ui/Button";
+import { EmptyState } from "@/ui/EmptyState";
+import { canSave } from "./newsSteps";
 import { NewsRow } from "./NewsRow";
 
-type Props = { page: NewsPage; busy: boolean; onClick: (ref: string) => void };
+type Props = {
+  page: NewsPage;
+  busy: boolean;
+  onOpen: (ref: string) => void;
+  onFlag: (item: NewsItem) => void;
+  onMarkAllRead: (group: NewsGroup) => void;
+  onMore: (ref: string) => void;
+};
 
-function Rows({ items, busy, onClick }: { items: NewsItem[]; busy: boolean; onClick: (ref: string) => void }) {
-  return (
-    <ul>
+/** グループのタブなら分類ごとの帯つきの枠、それ以外は 1 枚の平らな一覧 */
+export function NewsList({ page, busy, onOpen, onFlag, onMarkAllRead, onMore }: Props) {
+  if (page.empty) return <EmptyState title="該当する掲示はありません" />;
+  const rows = (items: NewsItem[]) => (
+    <ul className="m-0 list-none p-0">
       {items.map((it, i) => (
-        <NewsRow key={`${it.openRef}-${i}`} item={it} busy={busy} onClick={onClick} />
+        <NewsRow key={`${it.openRef}-${i}`} item={it} busy={busy} canSave={canSave(page, it.updateRef)} onOpen={() => onOpen(it.openRef)} onFlag={() => onFlag(it)} />
       ))}
     </ul>
   );
-}
-
-function GroupCard({ group, busy, onClick }: { group: NewsGroup; busy: boolean; onClick: (ref: string) => void }) {
-  const [open, setOpen] = useState(true);
+  if (!page.groups) {
+    return (
+      <section className="overflow-hidden rounded-[4px] border border-border bg-card">{rows(page.items)}</section>
+    );
+  }
   return (
-    <CollapsibleCard title={`${group.title}(${group.items.length})`} open={open} onToggle={() => setOpen(!open)}>
-      <Rows items={group.items} busy={busy} onClick={onClick} />
-    </CollapsibleCard>
-  );
-}
-
-/** グループのタブなら分類ごとのカード、それ以外は 1 枚の平らな一覧 */
-export function NewsList({ page, busy, onClick }: Props) {
-  if (page.empty) return <Card className="p-4 text-sm">該当する掲示はありません</Card>;
-  if (page.groups) return <>{page.groups.map((g, i) => <GroupCard key={`${g.title}-${i}`} group={g} busy={busy} onClick={onClick} />)}</>;
-  return (
-    <Card className="p-4">
-      <Rows items={page.items} busy={busy} onClick={onClick} />
-    </Card>
+    <div className="flex flex-col gap-3">
+      {page.groups.map((g, i) => (
+        <section key={`${g.title}-${i}`} className="overflow-hidden rounded-[4px] border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+              <h2 className="m-0 text-sm font-semibold">{g.title}</h2>
+              {g.description && <small className="text-xs text-muted-foreground">{g.description}</small>}
+              <small className="text-xs text-muted-foreground">{`${g.items.length}件`}</small>
+            </div>
+            <Button variant="secondary" disabled={busy || !g.items.some((it) => it.unread) || !canSave(page, g.updateRef)} onClick={() => onMarkAllRead(g)}>すべて既読にする</Button>
+          </div>
+          {rows(g.items)}
+          {g.moreRef && (
+            <div className="border-t border-border px-3 py-2">
+              <Button variant="ghost" disabled={busy} onClick={() => onMore(g.moreRef)}>すべて表示する</Button>
+            </div>
+          )}
+        </section>
+      ))}
+    </div>
   );
 }

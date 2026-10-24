@@ -16,12 +16,19 @@ export function newsRowsIn(root: ParentNode): Element[] {
   return [...root.querySelectorAll("div.alignRight")].filter((d) => [...d.children].some((c) => c.matches("dl.textOf")));
 }
 
+/** 文字がちょうど text の button。スクロール枠の中(行のボタン)は除く */
+export function buttonByText(scope: ParentNode | null, text: string): HTMLElement | null {
+  return [...(scope?.querySelectorAll<HTMLElement>("button") ?? [])].find((b) => squash(b.textContent) === text && !b.closest(".ui-scrollpanel")) ?? null;
+}
+
 /** ボタンの文言: フラグは「フラグをつける」以外ならフラグ付き、既読は「既読にする」ならいま未読 */
 export function parseNewsRow(row: Element): NewsItem {
   const dl = [...row.children].find((c) => c.matches("dl.textOf"))!;
   const link = dl.querySelector<HTMLElement>("a.ui-commandlink");
   const buttons = [...row.querySelectorAll("span.inlineBlock > div.ui-selectbooleanbutton")].filter((b) => b.parentElement?.parentElement === row);
   const [flag, read] = buttons;
+  // 「更新」は同じグループの中、グループでなければ同じタブパネルの中
+  const update = buttonByText(row.closest(".ui-accordion-content") ?? row.closest(".ui-tabs-panel"), "更新");
   let meta: RegExpExecArray | null = null;
   for (const n of [...dl.childNodes].reverse()) {
     if (n.nodeType === 3 && (meta = META.exec(n.textContent ?? ""))) break;
@@ -39,5 +46,6 @@ export function parseNewsRow(row: Element): NewsItem {
     openRef: link ? assignRef(link) : "",
     flagRef: flag ? assignRef(flag) : "",
     readRef: read ? assignRef(read) : "",
+    updateRef: update ? assignRef(update) : "",
   };
 }
