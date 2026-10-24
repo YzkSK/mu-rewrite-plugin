@@ -12,6 +12,8 @@ type Props = {
   busy: boolean;
   onSearch: (q: { keyword: string; course: string }) => void;
   onTab: (name: string) => void;
+  canReadUnread: boolean;
+  onReadUnread: () => void;
 };
 
 const SEGMENTS: [label: string, tab: string][] = [["未読", "未読"], ["重要", "重要"], ["フラグ", "フラグつき"]];
@@ -19,7 +21,7 @@ const KINDS = ["授業", "時間割変更", "申込", "新着", "既読"];
 const KIND_OPTIONS = [{ value: "", label: "すべての種類" }, ...KINDS.map((k) => ({ value: k, label: k }))];
 
 /** 検索(件名・差出人・本文と授業科目)と絞り込み。タブの切り替えは通信なし */
-export function NewsToolbar({ page, busy, onSearch, onTab }: Props) {
+export function NewsToolbar({ page, busy, onSearch, onTab, canReadUnread, onReadUnread }: Props) {
   const [keyword, setKeyword] = useState(page.keyword);
   const [course, setCourse] = useState(page.course);
   const [grouped, setGrouped] = useState(true);
@@ -63,6 +65,9 @@ export function NewsToolbar({ page, busy, onSearch, onTab }: Props) {
               onTab(on ? "グループ" : "全表示");
             }}
           />
+          <div className="ml-auto">
+            <Button variant="secondary" disabled={busy || !canReadUnread} onClick={onReadUnread}>未読を新しい順に読む</Button>
+          </div>
         </div>
       </div>
     </Panel>

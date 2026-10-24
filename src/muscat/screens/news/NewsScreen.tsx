@@ -154,17 +154,16 @@ export function NewsScreen({ client, doc, initial, initialOpened = "", initialRe
               if (tab) click(tab.ref, false);
             }}
             onSearch={search}
+            canReadUnread={!!firstUnread}
+            onReadUnread={() => {
+              if (!firstUnread) return;
+              setReading(true);
+              open(firstUnread.openRef);
+            }}
           />
           <BusyOverlay busy={busy}>
             <div className={showDetail ? "grid grid-cols-1 items-start gap-3 min-[768px]:grid-cols-2" : ""}>
               <div className="flex min-w-0 flex-col gap-3">
-                <div>
-                  <Button variant="secondary" disabled={busy || !firstUnread} onClick={() => {
-                    if (!firstUnread) return;
-                    setReading(true);
-                    open(firstUnread.openRef);
-                  }}>未読を新しい順に読む</Button>
-                </div>
                 <NewsList page={listPage!} busy={busy} onOpen={(ref) => {
                   setReading(false);
                   open(ref);
