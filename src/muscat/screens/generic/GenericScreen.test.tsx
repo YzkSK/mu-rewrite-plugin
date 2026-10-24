@@ -14,7 +14,7 @@ const page: GenericPage = {
     { kind: "line", items: [{ kind: "text", text: "先頭の文" }] },
     { kind: "heading", text: "見出しA", level: 2 },
     { kind: "line", items: [{ kind: "text", text: "対象のデータが存在しません。" }], tone: "notice" },
-    { kind: "tabs", tabs: [{ label: "タブ一", ref: "t1", selected: true }, { label: "タブ二", ref: "t2", selected: false }] },
+    { kind: "tabs", tabs: [{ label: "タブ一", ref: "t1", selected: true, disabled: false }, { label: "タブ二", ref: "t2", selected: false, disabled: true }] },
     { kind: "heading", text: "小見出し", level: 3 },
     {
       kind: "fields",
@@ -64,6 +64,9 @@ test("タブの帯", () => {
   expect(html).toContain('role="tablist"');
   expect(html).toMatch(/aria-selected="true"[^>]*>タブ一/);
   expect(html).toMatch(/aria-selected="false"[^>]*>タブ二/);
+  // 元のページで無効なタブは押せない(クラス名の disabled: と区別するため、属性の disabled="" を見る)
+  expect(html).toMatch(/ disabled=""[^>]*>タブ二/);
+  expect(html).not.toMatch(/ disabled=""[^>]*>タブ一/);
 });
 
 test("fields の格子と表", () => {

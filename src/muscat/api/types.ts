@@ -74,7 +74,7 @@ export type GInline = { kind: "text"; text: string } | GControl;
 export type GBlock =
   | { kind: "heading"; text: string; level: 1 | 2 | 3 | 4 }
   | { kind: "line"; items: GInline[]; tone?: "notice" }
-  | { kind: "tabs"; tabs: { label: string; ref: string; selected: boolean }[] }
+  | { kind: "tabs"; tabs: { label: string; ref: string; selected: boolean; disabled: boolean }[] }
   | { kind: "fields"; rows: { label: string; text: string; controls: GControl[] }[] }
   | { kind: "table"; headers: string[]; rows: GCell[][] };
 export type GenericPage = { blocks: GBlock[] };

@@ -87,6 +87,11 @@ test("タブは 1 つの tabs ブロックで、選択中のパネルだけ読�
   expect(ref).toMatch(/^c\d+$/);
 });
 
+test("元のページで無効(ui-state-disabled)なタブは disabled", () => {
+  const b = blocks(TABS.replace('<li><a href="#t1">', '<li class="ui-state-disabled"><a href="#t1">'));
+  expect(b[0]).toMatchObject({ kind: "tabs", tabs: [{ label: "一", disabled: true }, { label: "二", disabled: false }] });
+});
+
 test("選択中が分からなければ最初のパネル", () => {
   const b = blocks(TABS.replace("ui-tabs-selected", ""));
   expect(b.length).toBe(2);

@@ -9,7 +9,7 @@ const tabItems = (nav: Element) => [...nav.querySelectorAll("li")].filter((li) =
 export function tabsBlock(nav: Element): GBlock | null {
   const tabs = tabItems(nav).map((li) => {
     const a = li.querySelector("a")!;
-    return { label: squash(a.textContent), ref: assignRef(a), selected: li.matches(SELECTED) };
+    return { label: squash(a.textContent), ref: assignRef(a), selected: li.matches(SELECTED), disabled: li.matches(".ui-state-disabled") };
   });
   return tabs.length > 0 ? { kind: "tabs", tabs } : null;
 }
