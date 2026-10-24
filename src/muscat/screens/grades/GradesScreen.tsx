@@ -1,7 +1,9 @@
 import { useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
+import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { CreditTable } from "./CreditTable";
 import { GpaSummary } from "./GpaSummary";
 import { GradeFilterBar } from "./GradeFilterBar";
@@ -14,18 +16,20 @@ export function GradesScreen({ client, initial }: { client: MuscatClient; initia
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && !grades && <Card className="p-4">読み込み中…</Card>}
+      {status === "loading" && !grades && <PageLoading />}
       {grades && (
-        <>
-          <GpaSummary gpa={grades.gpa} totals={grades.totals} />
-          <GradeFilterBar key={JSON.stringify(grades.filter)} value={grades.filter} busy={status === "loading"} onApply={setFilter} />
-          <div className="flex gap-2">
-            <Button variant={view === "category" ? "primary" : "ghost"} onClick={() => setView("category")}>分類ごと</Button>
-            <Button variant={view === "term" ? "primary" : "ghost"} onClick={() => setView("term")}>年度学期ごと</Button>
+        <BusyOverlay busy={status === "loading"}>
+          <div className="flex flex-col gap-3">
+            <GpaSummary gpa={grades.gpa} totals={grades.totals} />
+            <GradeFilterBar key={JSON.stringify(grades.filter)} value={grades.filter} busy={status === "loading"} onApply={setFilter} />
+            <div className="flex gap-2">
+              <Button variant={view === "category" ? "primary" : "ghost"} onClick={() => setView("category")}>分類ごと</Button>
+              <Button variant={view === "term" ? "primary" : "ghost"} onClick={() => setView("term")}>年度学期ごと</Button>
+            </div>
+            <GradeList entries={grades.entries} view={view} />
+            <CreditTable credits={grades.credits} />
           </div>
-          <GradeList entries={grades.entries} view={view} />
-          <CreditTable credits={grades.credits} />
-        </>
+        </BusyOverlay>
       )}
     </div>
   );

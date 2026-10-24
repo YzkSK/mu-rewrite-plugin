@@ -66,5 +66,5 @@ test("年度学期ごと: 新しい年度学期が上", () => {
 test("空・エラー・読み込み中", () => {
   expect(render({ status: "ready", grades: { ...grades, entries: [{ depth: 0, name: "見出しだけ", course: null }] } })).toContain("該当する科目はありません");
   expect(render({ status: "error", error: "MUSCAT が応答しません。しばらくして再読み込みしてください" })).toContain("応答しません");
-  expect(render(undefined)).toContain("読み込み中");
+  expect(render(undefined)).toContain("読み込んでいます");
 });

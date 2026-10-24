@@ -56,6 +56,6 @@ test("詳細: 項目名と値、本文はサニタイズ、前へ/次へ/閉じ�
 
 test("データなし・読み込み中・エラー", () => {
   expect(render(ready({ items: [], empty: true }))).toContain("該当する掲示はありません");
-  expect(render()).toContain("読み込み中");
+  expect(render()).toContain("読み込んでいます");
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
 });

@@ -97,5 +97,5 @@ test("左寄せ: 画面は幅を抑え、項目名の列は内容の幅", () => 
 
 test("エラー・読み込み中", () => {
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
-  expect(render()).toContain("読み込み中");
+  expect(render()).toContain("読み込んでいます");
 });

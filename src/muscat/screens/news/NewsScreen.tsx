@@ -1,5 +1,7 @@
 import type { MuscatClient } from "@/muscat/api/client";
+import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { NewsDetailView } from "./NewsDetailView";
 import { NewsList } from "./NewsList";
 import { NewsToolbar } from "./NewsToolbar";
@@ -12,7 +14,7 @@ export function NewsScreen({ client, doc, initial }: { client: MuscatClient; doc
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && !page && <Card className="p-4">読み込み中…</Card>}
+      {status === "loading" && !page && <PageLoading />}
       {page && (
         <>
           <NewsToolbar
@@ -36,8 +38,12 @@ export function NewsScreen({ client, doc, initial }: { client: MuscatClient; doc
               })();
             }}
           />
-          {page.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
-          <NewsList page={page} busy={busy} onClick={click} />
+          <BusyOverlay busy={busy}>
+            <div className="flex flex-col gap-3">
+              {page.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
+              <NewsList page={page} busy={busy} onClick={click} />
+            </div>
+          </BusyOverlay>
         </>
       )}
     </div>

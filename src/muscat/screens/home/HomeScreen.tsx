@@ -1,5 +1,7 @@
 import type { MuscatClient } from "@/muscat/api/client";
+import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { NewsDetailView } from "../news/NewsDetailView";
 import { HomeInfo } from "./HomeInfo";
 import { HomeNotices } from "./HomeNotices";
@@ -20,13 +22,17 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
         {page && <HomeInfo unread={page.unreadKeiji} disabled={busy} keijiRef={page.keijiRef} timetableRef={page.timetableChangeRef} onKeiji={() => click(page.keijiRef)} onTimetable={() => click(page.timetableChangeRef)} />}
       </div>
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && !page && <Card className="p-4">読み込み中…</Card>}
-      {page?.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
+      {status === "loading" && !page && <PageLoading />}
       {page && (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <HomeNotices tabs={page.notices} busy={busy} onTab={(ref) => click(ref, false)} onOpen={click} />
-          <TodayLessons lessons={page.lessons} now={now ?? new Date()} />
-        </div>
+        <BusyOverlay busy={busy}>
+          <div className="flex flex-col gap-3">
+            {page.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <HomeNotices tabs={page.notices} busy={busy} onTab={(ref) => click(ref, false)} onOpen={click} />
+              <TodayLessons lessons={page.lessons} now={now ?? new Date()} />
+            </div>
+          </div>
+        </BusyOverlay>
       )}
     </div>
   );

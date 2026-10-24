@@ -1,5 +1,6 @@
 import type { MuscatClient } from "@/muscat/api/client";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { GenericSections } from "./GenericSections";
 import { useLivePage, type LiveState } from "./useLivePage";
 
@@ -10,7 +11,7 @@ export function GenericScreen({ client, doc, initial }: { client: MuscatClient; 
     // 左寄せで、横いっぱいには広げない(入力欄や項目名と値が、離れて見えないように)
     <div className="flex w-full max-w-4xl flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && <Card className="p-4">読み込み中…</Card>}
+      {status === "loading" && <PageLoading />}
       {page && <GenericSections blocks={page.blocks} run={(steps) => void run(steps)} />}
     </div>
   );

@@ -1,3 +1,4 @@
+import { track } from "./busy";
 import type { WaitOpts, WaitResult } from "./driver/busy";
 import { drive, type DriveStep } from "./driver/drive";
 import { MuscatDownError } from "./errors";
@@ -70,15 +71,18 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
   };
 
   return {
-    runLive: (op) => queue(() => op({ doc: deps.doc, drive: (steps, opts) => drive(deps.doc, steps, opts) })),
+    // 待ち行列に積んだ時点から busy にする(順番待ちも「読み込み中」に見せる)
+    runLive: (op) => track(() => queue(() => op({ doc: deps.doc, drive: (steps, opts) => drive(deps.doc, steps, opts) }))),
     run: (op) =>
-      queue(async () => {
-        const first = await op(ctx);
-        if (first !== null) return first;
-        session.adopt(await recover(deps.fetch, deps.now)); // 一度だけやり直す
-        const second = await op(ctx);
-        if (second === null) throw new MuscatDownError("MUSCAT が応答しません");
-        return second;
-      }),
+      track(() =>
+        queue(async () => {
+          const first = await op(ctx);
+          if (first !== null) return first;
+          session.adopt(await recover(deps.fetch, deps.now)); // 一度だけやり直す
+          const second = await op(ctx);
+          if (second === null) throw new MuscatDownError("MUSCAT が応答しません");
+          return second;
+        }),
+      ),
   };
 }

@@ -46,5 +46,5 @@ test("範囲外の年度が分かっているとき: そのボタンは押せず
 });
 
 test("読み込み中は表示が出る", () => {
-  expect(render({})).toContain("読み込み中");
+  expect(render({})).toContain("読み込んでいます");
 });
