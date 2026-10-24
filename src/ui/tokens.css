@@ -111,7 +111,14 @@
 .mu-dots i:nth-child(2) { animation-delay: .2s; }
 .mu-dots i:nth-child(3) { animation-delay: .4s; }
 
+/* 一覧の行は上から 40ms ずつ(13 行目以降は同時)、カレンダーのマスは左上から斜めに 15ms ずつ、件数は一瞬のフェード */
+@keyframes mu-fadein { from { opacity: 0; } to { opacity: 1; } }
+.mu-row { animation: mu-fadein 220ms ease-out both; animation-delay: calc(min(var(--i, 0), 11) * 40ms); }
+.mu-cell { animation: mu-fadein 250ms ease-out both; animation-delay: calc(var(--i, 0) * 15ms); }
+.mu-fade { animation: mu-fadein 180ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
+  .mu-row, .mu-cell, .mu-fade { animation: none !important; }
   [data-slot="progress-indicator"] { animation: none !important; left: 0 !important; width: 100% !important; opacity: .6; }
   .mu-dots i { animation: none !important; }
   [data-sw-collapsible-panel] { animation: none !important; }
