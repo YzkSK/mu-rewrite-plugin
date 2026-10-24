@@ -1,7 +1,7 @@
 import type { NewsGroup, NewsItem, NewsPage } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { EmptyState } from "@/ui/EmptyState";
-import { canSave } from "./newsSteps";
+import { canMarkAllRead } from "./newsSteps";
 import { NewsRow } from "./NewsRow";
 
 type Props = {
@@ -19,7 +19,7 @@ export function NewsList({ page, busy, onOpen, onFlag, onMarkAllRead, onMore }: 
   const rows = (items: NewsItem[]) => (
     <ul className="m-0 list-none p-0">
       {items.map((it, i) => (
-        <NewsRow key={`${it.openRef}-${i}`} item={it} busy={busy} canSave={canSave(page, it.updateRef)} onOpen={() => onOpen(it.openRef)} onFlag={() => onFlag(it)} />
+        <NewsRow key={`${it.openRef}-${i}`} item={it} busy={busy} canSave={!!it.flagRef} onOpen={() => onOpen(it.openRef)} onFlag={() => onFlag(it)} />
       ))}
     </ul>
   );
@@ -38,7 +38,7 @@ export function NewsList({ page, busy, onOpen, onFlag, onMarkAllRead, onMore }: 
               {g.description && <small className="text-xs text-muted-foreground">{g.description}</small>}
               <small className="text-xs text-muted-foreground">{`${g.items.length}件`}</small>
             </div>
-            <Button variant="secondary" disabled={busy || !g.items.some((it) => it.unread) || !canSave(page, g.updateRef)} onClick={() => onMarkAllRead(g)}>すべて既読にする</Button>
+            <Button variant="secondary" disabled={busy || !g.items.some((it) => it.unread) || !canMarkAllRead(page, g)} onClick={() => onMarkAllRead(g)}>すべて既読にする</Button>
           </div>
           {rows(g.items)}
           {g.moreRef && (

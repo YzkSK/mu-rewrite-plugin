@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import type { NewsDetail, NewsGroup, NewsItem, NewsPage } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
 import { NewsScreen } from "./NewsScreen";
-import { canSave, markAllReadSteps, toggleSteps } from "./newsSteps";
+import { markAllReadSteps, toggleSteps } from "./newsSteps";
 import type { NewsState } from "./useNews";
 
 const client = fakeClient();
@@ -42,12 +42,12 @@ test("グループ: 帯に分類名・説明・件数・すべて既読にする
   expect(html.match(/すべて表示する/g)).toHaveLength(1);
 });
 
-test("操作中・更新や確認の OK が無いときは、フラグとすべて既読にするが無効", () => {
+test("操作中・元のボタンが無いときは、フラグが無効。すべて既読にするは更新か確認の OK が無いと無効", () => {
   const unread = [item({ unread: true })];
   expect(render(ready({ items: unread }, true))).toMatch(disabledBtn("フラグをつける"));
   expect(render(ready({ items: unread }))).not.toMatch(disabledBtn("フラグをつける"));
-  expect(render(ready({ items: [item({ updateRef: "" })] }))).toMatch(disabledBtn("フラグをつける"));
-  expect(render(ready({ items: unread, confirmYesRef: "" }))).toMatch(disabledBtn("フラグをつける"));
+  expect(render(ready({ items: [item({ flagRef: "" })] }))).toMatch(disabledBtn("フラグをつける"));
+  expect(render(ready({ items: unread, confirmYesRef: "" }))).not.toMatch(disabledBtn("フラグをつける"));
   const dis = /disabled=""[^>]*>すべて既読にする/;
   expect(render(ready({ groups: [group({ items: unread })] }))).not.toMatch(dis);
   expect(render(ready({ groups: [group({ items: unread })] }, true))).toMatch(dis);
@@ -56,23 +56,14 @@ test("操作中・更新や確認の OK が無いときは、フラグとすべ�
   expect(render(ready({ groups: [group({ items: [item()] })] }))).toMatch(dis);
 });
 
-test("操作の steps: 行の切り替えは 切り替え → 更新 → OK(最後だけ ajax)", () => {
-  const p = { ...base };
-  expect(toggleSteps(p, "c2", "u1")).toEqual([
-    { kind: "click", ref: "c2", ajax: false },
-    { kind: "click", ref: "u1", ajax: false },
-    { kind: "click", ref: "y", ajax: true },
-  ]);
-  expect(canSave(p, "u1")).toBe(true);
-  expect(canSave(p, "")).toBe(false);
-  expect(canSave({ ...p, confirmYesRef: "" }, "u1")).toBe(false);
+// 「更新」はグループ全部を既読にする(利用者が実ページで確認)。行の切り替えでは押さない
+test("操作の steps: 行の切り替えはその行のボタンだけで、更新は押さない", () => {
+  expect(toggleSteps("c2")).toEqual([{ kind: "click", ref: "c2", ajax: true }]);
 });
 
-test("操作の steps: すべて既読にするは未読の行の既読ボタンだけ → グループの更新 → OK", () => {
-  const g = group({ items: [item({ unread: true, readRef: "r1" }), item({ unread: false, readRef: "r2" }), item({ unread: true, readRef: "r3" })] });
+test("操作の steps: すべて既読にするは グループの更新 → OK。未読が無い・押せないときは null", () => {
+  const g = group({ items: [item({ unread: true, readRef: "r1" }), item({ unread: false, readRef: "r2" })] });
   expect(markAllReadSteps(base, g)).toEqual([
-    { kind: "click", ref: "r1", ajax: false },
-    { kind: "click", ref: "r3", ajax: false },
     { kind: "click", ref: "gu", ajax: false },
     { kind: "click", ref: "y", ajax: true },
   ]);
@@ -108,7 +99,7 @@ test("詳細の「未読に戻す」は、一覧から開いた行が保存で�
   expect(render(ready({ detail, items: [item({ title: "詳細の件名" })] }), "")).not.toContain("未読に戻す");
   expect(render(ready({ detail, items: [item({ title: "詳細の件名", openRef: "other" })] }))).not.toContain("未読に戻す");
   expect(render(ready({ detail, items: [item({ title: "詳細の件名", unread: true })] }))).not.toContain("未読に戻す");
-  expect(render(ready({ detail, items: [item({ title: "詳細の件名", updateRef: "" })] }))).not.toContain("未読に戻す");
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名", readRef: "" })] }))).not.toContain("未読に戻す");
 });
 
 test("データなし・読み込み中・エラー", () => {

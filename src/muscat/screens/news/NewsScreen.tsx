@@ -9,7 +9,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { useToast } from "@/ui/Toast";
 import { NewsDetailView } from "./NewsDetailView";
 import { NewsList } from "./NewsList";
-import { canSave, markAllReadSteps, toggleSteps } from "./newsSteps";
+import { markAllReadSteps, toggleSteps } from "./newsSteps";
 import { NewsToolbar } from "./NewsToolbar";
 import { useNews, type NewsState } from "./useNews";
 
@@ -21,10 +21,9 @@ export function NewsScreen({ client, doc, initial, initialOpened = "" }: { clien
   const markAllRead = (g: NewsGroup) => {
     const steps = page && markAllReadSteps(page, g);
     if (!steps) return;
-    const n = g.items.filter((i) => i.unread && i.readRef).length;
-    void run(steps).then((ok) => ok && toast(`${g.title}の ${n} 件を既読にしました`));
+    void run(steps).then((ok) => ok && toast(`${g.title}をすべて既読にしました`));
   };
-  const flag = (it: NewsItem) => page && void run(toggleSteps(page, it.flagRef, it.updateRef));
+  const flag = (it: NewsItem) => void run(toggleSteps(it.flagRef));
   // 詳細の「未読に戻す」: 一覧から開いた行そのものの既読ボタンで切り替えて保存する。
   // 件名だけで探すと、同じ件名の別の掲示を変えてしまう。前へ・次へで移った詳細は、どの行か分からないので出さない
   const [opened, setOpened] = useState(initialOpened); // initialOpened はテスト用
@@ -32,8 +31,8 @@ export function NewsScreen({ client, doc, initial, initialOpened = "" }: { clien
     setOpened(ref);
     click(ref);
   };
-  const target = page?.items.find((i) => i.openRef === opened && i.title === page.detail?.title && !i.unread && i.readRef && canSave(page, i.updateRef));
-  const unread = () => page && target && void run(toggleSteps(page, target.readRef, target.updateRef));
+  const target = page?.items.find((i) => i.openRef === opened && i.title === page.detail?.title && !i.unread && i.readRef);
+  const unread = () => target && void run(toggleSteps(target.readRef));
   const firstUnread = page?.items.find((i) => i.unread && i.openRef);
   const search = (q: { keyword: string; course: string }) => {
     if (!page) return;
