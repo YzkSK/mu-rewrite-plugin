@@ -11,7 +11,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
-import { exportFile, findExportButton } from "./exportFile";
+import { exportFile, findExportButton } from "../exportFile";
 import { Legend, Mark } from "./SessionMarks";
 import { useAttendance, type AttendanceState } from "./useAttendance";
 

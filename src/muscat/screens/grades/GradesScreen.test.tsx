@@ -3,9 +3,9 @@ import { renderToString } from "react-dom/server";
 import type { GradeCourse, GradeEntry, Grades } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
 import { GradesScreen } from "./GradesScreen";
-import { GradeList } from "./GradeList";
 
 const client = fakeClient();
+const doc = new DOMParser().parseFromString(`<form id="funcForm"><button id="funcForm:create" type="button">PDF</button></form>`, "text/html");
 
 const course = (o: Partial<GradeCourse>): GradeCourse => ({
   mark: "", online: false, inProgress: false, name: "科目", credits: 2, grade: "B", gpaTarget: true, gpaTargetYear: true,
@@ -26,41 +26,57 @@ const grades: Grades = {
     byYear: [{ label: "2024年度", value: 2.87 }, { label: "通算", value: 2.8 }],
     cumulative: [{ label: "2023年度", value: 2.5 }, { label: "2024年度", value: 2.91 }],
   },
-  credits: [{ depth: 0, name: "教養分類", required: 10, earned: 8, inProgress: null, total: 8 }],
+  credits: [{ depth: 0, name: "総合計", required: 10, earned: 8, inProgress: 4, total: 12 }, { depth: 0, name: "教養分類", required: 4, earned: 2, inProgress: 1, total: 3 }],
   totals: { inProgress: 24, online: 51 },
   filter: { fail: true, inProgress: true, noCredit: true, transfer: true },
 };
-const render = (initial: Parameters<typeof GradesScreen>[0]["initial"]) => renderToString(<GradesScreen client={client} initial={initial} />);
+const render = (initial: Parameters<typeof GradesScreen>[0]["initial"], extra: Partial<Parameters<typeof GradesScreen>[0]> = {}) =>
+  renderToString(<GradesScreen client={client} doc={doc} initial={initial} {...extra} />);
+const ready = { status: "ready", grades } as const;
 
-test("要約: 総合GPAの最新と通算・年度GPA・履修合計単位・単位表", () => {
-  const html = render({ status: "ready", grades });
-  for (const s of ["2.91", "2.80", "2.87", "24.0", "51.0", "年度学期ごとのGPA", "単位の状況", "教養分類"]) expect(html).toContain(s);
+test("数字の帯: 総合GPA(最新)・通算GPA・修得済単位・履修中単位", () => {
+  const html = render(ready);
+  for (const s of ["総合GPA(最新)", "2.91", "通算GPA", "2.80", "修得済単位", "8.0", "履修中単位", "4.0"]) expect(html).toContain(s);
 });
 
-test("一覧: 科目名・教員・履修中・分類ごとのインデント", () => {
-  const html = render({ status: "ready", grades });
-  for (const s of ["優秀科目", "教員A", "履修中", "オンライン", "基礎分類"]) expect(html).toContain(s);
-  expect(html).toContain("padding-left:12px"); // depth 1 の見出し
-  expect(html).toContain("padding-left:24px"); // depth 2 の授業
+test("分類ごとの表: 見出し・科目・単位・評価・年度・学期・教員、履修中と D の色", () => {
+  const html = render(ready);
+  for (const s of ["基礎分類", "優秀科目", "2.0", "2024", "1学期", "教員A", "履修中", "text-error", ">オンライン<"]) expect(html).toContain(s);
+  for (const s of ["※", "* オンライン授業"]) expect(html).not.toContain(s); // 記号と注記は出さない
+  expect(html).toContain("padding-left:42px"); // depth 2
 });
 
-test("評価: S は強調、D は警告色、B は普通", () => {
-  const s = renderToString(<GradeList entries={[entries[2]!]} view="category" />);
-  expect(s).toContain("text-primary");
-  expect(s).not.toContain("text-error");
-  expect(renderToString(<GradeList entries={[entries[3]!]} view="category" />)).toContain("text-error");
-  const b = renderToString(<GradeList entries={[{ depth: 0, name: "x", course: course({}) }]} view="category" />);
-  expect(b).not.toContain("text-error");
-  expect(b).not.toContain("text-primary");
-});
-
-test("年度学期ごと: 新しい年度学期が上", () => {
-  const html = renderToString(<GradeList entries={entries} view="term" />);
+test("年度学期ごと: 年度学期の見出しが新しい順に出て、分類の見出しは出ない", () => {
+  const html = render(ready, { initialView: "term" });
   const at = (s: string) => html.indexOf(s);
   expect(at("2025年度 3学期")).toBeGreaterThan(-1);
   expect(at("2025年度 3学期")).toBeLessThan(at("2024年度 1学期"));
   expect(at("2024年度 1学期")).toBeLessThan(at("2023年度 2学期"));
   expect(html).not.toContain("基礎分類");
+});
+
+test("表示の設定は初めは閉じていて、開くと 6 つのチェックと「表示」", () => {
+  expect(render(ready)).not.toContain("表示する列");
+  const html = render(ready, { initialOpen: true });
+  for (const s of ["表示する列", "GPA対象(年度毎)", "不合格科目", "履修中科目", "配当なし科目", "振替科目"]) expect(html).toContain(s);
+  expect(html.match(/type="checkbox"/g)?.length).toBe(6);
+  expect(html).toContain("表示</button>");
+});
+
+test("GPA対象の列を隠すと見出しから消える", () => {
+  expect(render(ready)).toContain("GPA対象</th>");
+  const html = render(ready, { initialCols: { gpa: false, gpaYear: true } });
+  expect(html).not.toContain("GPA対象</th>");
+  expect(html).toContain("GPA対象(年度毎)</th>");
+});
+
+test("PDF で出力のボタン", () => {
+  expect(render(ready)).toContain("PDF で出力");
+});
+
+test("下の折りたたみ 3 つの見出し", () => {
+  const html = render(ready);
+  for (const s of ["GPA推移表", "単位修得状況", "履修合計単位・合計単位(オンライン)"]) expect(html).toContain(s);
 });
 
 test("空・エラー・読み込み中", () => {
