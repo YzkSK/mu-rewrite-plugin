@@ -4,11 +4,11 @@ import { EmptyState } from "@/ui/EmptyState";
 import { Panel } from "@/ui/Panel";
 import { dateTitle, dayRows, isSameDay, minutes, type DayRow } from "./dayRows";
 
-type Props = { day: HomeDay | null; timetableRef: string; busy: boolean; now: Date; onClick: (ref: string) => void };
+type Props = { day: HomeDay | null; timetableRef: string; busy: boolean; now: Date; onClick: (ref: string) => void; onOpenCourse: (title: string) => void };
 
 const label = (ps: number[]) => (ps.length === 1 ? `${ps[0]}限` : `${ps.join("・")}限`);
 
-function Row({ row, state }: { row: DayRow; state: "now" | "past" | "later" }) {
+function Row({ row, state, onOpen }: { row: DayRow; state: "now" | "past" | "later"; onOpen: (title: string) => void }) {
   const it = row.item;
   return (
     <li className={`grid grid-cols-[3.5rem_1fr] items-start gap-3 ${state === "past" ? "opacity-45" : ""}`}>
@@ -17,14 +17,18 @@ function Row({ row, state }: { row: DayRow; state: "now" | "past" | "later" }) {
         <small className="font-normal text-muted-foreground">{row.start}</small>
       </div>
       {it ? (
-        <div className={`flex min-w-0 flex-col gap-0.5 rounded-[4px] border px-3 py-2 ${state === "now" ? "border-primary bg-primary/10" : "border-border"}`}>
+        <button
+          type="button"
+          onClick={() => onOpen(it.title)}
+          className={`flex min-w-0 cursor-pointer flex-col items-start gap-0.5 rounded-[4px] border px-3 py-2 text-left ${state === "now" ? "border-primary bg-primary/10" : "border-border bg-transparent"}`}
+        >
           {it.room && <span className="text-base font-semibold">{it.room}</span>}
           <b className="text-sm">{it.title}</b>
           <span className="text-xs text-muted-foreground">
             {[`〜${row.end}`, it.teachers.join("、")].filter(Boolean).join("、")}
             {it.keijiCount > 0 && <span className="ml-2 font-semibold text-primary">{`掲示 ${it.keijiCount}`}</span>}
           </span>
-        </div>
+        </button>
       ) : (
         <span className="py-1 text-xs text-muted-foreground">空き</span>
       )}
@@ -33,7 +37,7 @@ function Row({ row, state }: { row: DayRow; state: "now" | "past" | "later" }) {
 }
 
 /** 今日(または選んだ日)の 1〜7 限。「今」と終わった時限の見分けは、画面の日付が now と同じ日のときだけ */
-export function TodayPanel({ day, timetableRef, busy, now, onClick }: Props) {
+export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse }: Props) {
   const nav = day?.nav;
   const nav3 = (name: string, ref: string | undefined) => (
     <Button variant="ghost" disabled={busy || !ref} onClick={() => onClick(ref!)}>{name}</Button>
@@ -76,7 +80,7 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick }: Props) {
         ) : (
           <ul className="flex flex-col gap-2">
             {rows.map((r) => (
-              <Row key={r.periods[0]} row={r} state={stateOf(r)} />
+              <Row key={r.periods[0]} row={r} state={stateOf(r)} onOpen={onOpenCourse} />
             ))}
           </ul>
         )}

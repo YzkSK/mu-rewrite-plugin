@@ -17,7 +17,7 @@ const timetable: Timetable = {
 };
 
 const render = (props: Partial<Parameters<typeof TimetableScreen>[0]>) =>
-  renderToString(<TimetableScreen client={client} year={2026} term={1} {...props} />);
+  renderToString(<TimetableScreen client={client} doc={document} year={2026} term={1} {...props} />);
 
 test("授業あり: 科目名と教室が出る", () => {
   const html = render({ initial: { status: "ready", timetable } });

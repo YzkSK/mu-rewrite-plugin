@@ -5,7 +5,7 @@ import type { Attendance } from "./types";
 const SELECT = "funcForm:kaikoNendoGakki_input";
 const RENDER = "funcForm:btnHyoji funcForm:conditionArea funcForm:jugyoKaisuInfo funcForm:jugyoKaisuTbl";
 
-const isReady = (d: Document) => !!d.querySelector(`#funcForm [name="${SELECT}"]`);
+export const isReady = (d: Document) => !!d.querySelector(`#funcForm [name="${SELECT}"]`);
 const currentTerm = (d: Document) => d.querySelector<HTMLSelectElement>(`[name="${SELECT}"]`)?.value;
 
 export function getAttendance(core: Core, termKey?: string): Promise<Attendance> {

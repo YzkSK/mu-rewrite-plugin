@@ -1,17 +1,22 @@
+import { useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
+import { nativeNav } from "@/muscat/shell/nativeNav";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
 import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
+import { CourseDrawer } from "../course/CourseDrawer";
+import type { CourseKey } from "../course/useCourse";
 import { CourseCard } from "./CourseCard";
 import { useAttendance, type AttendanceState } from "./useAttendance";
 
-type Props = { client: MuscatClient; initial?: AttendanceState };
+type Props = { client: MuscatClient; doc: Document; initial?: AttendanceState };
 
 const yearOf = (key: string) => Number(key.split("|")[0]);
 
-export function AttendanceScreen({ client, initial }: Props) {
+export function AttendanceScreen({ client, doc, initial }: Props) {
   const { status, attendance, error, setTermKey } = useAttendance(client, initial);
+  const [course, setCourse] = useState<CourseKey | null>(null);
   const year = attendance ? yearOf(attendance.termKey) : 0;
   // 252 個は多すぎるので、選択中の年度の 5 年前〜1 年後だけ出す
   const options = (attendance?.terms ?? [])
@@ -32,9 +37,21 @@ export function AttendanceScreen({ client, initial }: Props) {
         <BusyOverlay busy={status === "loading"}>
           <div className="flex flex-col gap-3">
             {attendance.courses.length === 0 && <Card className="p-4">この学期の授業はありません</Card>}
-            {attendance.courses.map((c) => <CourseCard key={c.code + c.when} course={c} />)}
+            {attendance.courses.map((c) => <CourseCard key={c.code + c.when} course={c} onOpen={() => setCourse({ title: c.subject, code: c.code })} />)}
           </div>
         </BusyOverlay>
+      )}
+      {course && (
+        <CourseDrawer
+          key={course.title + course.code}
+          client={client}
+          course={course}
+          onClose={() => setCourse(null)}
+          onNav={(label) => {
+            setCourse(null);
+            nativeNav(doc, label);
+          }}
+        />
       )}
     </div>
   );

@@ -4,13 +4,17 @@ import { Button } from "@/ui/Button";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
 import { PageLoading } from "@/ui/PageLoading";
+import { nativeNav } from "@/muscat/shell/nativeNav";
+import { CourseDrawer } from "../course/CourseDrawer";
+import type { CourseKey } from "../course/useCourse";
 import { TimetableGrid } from "./TimetableGrid";
 import { useTimetable, type TimetableState } from "./useTimetable";
 
-type Props = { client: MuscatClient; year: number; term?: number; initial?: TimetableState };
+type Props = { client: MuscatClient; doc: Document; year: number; term?: number; initial?: TimetableState };
 
-export function TimetableScreen({ client, year, term: term0 = 1, initial }: Props) {
+export function TimetableScreen({ client, doc, year, term: term0 = 1, initial }: Props) {
   const [term, setTerm] = useState(term0);
+  const [course, setCourse] = useState<CourseKey | null>(null);
   const { status, timetable, error, blocked = [], setYear } = useTimetable(client, year, initial);
   const moving = status === "loading";
   const [dir, setDir] = useState<-1 | 1 | 0>(0); // どちらのボタンを押したか(スピナーを出す側)。初回読み込みはどちらでもない
@@ -41,9 +45,21 @@ export function TimetableScreen({ client, year, term: term0 = 1, initial }: Prop
       ) : (
         <BusyOverlay busy={moving && !!timetable}>
           <Card className="overflow-x-auto p-2">
-            {status === "loading" && !timetable ? <PageLoading /> : <TimetableGrid entries={entries} />}
+            {status === "loading" && !timetable ? <PageLoading /> : <TimetableGrid entries={entries} onOpen={(e) => setCourse({ title: e.subject, code: e.code })} />}
           </Card>
         </BusyOverlay>
+      )}
+      {course && (
+        <CourseDrawer
+          key={course.title + course.code}
+          client={client}
+          course={course}
+          onClose={() => setCourse(null)}
+          onNav={(label) => {
+            setCourse(null);
+            nativeNav(doc, label);
+          }}
+        />
       )}
     </div>
   );
