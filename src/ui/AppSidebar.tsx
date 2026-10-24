@@ -3,6 +3,7 @@ import {
   IconSearch, IconUser,
 } from "@tabler/icons-react";
 import type { ComponentType } from "react";
+import { Spinner } from "@/components/starwind/spinner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
   SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
@@ -10,7 +11,8 @@ import {
 } from "@/components/starwind/sidebar";
 import type { NavGroup, NavItem, NavModel } from "@/muscat/shell/drawerItems";
 
-type Props = { model: NavModel; onPick?: () => void };
+type Props = { model: NavModel; onPick?: () => void; /** 移動中の項目のラベル */ pendingLabel?: string; onPending?: (label: string) => void };
+type Pick = (i: NavItem) => void;
 
 const GROUP_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   お知らせ: IconBell, 授業: IconBook, シラバス: IconSearch, 学生支援: IconHeart, 設備状況照会: IconBuilding,
@@ -21,7 +23,10 @@ const FOOTER_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 // 押すと沈む・選択の地はフェードで移る
 const MB = "transition-[background-color,color,transform,width,height,padding] duration-200 active:scale-[0.98]";
 
-function Group({ group, pick }: { group: NavGroup; pick: (i: NavItem) => void }) {
+/** 移動中の項目の横の小さな丸いアイコン */
+export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spinner className="ml-auto size-4 text-primary" /> : null);
+
+function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pendingLabel?: string }) {
   const Icon = GROUP_ICONS[group.title] ?? IconList;
   return (
     <SidebarMenuItem>
@@ -49,6 +54,7 @@ function Group({ group, pick }: { group: NavGroup; pick: (i: NavItem) => void })
                   }}
                 >
                   <span>{item.label}</span>
+                  <PendingSpinner on={pendingLabel === item.label} />
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             ))}
@@ -59,7 +65,7 @@ function Group({ group, pick }: { group: NavGroup; pick: (i: NavItem) => void })
   );
 }
 
-function FooterItem({ item, pick }: { item: NavItem; pick: (i: NavItem) => void }) {
+function FooterItem({ item, pick, pendingLabel }: { item: NavItem; pick: Pick; pendingLabel?: string }) {
   const Icon = FOOTER_ICONS[item.label] ?? IconList;
   const cls = `${MB} h-[34px] text-[13px] ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
   return (
@@ -74,6 +80,7 @@ function FooterItem({ item, pick }: { item: NavItem; pick: (i: NavItem) => void 
         <SidebarMenuButton size="sm" isActive={item.active} aria-current={item.active ? "page" : undefined} className={cls} onClick={() => pick(item)}>
           <Icon />
           {item.label}
+          <PendingSpinner on={pendingLabel === item.label} />
         </SidebarMenuButton>
       )}
     </SidebarMenuItem>
@@ -81,9 +88,12 @@ function FooterItem({ item, pick }: { item: NavItem; pick: (i: NavItem) => void 
 }
 
 /** サイドバーの中身。開閉・幅・押し出しは App(Sidebar)の仕事。 */
-export function AppSidebar({ model, onPick }: Props) {
-  const pick = (item: NavItem) => {
-    if ("onSelect" in item) item.onSelect();
+export function AppSidebar({ model, onPick, pendingLabel, onPending }: Props) {
+  const pick: Pick = (item) => {
+    if ("onSelect" in item) {
+      onPending?.(item.label);
+      item.onSelect();
+    }
     onPick?.();
   };
   const { home } = model;
@@ -95,17 +105,18 @@ export function AppSidebar({ model, onPick }: Props) {
             <SidebarMenuButton size="md" isActive={home.active} aria-current={home.active ? "page" : undefined} className={`${MB} h-[38px] text-sm`} onClick={() => pick(home)}>
               <IconHome className="text-primary" />
               {home.label}
+              <PendingSpinner on={pendingLabel === home.label} />
             </SidebarMenuButton>
           </SidebarMenuItem>
           {model.groups.map((g) => (
-            <Group key={g.title} group={g} pick={pick} />
+            <Group key={g.title} group={g} pick={pick} pendingLabel={pendingLabel} />
           ))}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="gap-px border-t border-sidebar-border px-2.5 pt-2 pb-3">
         <SidebarMenu className="gap-px">
           {model.footer.map((i) => (
-            <FooterItem key={i.label} item={i} pick={pick} />
+            <FooterItem key={i.label} item={i} pick={pick} pendingLabel={pendingLabel} />
           ))}
         </SidebarMenu>
       </SidebarFooter>

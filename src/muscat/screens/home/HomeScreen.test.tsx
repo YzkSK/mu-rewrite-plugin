@@ -69,6 +69,6 @@ test("詳細は一覧の上に出る。無ければ出ない", () => {
 });
 
 test("読み込み中・エラー", () => {
-  expect(render()).toContain("読み込み中");
+  expect(render()).toContain("読み込んでいます");
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
 });

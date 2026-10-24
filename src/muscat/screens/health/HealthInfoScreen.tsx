@@ -1,5 +1,6 @@
 import type { MuscatClient } from "@/muscat/api/client";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { InfoSections } from "../info/InfoSections";
 import { useInfoPage, type InfoState } from "../info/useInfoPage";
 
@@ -8,7 +9,7 @@ export function HealthInfoScreen({ client, initial }: { client: MuscatClient; in
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && <Card className="p-4">読み込み中…</Card>}
+      {status === "loading" && <PageLoading />}
       {page && <InfoSections page={page} />}
     </div>
   );

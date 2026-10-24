@@ -20,7 +20,7 @@ export function GradeFilterBar({ value, busy, onApply }: { value: GradeFilter; b
       {LABELS.map(([k, label]) => (
         <Checkbox key={k} label={label} checked={draft[k]} onChange={(c) => setDraft({ ...draft, [k]: c })} />
       ))}
-      <Button disabled={busy} onClick={() => onApply(draft)}>表示</Button>
+      <Button loading={busy} onClick={() => onApply(draft)}>表示</Button>
     </Card>
   );
 }

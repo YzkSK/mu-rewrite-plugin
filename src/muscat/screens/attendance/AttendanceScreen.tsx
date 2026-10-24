@@ -1,5 +1,7 @@
 import type { MuscatClient } from "@/muscat/api/client";
+import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
+import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { CourseCard } from "./CourseCard";
 import { useAttendance, type AttendanceState } from "./useAttendance";
@@ -25,11 +27,15 @@ export function AttendanceScreen({ client, initial }: Props) {
         </div>
       )}
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
-      {status === "loading" && !attendance && <Card className="p-4">読み込み中…</Card>}
-      {status !== "error" && attendance && attendance.courses.length === 0 && (
-        <Card className="p-4">この学期の授業はありません</Card>
+      {status === "loading" && !attendance && <PageLoading />}
+      {status !== "error" && attendance && (
+        <BusyOverlay busy={status === "loading"}>
+          <div className="flex flex-col gap-3">
+            {attendance.courses.length === 0 && <Card className="p-4">この学期の授業はありません</Card>}
+            {attendance.courses.map((c) => <CourseCard key={c.code + c.when} course={c} />)}
+          </div>
+        </BusyOverlay>
       )}
-      {status !== "error" && attendance?.courses.map((c) => <CourseCard key={c.code + c.when} course={c} />)}
     </div>
   );
 }

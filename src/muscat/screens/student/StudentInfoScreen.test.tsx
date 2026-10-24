@@ -29,5 +29,5 @@ test("3 セル以上の行がある grid は表", () => {
 
 test("エラー・読み込み中", () => {
   expect(render({ status: "error", error: "MUSCAT が応答しません。しばらくして再読み込みしてください" })).toContain("応答しません");
-  expect(render()).toContain("読み込み中");
+  expect(render()).toContain("読み込んでいます");
 });

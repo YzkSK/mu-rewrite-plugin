@@ -51,5 +51,5 @@ test("学期の選択肢は選択年度の 5 年前〜1 年後に絞る", () => 
 
 test("エラーと読み込み中", () => {
   expect(render({ status: "error", error: "MUSCAT が応答しません。しばらくして再読み込みしてください" })).toContain("応答しません");
-  expect(render(undefined)).toContain("読み込み中");
+  expect(render(undefined)).toContain("読み込んでいます");
 });

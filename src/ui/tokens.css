@@ -104,7 +104,16 @@
 /* サイドバーの押し出し */
 [data-slot="sidebar-gap"], [data-slot="sidebar-container"] { transition-duration: 250ms; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 
+@keyframes mu-slide { 0% { left: -35%; } 100% { left: 100%; } }
+@keyframes mu-dot { 0%, 80%, 100% { opacity: .2; } 30% { opacity: 1; } }
+/* 読み込みの帯と「…」の点 */
+.mu-dots i { font-style: normal; animation: mu-dot 1.2s ease-in-out infinite; }
+.mu-dots i:nth-child(2) { animation-delay: .2s; }
+.mu-dots i:nth-child(3) { animation-delay: .4s; }
+
 @media (prefers-reduced-motion: reduce) {
+  [data-slot="progress-indicator"] { animation: none !important; left: 0 !important; width: 100% !important; opacity: .6; }
+  .mu-dots i { animation: none !important; }
   [data-sw-collapsible-panel] { animation: none !important; }
   *, ::before, ::after { transition-duration: 0s !important; transition-delay: 0s !important; }
 }
