@@ -46,3 +46,8 @@ test("AppSidebar: 移動中の項目の横だけにスピナー", () => {
   expect(h.match(/data-slot="spinner"/g)?.length).toBe(1);
   expect(h).toMatch(/成績照会<\/span><svg[^>]*data-slot="spinner"/);
 });
+
+// 実機で「画面を移るたびにサイドバーのグループが開く動きをする」: 最初は動かさない印を付ける
+test("AppSidebar: 最初の描画では折りたたみを動かさない(mu-still)", () => {
+  expect(side()).toContain("mu-still");
+});

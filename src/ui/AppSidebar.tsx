@@ -2,7 +2,7 @@ import {
   IconBell, IconBook, IconBuilding, IconChevronDown, IconExternalLink, IconHeart, IconHome, IconList, IconLogout,
   IconSearch, IconUser,
 } from "@tabler/icons-react";
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
 import { Spinner } from "@/components/starwind/spinner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
@@ -28,9 +28,11 @@ export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spinner classN
 
 function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pendingLabel?: string }) {
   const Icon = GROUP_ICONS[group.title] ?? IconList;
+  // 画面を移るたびに作り直されるので、最初は開く動きを出さない。自分で開閉したら動かす
+  const [touched, setTouched] = useState(false);
   return (
     <SidebarMenuItem>
-      <Collapsible defaultOpen>
+      <Collapsible defaultOpen className={touched ? undefined : "mu-still"} onOpenChange={() => setTouched(true)}>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
             <Icon className="text-primary" />
