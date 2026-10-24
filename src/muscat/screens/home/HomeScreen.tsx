@@ -1,35 +1,31 @@
 import type { MuscatClient } from "@/muscat/api/client";
 import { BusyOverlay } from "@/ui/BusyOverlay";
-import { Card } from "@/ui/Card";
+import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { NewsDetailView } from "../news/NewsDetailView";
-import { HomeInfo } from "./HomeInfo";
-import { HomeNotices } from "./HomeNotices";
-import { TodayLessons } from "./TodayLessons";
+import { NoticePanel } from "./NoticePanel";
+import { TodayPanel } from "./TodayPanel";
 import { useHome, type HomeState } from "./useHome";
 
 /** ホーム。操作は元の画面の部品を click する(通信を起こすものは ajax: true)。now・initial はテスト用 */
 export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient; doc: Document; initial?: HomeState; now?: Date }) {
   const { status, page, error, busy = false, run } = useHome(client, doc, initial);
   const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
+  const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
     <div className="flex flex-col gap-3 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold">ホーム</h1>
-          <p className="text-sm text-muted-foreground">今日の授業と、未読のお知らせをひと目で。</p>
-        </div>
-        {page && <HomeInfo unread={page.unreadKeiji} disabled={busy} keijiRef={page.keijiRef} timetableRef={page.timetableChangeRef} onKeiji={() => click(page.keijiRef)} onTimetable={() => click(page.timetableChangeRef)} />}
-      </div>
-      {status === "error" && <Card className="p-4 text-error">{error}</Card>}
+      {status === "error" && <ErrorNotice title="ホームを読み込めませんでした" message={error ?? ""} />}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <BusyOverlay busy={busy}>
           <div className="flex flex-col gap-3">
             {page.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <HomeNotices tabs={page.notices} busy={busy} onTab={(ref) => click(ref, false)} onOpen={click} />
-              <TodayLessons lessons={page.lessons} now={now ?? new Date()} />
+            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+              <TodayPanel day={page.day} timetableRef={page.timetableChangeRef} busy={busy} now={now ?? new Date()} onClick={click} />
+              <div className="flex flex-col gap-3">
+                <NoticePanel title="重要なお知らせ" items={items("重要")} busy={busy} onOpen={click} badge={page.unreadKeiji} badgeDisabled={!page.keijiRef} onBadge={() => click(page.keijiRef)} />
+                <NoticePanel title="期限あり" items={items("期限あり")} busy={busy} onOpen={click} />
+              </div>
             </div>
           </div>
         </BusyOverlay>

@@ -122,13 +122,30 @@ export type NewsPage = {
 /** ホーム。date は "2026/10/19" か ""。ref は driver の data-mu-ref(取れなければ "") */
 export type HomeNotice = { date: string; title: string; source: string; openRef: string };
 export type HomeNoticeTab = { name: string; ref: string; selected: boolean; items: HomeNotice[]; empty: boolean };
-export type HomeLesson = { slots: { weekday: string; period: number }[]; title: string; teachers: string[]; room: string; keijiCount: number };
+/** 日表示の 1 件。plain は授業ではない予定(lessonTitle が無い行)で、title は行の文字 */
+export type HomeDayItem = {
+  start: string;
+  end: string;
+  title: string;
+  teachers: string[];
+  room: string;
+  keijiCount: number;
+  syllabusRef: string;
+  memo: { value: string; inputRef: string; saveRef: string } | null;
+  plain: boolean;
+};
+export type HomeDay = {
+  date: string;
+  nav: { prevWeek: string; prevDay: string; today: string; nextDay: string; nextWeek: string };
+  allDay: { title: string; ref: string }[];
+  items: HomeDayItem[];
+};
 export type HomePage = {
   unreadKeiji: number | null;
   keijiRef: string;
   timetableChangeRef: string;
   notices: HomeNoticeTab[];
-  lessons: HomeLesson[];
+  day: HomeDay | null;
   detail: NewsDetail | null;
 };
 /** 生きたページの入力欄。ref は driver の data-mu-ref(見つからなければ "") */
