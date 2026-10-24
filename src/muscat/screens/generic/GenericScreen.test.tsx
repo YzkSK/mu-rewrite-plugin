@@ -95,6 +95,20 @@ test("左寄せ: 画面は幅を抑え、項目名の列は内容の幅", () => 
   expect(html).not.toContain("mx-auto");
 });
 
+test("dialog ブロックは role=dialog の小窓で、中のボタンも描かれる", () => {
+  const withDialog: GenericPage = {
+    blocks: [
+      ...page.blocks,
+      { kind: "dialog", title: "確認ダイアログ", blocks: [{ kind: "line", items: [{ kind: "button", ref: "d1", label: "了解", disabled: false, as: "button" }] }] },
+    ],
+  };
+  const h = render({ status: "ready", page: withDialog });
+  expect(h).toMatch(/role="dialog"[^>]*aria-modal="true"[^>]*aria-label="確認ダイアログ"/);
+  expect(h.indexOf("詳細リンク")).toBeLessThan(h.indexOf('role="dialog"'));
+  expect(h).toMatch(/<button[^>]*>了解/);
+  expect(html).not.toContain('role="dialog"');
+});
+
 test("エラー・読み込み中", () => {
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
   expect(render()).toContain("読み込んでいます");

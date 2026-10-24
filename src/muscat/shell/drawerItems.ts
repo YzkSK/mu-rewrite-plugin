@@ -29,3 +29,9 @@ export function loginUserOf(doc: Document): string | undefined {
   const text = doc.querySelector("p.loginInfo")?.textContent ?? "";
   return text.match(/^\s*(.+?)\s*さん/)?.[1]?.trim() || undefined;
 }
+
+/** 同じ `p.loginInfo` の「前回ログイン：」のあと(例: 2026/10/25 01:29)。無ければ undefined */
+export function lastLoginOf(doc: Document): string | undefined {
+  const text = doc.querySelector("p.loginInfo")?.textContent ?? "";
+  return text.match(/前回ログイン[:：]\s*(.+)/)?.[1]?.trim() || undefined;
+}

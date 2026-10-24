@@ -10,7 +10,7 @@ const QUIET_MS = 150;
 
 /**
  * 生きたページを読み、操作(run)のあとと、ほかの ajax で #funcForm が書き換わったあとに読み直す。
- * 属性の変化は見ない(parse が ref を属性で付けるので、見ると読み直しが止まらなくなる)。initial はテスト用
+ * 属性の変化は aria-hidden しか見ない(parse が ref を属性で付けるので、全部見ると読み直しが止まらなくなる)。initial はテスト用
  */
 export function useLivePage(client: MuscatClient, doc: Document, initial?: LiveState) {
   const [state, setState] = useState<LiveState>(initial ?? { status: "loading" });
@@ -29,8 +29,10 @@ export function useLivePage(client: MuscatClient, doc: Document, initial?: LiveS
       clearTimeout(timer);
       timer = setTimeout(() => void read(), QUIET_MS);
     });
-    // フォームごと差し替えられても追えるよう、ひとつ外側を見る
-    observer.observe(doc.getElementById("funcForm")?.parentElement ?? doc.body, { subtree: true, childList: true, characterData: true });
+    // フォームごと差し替えられても追えるよう、ひとつ外側を見る。ダイアログの開閉は aria-hidden の変化だけのことがあるので、それだけ属性も見る
+    observer.observe(doc.getElementById("funcForm")?.parentElement ?? doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-hidden"] });
+    // フォームの外(body の直下)に移されたダイアログの開閉も見る
+    observer.observe(doc.body, { subtree: true, attributes: true, attributeFilter: ["aria-hidden"] });
     return () => {
       clearTimeout(timer);
       observer.disconnect();

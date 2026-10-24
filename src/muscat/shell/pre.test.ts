@@ -20,7 +20,7 @@ test("覆いは白一色でなく、上の段の線と読み込みの帯を描�
   installPreHide(document);
   const css = document.getElementById("mu-react-pre")!.textContent!;
   expect(css).toContain("html.mu-pre::after");
-  expect(css).toContain("0 69px/100% 1px");
+  expect(css).toContain("0 0/100% 56px");
   expect(root.classList.contains("mu-pre-side")).toBe(false);
   releasePreHide(document);
   localStorage.removeItem("mu-m-drawer");

@@ -1,11 +1,11 @@
 const ID = "mu-react-pre";
 
 // 描画までの間も白一色にせず、上の段の線・サイドバーの地・読み込みの帯で、移動中に見せる(React の枠と同じ寸法)
-const LINE = "linear-gradient(#e8e6ec,#e8e6ec) 0 69px/100% 1px no-repeat";
+const LINE = "linear-gradient(#541b86,#541b86) 0 0/100% 56px no-repeat";
 const CSS = `html.mu-pre body { visibility: hidden }
-html.mu-pre { min-height: 100%; background: ${LINE}, #fff }
-html.mu-pre.mu-pre-side { background: ${LINE}, linear-gradient(#e8e6ec,#e8e6ec) 17rem 70px/1px 100% no-repeat, linear-gradient(#f8f6fb,#f8f6fb) 0 70px/17rem 100% no-repeat, #fff }
-html.mu-pre::after { content: ""; position: fixed; top: 69px; left: 0; width: 35%; height: 3px; background: #541b86; animation: mu-pre-slide 1.1s ease-in-out infinite }
+html.mu-pre { min-height: 100%; background: ${LINE}, #f3f2f5 }
+html.mu-pre.mu-pre-side { background: ${LINE}, linear-gradient(#d9d4df,#d9d4df) 15rem 56px/1px 100% no-repeat, linear-gradient(#fff,#fff) 0 56px/15rem 100% no-repeat, #f3f2f5 }
+html.mu-pre::after { content: ""; position: fixed; top: 56px; left: 0; width: 35%; height: 3px; background: #541b86; animation: mu-pre-slide 1.1s ease-in-out infinite }
 @keyframes mu-pre-slide { 0% { left: -35% } 100% { left: 100% } }
 @media (prefers-reduced-motion: reduce) { html.mu-pre::after { animation: none; width: 100%; opacity: .6 } }`;
 

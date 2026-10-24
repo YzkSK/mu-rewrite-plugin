@@ -11,7 +11,9 @@ export const squash = (s: string | null | undefined) => (s ?? "").replace(/\s+/g
 /** 画面に出さない要素(隠し・PrimeFaces が作る補助の見た目) */
 export const SKIP =
   'script, style, .ui-helper-hidden, [style*="display:none"], [style*="display: none"], .ui-selectonemenu-panel, .ui-selectonemenu-label, ' +
-  ".ui-selectonemenu-label-container, .ui-selectonemenu-trigger, .ui-chkbox-box, .ui-radiobutton-box, .ui-icon";
+  ".ui-selectonemenu-label-container, .ui-selectonemenu-trigger, .ui-chkbox-box, .ui-radiobutton-box, .ui-icon, " +
+  // 閉じたダイアログは CSS で隠れていて style に印が無い。題名の帯は dialog ブロックの title で足りる
+  '.ui-dialog[aria-hidden="true"], .ui-dialog-titlebar';
 const HIDDEN = '.ui-helper-hidden, [style*="display:none"], [style*="display: none"], .ui-selectonemenu-panel';
 const DROP = `${SKIP}, select, textarea, button, a[onclick]`;
 

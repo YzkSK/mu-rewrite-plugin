@@ -76,7 +76,9 @@ export type GBlock =
   | { kind: "line"; items: GInline[]; tone?: "notice" }
   | { kind: "tabs"; tabs: { label: string; ref: string; selected: boolean; disabled: boolean }[] }
   | { kind: "fields"; rows: { label: string; text: string; controls: GControl[] }[] }
-  | { kind: "table"; headers: string[]; rows: GCell[][] };
+  | { kind: "table"; headers: string[]; rows: GCell[][] }
+  /** 開いているダイアログ。本文の流れに混ぜず、ページの最後に置く */
+  | { kind: "dialog"; title: string; blocks: GBlock[] };
 export type GenericPage = { blocks: GBlock[] };
 /** 掲示板。ref は driver の data-mu-ref(取れなければ "") */
 export type NewsItem = {

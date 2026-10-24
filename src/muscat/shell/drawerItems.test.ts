@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { drawerItems, loginUserOf } from "./drawerItems";
+import { drawerItems, lastLoginOf, loginUserOf } from "./drawerItems";
 
 const doc = (html: string) => new DOMParser().parseFromString(html, "text/html");
 const groups = [{ title: "授業", labels: ["出席確認", "成績照会"] }];
@@ -30,4 +30,10 @@ test("ホームとログアウトは元のヘッダーを click、外部リン�
 test("ユーザー名は p.loginInfo から。無ければ undefined", () => {
   expect(loginUserOf(doc('<p class="loginInfo"> 武蔵 太郎 さん ようこそ</p>'))).toBe("武蔵 太郎");
   expect(loginUserOf(doc(""))).toBeUndefined();
+});
+
+test("前回ログインは p.loginInfo の「前回ログイン：」のあと。無ければ undefined", () => {
+  expect(lastLoginOf(doc('<p class="loginInfo">佐藤 康樹さん 前回ログイン：2026/10/25 01:29</p>'))).toBe("2026/10/25 01:29");
+  expect(lastLoginOf(doc('<p class="loginInfo">佐藤 康樹さん</p>'))).toBeUndefined();
+  expect(lastLoginOf(doc(""))).toBeUndefined();
 });

@@ -1,8 +1,5 @@
-import {
-  IconBell, IconBook, IconBuilding, IconChevronDown, IconExternalLink, IconHeart, IconHome, IconList, IconLogout,
-  IconSearch, IconUser,
-} from "@tabler/icons-react";
-import { useState, type ComponentType } from "react";
+import { IconChevronDown } from "@tabler/icons-react";
+import { useState } from "react";
 import { flushSync } from "react-dom";
 import { Spinner } from "@/components/starwind/spinner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
@@ -15,37 +12,31 @@ import type { NavGroup, NavItem, NavModel } from "@/muscat/shell/drawerItems";
 type Props = { model: NavModel; onPick?: () => void; /** 移動中の項目のラベル */ pendingLabel?: string; onPending?: (label: string) => void };
 type Pick = (i: NavItem) => void;
 
-const GROUP_ICONS: Record<string, ComponentType<{ className?: string }>> = {
-  お知らせ: IconBell, 授業: IconBook, シラバス: IconSearch, 学生支援: IconHeart, 設備状況照会: IconBuilding,
-};
-const FOOTER_ICONS: Record<string, ComponentType<{ className?: string }>> = {
-  個人設定: IconUser, "MU ポータルへ": IconHome, "MU-LMS へ": IconBook, ログアウト: IconLogout,
-};
 // 押すと沈む・選択の地はフェードで移る
 const MB = "transition-[background-color,color,transform,width,height,padding] duration-200 active:scale-[0.98]";
+// 選択中: 薄い紫の地・紫の文字・左に 3px の線(どの項目も同じ)
+const ACTIVE = "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--mu-primary)]";
 
 /** 移動中の項目の横の小さな丸いアイコン */
 export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spinner className="ml-auto size-4 text-primary" /> : null);
 
 function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pendingLabel?: string }) {
-  const Icon = GROUP_ICONS[group.title] ?? IconList;
   // 画面を移るたびに作り直されるので、最初は開く動きを出さない。自分で開閉したら動かす
   const [touched, setTouched] = useState(false);
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="border-t border-sidebar-border">
       <Collapsible defaultOpen className={touched ? undefined : "mu-still"}>
         <CollapsibleTrigger asChild>
           {/* 見出しの click(開閉が確定)で、開閉より先に印を DOM から外す。後だと最初の 1 回が動かず、項目や押し下げで外すと開いたままの所に開く動きが出る */}
           <SidebarMenuButton
             onClickCapture={() => flushSync(() => setTouched(true))}
-            size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
-            <Icon className="text-primary" />
+            size="sm" className={`${MB} group/ghead h-9 cursor-pointer rounded-none px-5 text-xs font-semibold text-muted-foreground`}>
             <span>{group.title}</span>
             <IconChevronDown className="ml-auto size-4 -rotate-90 text-muted-foreground transition-transform duration-200 group-aria-expanded/ghead:rotate-0" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenuSub className="mx-0 mt-0.5 ml-5.5 gap-px">
+          <SidebarMenuSub className="m-0 translate-x-0 gap-0 border-l-0 p-0">
             {group.items.map((item) => (
               <SidebarMenuSubItem key={item.label}>
                 <SidebarMenuSubButton
@@ -53,7 +44,7 @@ function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pen
                   size="sm"
                   isActive={item.active}
                   aria-current={item.active ? "page" : undefined}
-                  className={`${MB} h-[34px] cursor-pointer text-[13.5px] data-[active=true]:font-bold`}
+                  className={`${MB} ${ACTIVE} h-8 translate-x-0 cursor-pointer rounded-none px-5 text-[13.5px]`}
                   onClick={(e) => {
                     e.preventDefault();
                     pick(item);
@@ -72,19 +63,16 @@ function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pen
 }
 
 function FooterItem({ item, pick, pendingLabel }: { item: NavItem; pick: Pick; pendingLabel?: string }) {
-  const Icon = FOOTER_ICONS[item.label] ?? IconList;
-  const cls = `${MB} h-[34px] text-[13px] ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
+  const cls = `${MB} ${ACTIVE} h-8 rounded-none px-5 text-[13px] ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
   return (
     <SidebarMenuItem>
       {"href" in item ? (
         <SidebarMenuButton size="sm" href={item.href} target="_blank" rel="noopener noreferrer" className={cls}>
-          <Icon />
           {item.label}
-          <IconExternalLink className="ml-auto size-3.5!" />
+          <span className="ml-auto text-[11px] text-muted-foreground">外部</span>
         </SidebarMenuButton>
       ) : (
         <SidebarMenuButton size="sm" isActive={item.active} aria-current={item.active ? "page" : undefined} className={cls} onClick={() => pick(item)}>
-          <Icon />
           {item.label}
           <PendingSpinner on={pendingLabel === item.label} />
         </SidebarMenuButton>
@@ -105,11 +93,10 @@ export function AppSidebar({ model, onPick, pendingLabel, onPending }: Props) {
   const { home } = model;
   return (
     <>
-      <SidebarContent className="gap-0.5 p-2.5">
-        <SidebarMenu className="gap-0.5">
+      <SidebarContent className="gap-0 p-0">
+        <SidebarMenu className="gap-0">
           <SidebarMenuItem>
-            <SidebarMenuButton size="md" isActive={home.active} aria-current={home.active ? "page" : undefined} className={`${MB} h-[38px] text-sm`} onClick={() => pick(home)}>
-              <IconHome className="text-primary" />
+            <SidebarMenuButton size="md" isActive={home.active} aria-current={home.active ? "page" : undefined} className={`${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm font-semibold`} onClick={() => pick(home)}>
               {home.label}
               <PendingSpinner on={pendingLabel === home.label} />
             </SidebarMenuButton>
@@ -119,8 +106,8 @@ export function AppSidebar({ model, onPick, pendingLabel, onPending }: Props) {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="gap-px border-t border-sidebar-border px-2.5 pt-2 pb-3">
-        <SidebarMenu className="gap-px">
+      <SidebarFooter className="gap-0 border-t border-sidebar-border p-0 py-1">
+        <SidebarMenu className="gap-0">
           {model.footer.map((i) => (
             <FooterItem key={i.label} item={i} pick={pick} pendingLabel={pendingLabel} />
           ))}

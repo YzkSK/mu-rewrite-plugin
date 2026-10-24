@@ -3,7 +3,7 @@ import css from "@/ui/tokens.css?inline";
 import { createMuscatClient } from "../api/client";
 import { readMenuIds } from "../api/menuIds";
 import { App } from "./App";
-import { drawerItems, loginUserOf } from "./drawerItems";
+import { drawerItems, lastLoginOf, loginUserOf } from "./drawerItems";
 import { readMenuGroups } from "../api/menuGroups";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
 import type { ScreenDef } from "./screens";
@@ -25,7 +25,7 @@ export function mountScreen(screen: ScreenDef, key: string): void {
   const root = createRoot(mountPoint);
   current = { key, root };
   root.render(
-    <App title={screen.title} model={model} user={loginUserOf(document)}>
+    <App title={screen.title} model={model} user={loginUserOf(document)} lastLogin={lastLoginOf(document)}>
       {screen.render(client, document)}
     </App>,
   );
