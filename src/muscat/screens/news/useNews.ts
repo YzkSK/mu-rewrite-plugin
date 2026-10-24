@@ -38,16 +38,18 @@ export function useNews(client: MuscatClient, doc: Document, initial?: NewsState
     };
   }, [client, doc, read]);
   const run = useCallback(
-    async (steps: DriveStep[]) => {
+    /** 成功したかを返す(終わったあとの Toast 用) */
+    async (steps: DriveStep[]): Promise<boolean> => {
       setState((s) => ({ ...s, busy: true }));
       try {
         await client.driveLive(steps);
       } catch (e) {
         setState((s) => ({ ...s, status: "error", error: errorMessage(e), busy: false }));
-        return;
+        return false;
       }
       await read();
       setState((s) => ({ ...s, busy: false }));
+      return true;
     },
     [client, read],
   );

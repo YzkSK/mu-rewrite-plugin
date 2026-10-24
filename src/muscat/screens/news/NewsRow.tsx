@@ -1,35 +1,30 @@
 import type { NewsItem } from "@/muscat/api/types";
-import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 
-type Props = { item: NewsItem; busy: boolean; onClick: (ref: string) => void };
+type Props = { item: NewsItem; busy: boolean; canSave: boolean; onOpen: () => void; onFlag: () => void };
 
-/** 掲示 1 件。未読は件名を強調、重要・新着だけ色を付ける */
-export function NewsRow({ item, busy, onClick }: Props) {
+/** 掲示 1 件。左に未読の点、件名(未読は太字)、差出人と日付、右にフラグ */
+export function NewsRow({ item, busy, canSave, onOpen, onFlag }: Props) {
   return (
-    <li className="flex flex-col gap-1 border-b border-border py-2 last:border-b-0">
-      <div className="flex flex-wrap items-center gap-2">
-        {item.important && <Chip tone="alert">重要</Chip>}
-        {item.isNew && <Chip>新着</Chip>}
-        <button
-          type="button"
-          onClick={() => onClick(item.openRef)}
-          className={`cursor-pointer text-left text-sm underline-offset-2 hover:underline ${item.unread ? "font-bold" : ""}`}
-        >
-          {item.title}
-        </button>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>{[item.category, item.source, item.date.slice(5)].filter(Boolean).join(" ・ ")}</span>
-        <span className="flex gap-1">
-          <Button variant="ghost" disabled={busy} onClick={() => onClick(item.flagRef)}>
-            {item.flagged ? "フラグを外す" : "フラグ"}
-          </Button>
-          <Button variant="ghost" disabled={busy} onClick={() => onClick(item.readRef)}>
-            {item.unread ? "既読にする" : "未読にする"}
-          </Button>
+    <li className="flex items-center gap-2 border-b border-border px-3 py-2 last:border-b-0">
+      <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${item.unread ? "bg-primary" : ""}`} />
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 border-0 bg-transparent p-0 text-left">
+        <span className="flex items-center gap-2">
+          {item.important && <Chip tone="alert">重要</Chip>}
+          <span className={`min-w-0 break-words text-sm ${item.unread ? "font-bold" : ""}`}>{item.title}</span>
         </span>
-      </div>
+        <span className="text-xs text-muted-foreground">{[item.source, item.date.slice(5)].filter(Boolean).join(" ・ ")}</span>
+      </button>
+      <button
+        type="button"
+        aria-label={item.flagged ? "フラグを外す" : "フラグをつける"}
+        aria-pressed={item.flagged}
+        disabled={busy || !canSave}
+        onClick={onFlag}
+        className={`cursor-pointer border-0 bg-transparent px-2 py-1 text-base disabled:cursor-default disabled:opacity-40 ${item.flagged ? "text-primary" : "text-muted-foreground"}`}
+      >
+        {item.flagged ? "⚑" : "⚐"}
+      </button>
     </li>
   );
 }

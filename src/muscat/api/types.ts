@@ -94,8 +94,11 @@ export type NewsItem = {
   openRef: string;
   flagRef: string;
   readRef: string;
+  /** この行を保存する「更新」(フラグ・既読は更新→確認の OK で初めてサーバーに保存される) */
+  updateRef: string;
 };
-export type NewsGroup = { title: string; items: NewsItem[] };
+/** moreRef は「すべて表示する」、updateRef はそのグループの「更新」(無ければ "") */
+export type NewsGroup = { title: string; description: string; moreRef: string; updateRef: string; items: NewsItem[] };
 export type NewsTab = { name: string; ref: string; selected: boolean };
 export type NewsDetail = {
   title: string;
@@ -114,6 +117,8 @@ export type NewsPage = {
   keywordRef: string;
   courseRef: string;
   searchRef: string;
+  /** 「更新」を押すと出る、ページ共通の確認ダイアログの OK(無ければ "") */
+  confirmYesRef: string;
   groups: NewsGroup[] | null;
   items: NewsItem[];
   empty: boolean;

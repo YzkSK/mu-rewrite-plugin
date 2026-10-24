@@ -57,12 +57,40 @@ test("行の各項目: 分類・発信元・日付・アイコン・既読/フ�
   expect(resolveRef(d, items[0]!.readRef)?.textContent).toBe("既読にする");
 });
 
-test("グループ: アコーディオンの見出しごとの行。items は全部つないだもの", () => {
-  const acc = `<div class="ui-accordion"><h3 class="ui-accordion-header">授業関連 お知らせ</h3><div>${row({ title: "g1" })}${row({ title: "g2" })}</div>
-    <h3 class="ui-accordion-header">その他</h3><div>${row({ title: "g3" })}</div></div>`;
-  const p = parseNews(page([acc], 0));
-  expect(p.groups!.map((g) => [g.title, g.items.map((i) => i.title)])).toEqual([["授業関連 お知らせ", ["g1", "g2"]], ["その他", ["g3"]]]);
+const head = (title: string, desc = "") =>
+  `<h3 class="ui-accordion-header"><table class="tabWidth"><tr><td class="tabTitle">${title}</td><td class="tabTitleSetumei">${desc}</td><td class="tabTitleKensu"></td></tr></table></h3>`;
+const GROUP_OPS = `<div class="squeezeArea"><button type="button">表示</button><span class="floatRight"><div class="alignRight"><button type="button">更新</button></div></span></div>`;
+
+test("グループ: 見出しの題名と説明、行、更新・すべて表示する。items は全部つないだもの", () => {
+  const acc = `<div class="ui-accordion">${head("授業関連", "授業に関してのお知らせです。")}<div class="ui-accordion-content">${GROUP_OPS}<div class="ui-scrollpanel">${row({ title: "g1" })}${row({ title: "g2" })}</div><button type="button">すべて表示する</button></div>
+    ${head("その他")}<div class="ui-accordion-content">${GROUP_OPS}${row({ title: "g3" })}</div></div>`;
+  const d = page([acc], 0);
+  const p = parseNews(d);
+  expect(p.groups!.map((g) => [g.title, g.description, g.items.map((i) => i.title)])).toEqual([["授業関連", "授業に関してのお知らせです。", ["g1", "g2"]], ["その他", "", ["g3"]]]);
+  const [a, b] = p.groups!;
+  expect(resolveRef(d, a!.updateRef)?.textContent).toBe("更新");
+  expect(resolveRef(d, a!.moreRef)?.textContent).toBe("すべて表示する");
+  expect(b!.moreRef).toBe("");
+  // 行の更新は、同じグループの更新ボタン
+  expect(a!.items.map((i) => i.updateRef)).toEqual([a!.updateRef, a!.updateRef]);
+  expect(b!.items[0]!.updateRef).toBe(b!.updateRef);
+  expect(b!.updateRef).not.toBe(a!.updateRef);
   expect(p.items.map((i) => i.title)).toEqual(["g1", "g2", "g3"]);
+});
+
+test("グループでないパネルの行の更新は、同じパネルの「更新」ボタン", () => {
+  const d = page(["", OPS + row({ title: "A" })]);
+  const p = parseNews(d);
+  expect(resolveRef(d, p.items[0]!.updateRef)?.textContent).toBe("更新");
+  expect(parseNews(page(["", row({ title: "A" })])).items[0]!.updateRef).toBe("");
+});
+
+test("確認ダイアログの OK は body 直下のもの。#headerForm の中のものは使わない。無ければ空", () => {
+  const yes = `<button class="ui-confirmdialog-yes">OK</button>`;
+  const d = page([], 1, "", `<form id="headerForm"><div class="ui-confirm-dialog">${yes}</div></form><div class="ui-confirm-dialog">${yes.replace("OK", "OK2")}</div>`);
+  const p = parseNews(d);
+  expect(resolveRef(d, p.confirmYesRef)?.textContent).toBe("OK2");
+  expect(parseNews(page([], 1, "", `<form id="headerForm">${yes}</form>`)).confirmYesRef).toBe("");
 });
 
 test("データなし: 行が 0 で文言があれば empty", () => {

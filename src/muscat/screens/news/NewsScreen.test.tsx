@@ -1,57 +1,105 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { NewsDetail, NewsItem, NewsPage } from "@/muscat/api/types";
+import type { NewsDetail, NewsGroup, NewsItem, NewsPage } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
 import { NewsScreen } from "./NewsScreen";
+import { markAllReadSteps, toggleSteps } from "./newsSteps";
 import type { NewsState } from "./useNews";
 
 const client = fakeClient();
 const doc = new DOMParser().parseFromString("<p>x</p>", "text/html");
-const render = (initial?: NewsState) => renderToString(<NewsScreen client={client} doc={doc} initial={initial} />);
+const render = (initial?: NewsState, opened = "c1") => renderToString(<NewsScreen client={client} doc={doc} initial={initial} initialOpened={opened} />);
 
 const item = (o: Partial<NewsItem> = {}): NewsItem => ({
-  title: "件名A", category: "授業", source: "テスト部署", date: "2026/10/12", important: false, isNew: false, unread: false, flagged: false, openRef: "c1", flagRef: "c2", readRef: "c3", ...o,
+  title: "件名A", category: "授業", source: "テスト部署", date: "2026/10/12", important: false, isNew: false, unread: false, flagged: false, openRef: "c1", flagRef: "c2", readRef: "c3", updateRef: "u1", ...o,
 });
-const tabs = ["グループ", "全表示", "未読"].map((name, i) => ({ name, ref: `t${i}`, selected: name === "全表示" }));
-const base: NewsPage = { tabs, keyword: "", course: "", keywordRef: "k", courseRef: "j", searchRef: "s", groups: null, items: [item()], empty: false, detail: null };
+const group = (o: Partial<NewsGroup> = {}): NewsGroup => ({ title: "授業関連", description: "授業のお知らせ", moreRef: "", updateRef: "gu", items: [item()], ...o });
+const tabs = ["グループ", "全表示", "未読", "授業"].map((name, i) => ({ name, ref: `t${i}`, selected: name === "全表示" }));
+const base: NewsPage = { tabs, keyword: "", course: "", keywordRef: "k", courseRef: "j", searchRef: "s", confirmYesRef: "y", groups: null, items: [item()], empty: false, detail: null };
 const ready = (p: Partial<NewsPage> = {}, busy = false): NewsState => ({ status: "ready", page: { ...base, ...p }, busy });
+const disabledBtn = (label: string) => new RegExp(`aria-label="${label}"[^>]*disabled=""|disabled=""[^>]*aria-label="${label}"`);
 
-test("平らな一覧: 件名・分類・発信元・MM/DD、未読は強調、重要・新着のバッジ", () => {
-  const html = render(ready({ items: [item({ unread: true, important: true, isNew: true })] }));
-  for (const s of ["件名A", "授業", "テスト部署", "10/12", "重要", "新着", "font-bold", "既読にする", "フラグ", "時系列"]) expect(html).toContain(s);
+test("平らな一覧: 件名・差出人・MM/DD、未読は太字と点、重要の札、並び替えは無い", () => {
+  const html = render(ready({ items: [item({ unread: true, important: true })] }));
+  for (const s of ["件名A", "テスト部署", "10/12", "重要", "font-bold", "bg-primary", "未読 1", "検索", "分類ごとにまとめる", "未読を新しい順に読む"]) expect(html).toContain(s);
   expect(html).not.toContain("2026/10/12");
-  expect(render(ready())).not.toContain("font-bold");
+  expect(html).not.toContain("並び");
+  const read = render(ready());
+  expect(read).not.toContain("font-bold");
+  expect(read).not.toContain("bg-primary\"");
 });
 
-test("既読の行は「未読にする」、フラグ付きは「フラグを外す」", () => {
-  const html = render(ready({ items: [item({ unread: false, flagged: true })] }));
-  expect(html).toContain("未読にする");
+test("フラグ付きは「フラグを外す」で紫", () => {
+  const html = render(ready({ items: [item({ flagged: true })] }));
   expect(html).toContain("フラグを外す");
+  expect(html).toContain("text-primary");
+  expect(render(ready())).toContain("フラグをつける");
 });
 
-test("グループ: 分類ごとのカードに件数", () => {
-  const html = render(ready({ groups: [{ title: "授業関連", items: [item(), item({ title: "B" })] }, { title: "その他", items: [] }] }));
-  expect(html).toContain("授業関連(2)");
-  expect(html).toContain("その他(0)");
+test("グループ: 帯に分類名・説明・件数・すべて既読にする、moreRef があれば「すべて表示する」", () => {
+  const html = render(ready({ groups: [group({ items: [item({ unread: true }), item({ title: "B" })], moreRef: "m" }), group({ title: "その他", items: [] })] }));
+  for (const s of ["授業関連", "授業のお知らせ", "2件", "その他", "0件", "すべて既読にする", "すべて表示する"]) expect(html).toContain(s);
+  expect(html.match(/すべて表示する/g)).toHaveLength(1);
 });
 
-test("操作中は行のトグルが無効", () => {
-  const on = / disabled=""[^>]*>未読にする</;
-  expect(render(ready({}, true))).toMatch(on);
-  expect(render(ready({}, false))).not.toMatch(on);
+test("操作中・元のボタンが無いときは、フラグが無効。すべて既読にするは更新か確認の OK が無いと無効", () => {
+  const unread = [item({ unread: true })];
+  expect(render(ready({ items: unread }, true))).toMatch(disabledBtn("フラグをつける"));
+  expect(render(ready({ items: unread }))).not.toMatch(disabledBtn("フラグをつける"));
+  expect(render(ready({ items: [item({ flagRef: "" })] }))).toMatch(disabledBtn("フラグをつける"));
+  expect(render(ready({ items: unread, confirmYesRef: "" }))).not.toMatch(disabledBtn("フラグをつける"));
+  const dis = /disabled=""[^>]*>すべて既読にする/;
+  expect(render(ready({ groups: [group({ items: unread })] }))).not.toMatch(dis);
+  expect(render(ready({ groups: [group({ items: unread })] }, true))).toMatch(dis);
+  expect(render(ready({ groups: [group({ items: unread, updateRef: "" })] }))).toMatch(dis);
+  expect(render(ready({ groups: [group({ items: unread })], confirmYesRef: "" }))).toMatch(dis);
+  expect(render(ready({ groups: [group({ items: [item()] })] }))).toMatch(dis);
 });
 
-test("詳細: 項目名と値、本文はサニタイズ、前へ/次へ/閉じる", () => {
-  const detail: NewsDetail = {
-    title: "詳細の件名",
-    fields: [{ label: "件名", text: "詳細の件名", html: "" }, { label: "本文", text: "", html: `<p onclick="x()">本文<script>alert(1)</script></p>` }],
-    flagged: false, flagRef: "d1", prevRef: "d2", nextRef: "d3", closeRef: "d4",
-  };
-  const html = render(ready({ detail }));
-  for (const s of ["詳細の件名", "本文", "前へ", "次へ", "閉じる"]) expect(html).toContain(s);
+// 「更新」はグループ全部を既読にする(利用者が実ページで確認)。行の切り替えでは押さない
+test("操作の steps: 行の切り替えはその行のボタンだけで、更新は押さない", () => {
+  expect(toggleSteps("c2")).toEqual([{ kind: "click", ref: "c2", ajax: true }]);
+});
+
+test("操作の steps: すべて既読にするは グループの更新 → OK。未読が無い・押せないときは null", () => {
+  const g = group({ items: [item({ unread: true, readRef: "r1" }), item({ unread: false, readRef: "r2" })] });
+  expect(markAllReadSteps(base, g)).toEqual([
+    { kind: "click", ref: "gu", ajax: false },
+    { kind: "click", ref: "y", ajax: true },
+  ]);
+  expect(markAllReadSteps(base, group({ items: [item()] }))).toBeNull();
+  expect(markAllReadSteps({ ...base, confirmYesRef: "" }, g)).toBeNull();
+  expect(markAllReadSteps(base, { ...g, updateRef: "" })).toBeNull();
+});
+
+test("未読を新しい順に読む: 未読が無ければ無効", () => {
+  const dis = /disabled=""[^>]*>未読を新しい順に読む/;
+  expect(render(ready())).toMatch(dis);
+  expect(render(ready({ items: [item({ unread: true })] }))).not.toMatch(dis);
+});
+
+const detail: NewsDetail = {
+  title: "詳細の件名",
+  fields: [{ label: "件名", text: "詳細の件名", html: "" }, { label: "本文", text: "", html: `<p onclick="x()">本文<script>alert(1)</script></p>` }],
+  flagged: false, flagRef: "d1", prevRef: "d2", nextRef: "d3", closeRef: "d4",
+};
+
+test("詳細: 項目名と値、本文はサニタイズ、前の掲示・次の掲示・未読に戻す・閉じる。無ければ出ない", () => {
+  const html = render(ready({ detail, items: [item({ title: "詳細の件名" })] }));
+  for (const s of ["詳細の件名", "本文", "前の掲示", "次の掲示", "未読に戻す", "閉じる", "‹ 掲示板", "min-[768px]:grid-cols-2"]) expect(html).toContain(s);
   expect(html).toContain("<p>本文</p>");
   expect(html).not.toContain("onclick");
-  expect(render(ready())).not.toContain("前へ");
+  const none = render(ready());
+  expect(none).not.toContain("前の掲示");
+  expect(none).not.toContain("grid-cols-2");
+});
+
+test("詳細の「未読に戻す」は、一覧から開いた行が保存できる既読の行のときだけ(同じ件名の別の行では出さない)", () => {
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名" })] }))).toContain("未読に戻す");
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名" })] }), "")).not.toContain("未読に戻す");
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名", openRef: "other" })] }))).not.toContain("未読に戻す");
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名", unread: true })] }))).not.toContain("未読に戻す");
+  expect(render(ready({ detail, items: [item({ title: "詳細の件名", readRef: "" })] }))).not.toContain("未読に戻す");
 });
 
 test("データなし・読み込み中・エラー", () => {
