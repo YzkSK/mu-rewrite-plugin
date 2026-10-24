@@ -32,7 +32,8 @@ export function parseRoom(root: Document): RoomPage {
   const id = (s: string) => root.getElementById(`funcForm:${s}`);
   const range = (a: string, b: string): RoomRange => ({ from: textField(id(a)), to: textField(id(b)) });
   const tables = [...form.querySelectorAll(".ui-selectmanycheckbox")];
-  const sw = id("j_id_3o");
+  // スイッチの id は生成物。固定 id の行(akiRow)の中の唯一の .ui-chkbox を探す
+  const sw = id("akiRow")?.querySelector(".ui-chkbox");
   const swInput = sw?.querySelector<HTMLInputElement>('input[type="checkbox"]');
   const box = sw?.querySelector(".ui-chkbox-box");
   return {

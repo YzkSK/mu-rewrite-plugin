@@ -32,8 +32,8 @@ const result = `<div id="funcForm:yoyakuArea">${legend}
 
 const page = (body: string) => new DOMParser().parseFromString(`<form id="funcForm">${body}</form>`, "text/html");
 const cond = `${checks("hyojiTaisho", ["本人の予約", "職員の予約"], [1])}${text("targetDateFrom:targetDateFrom_input", "2026/10/24")}${text("targetDateTo:targetDateTo_input", "2026/10/25")}
-  <div id="funcForm:j_id_3o" class="ui-chkbox"><input type="checkbox" id="funcForm:j_id_3o_input"><div class="ui-chkbox-box"></div></div>
-  ${text("targetTimeFrom:time")}${text("targetTimeTo:time")}${text("freeHour")}${text("freeMinute")}${checks("j_id_4a", ["月", "火", "水"], [0])}
+  <div id="funcForm:akiRow"><span>空き教室</span><div id="funcForm:j_id_9z" class="ui-chkbox"><input type="checkbox" id="funcForm:j_id_9z_input"><div class="ui-chkbox-box"></div></div>
+  ${text("targetTimeFrom:time")}${text("targetTimeTo:time")}${text("freeHour")}${text("freeMinute")}</div>${checks("j_id_4a", ["月", "火", "水"], [0])}
   ${sel("campus", [["", "すべて対象"], ["1", "有明キャンパス"]])}${sel("building", [["", "すべて対象"], ["A1", "有明１号館"]])}${sel("kai", [["", "すべて対象"], ["1", "1階"]])}
   ${text("shuyoNinzuHeijoFrom")}${text("shuyoNinzuHeijoTo", "50")}${text("shuyoNinzuShikenFrom")}${text("shuyoNinzuShikenTo")}${text("shuyoNinzuNyushiFrom")}${text("shuyoNinzuNyushiTo")}
   ${radio(0, "一覧に列を表示しない", true)}${radio(1, "一覧に列を表示する")}${sel("shuyoNinzu2", [["1", "平常時"], ["2", "試験時"]], "1")}
