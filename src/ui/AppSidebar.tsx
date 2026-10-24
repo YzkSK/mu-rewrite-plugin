@@ -2,7 +2,8 @@ import {
   IconBell, IconBook, IconBuilding, IconChevronDown, IconExternalLink, IconHeart, IconHome, IconList, IconLogout,
   IconSearch, IconUser,
 } from "@tabler/icons-react";
-import type { ComponentType } from "react";
+import { useState, type ComponentType } from "react";
+import { flushSync } from "react-dom";
 import { Spinner } from "@/components/starwind/spinner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
@@ -28,11 +29,16 @@ export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spinner classN
 
 function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pendingLabel?: string }) {
   const Icon = GROUP_ICONS[group.title] ?? IconList;
+  // 画面を移るたびに作り直されるので、最初は開く動きを出さない。自分で開閉したら動かす
+  const [touched, setTouched] = useState(false);
   return (
     <SidebarMenuItem>
-      <Collapsible defaultOpen>
+      <Collapsible defaultOpen className={touched ? undefined : "mu-still"}>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
+          {/* 見出しの click(開閉が確定)で、開閉より先に印を DOM から外す。後だと最初の 1 回が動かず、項目や押し下げで外すと開いたままの所に開く動きが出る */}
+          <SidebarMenuButton
+            onClickCapture={() => flushSync(() => setTouched(true))}
+            size="md" className={`${MB} group/ghead h-[38px] cursor-pointer text-sm font-bold`}>
             <Icon className="text-primary" />
             <span>{group.title}</span>
             <IconChevronDown className="ml-auto size-4 -rotate-90 text-muted-foreground transition-transform duration-200 group-aria-expanded/ghead:rotate-0" />

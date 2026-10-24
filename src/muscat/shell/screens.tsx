@@ -6,6 +6,7 @@ import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { HomeScreen } from "@/muscat/screens/home/HomeScreen";
 import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
+import { RoomScreen } from "@/muscat/screens/room/RoomScreen";
 import { SyllabusScreen } from "@/muscat/screens/syllabus/SyllabusScreen";
 import { TeacherScheduleScreen } from "@/muscat/screens/teacherSchedule/TeacherScheduleScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
@@ -33,5 +34,7 @@ export const SCREENS: Record<string, ScreenDef> = {
   Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },
   Kmh006: { title: "シラバス", render: (client, doc) => <SyllabusScreen client={client} doc={doc} /> },
   Bsa011: { title: "教員スケジュール", render: (client, doc) => <TeacherScheduleScreen client={client} doc={doc} /> },
+  // URL は bsa001 だが、見出しの画面コードは Ksa008
+  Ksa008: { title: "教室予約(参照のみ)", render: (client, doc) => <RoomScreen client={client} doc={doc} /> },
   Pky001: { title: "ホーム", render: (client, doc) => <HomeScreen client={client} doc={doc} /> },
 };

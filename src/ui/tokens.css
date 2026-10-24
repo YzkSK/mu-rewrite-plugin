@@ -101,6 +101,10 @@
 [data-sw-collapsible-panel] { overflow: hidden; }
 [data-sw-collapsible-panel][data-state="open"] { animation: mu-down 200ms ease-out; }
 [data-sw-collapsible-panel][data-state="closed"] { animation: mu-up 200ms ease-out forwards; }
+/* 折りたたみは、自分で開閉するまで動かさない(AppSidebar が付ける。後から animation を付けると、その時点で再生されるため) */
+.mu-still [data-sw-collapsible-panel] { animation: none !important; }
+/* 画面を移った直後の最初の描画(App が付ける)。サイドバーの押し出しは動かさない */
+.mu-noanim [data-slot="sidebar-gap"], .mu-noanim [data-slot="sidebar-container"], .mu-noanim [data-slot="sidebar"] * { transition: none !important; }
 /* サイドバーの押し出し */
 [data-slot="sidebar-gap"], [data-slot="sidebar-container"] { transition-duration: 250ms; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
 

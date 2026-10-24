@@ -22,6 +22,11 @@ export function watchScreen(doc: Document, onChange: (code: string) => void, opt
       clearTimeout(unknownTimer);
       unknownTimer = undefined;
       if (code !== last) notify(code);
+    } else if (last !== "" && hasMenu() && doc.getElementById("portalCont")) {
+      // ホームはコードを持たない。#portalCont で分かるので待たない(待つと移るたびに 1.5 秒白い)
+      clearTimeout(unknownTimer);
+      unknownTimer = undefined;
+      notify("");
     } else if (last !== "" && unknownTimer === undefined && hasMenu()) {
       unknownTimer = setTimeout(() => {
         unknownTimer = undefined;

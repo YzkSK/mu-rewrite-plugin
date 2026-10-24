@@ -25,6 +25,12 @@ export function App({ title, model, user, children }: Props) {
     const t = setTimeout(() => setPending(null), PENDING_MS);
     return () => clearTimeout(t);
   }, [pending]);
+  // 画面を移るたびに作り直されるので、最初の描画ではサイドバーの押し出しの動きを出さない
+  const [mounting, setMounting] = useState(true);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounting(false));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const body = <AppSidebar model={model} pendingLabel={pending ?? undefined} onPending={setPending} onPick={narrow ? () => change(false) : undefined} />;
   return (
     <PageTitleContext value={title}>
@@ -35,7 +41,7 @@ export function App({ title, model, user, children }: Props) {
       keyboardShortcut=""
       data-narrow={narrow}
       style={FRAME_STYLE}
-      className="group/frame relative h-screen min-h-0 flex-col overflow-hidden bg-background text-foreground"
+      className={`${mounting ? "mu-noanim " : ""}group/frame relative h-screen min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
       <Header title={title} user={user} />
       <TopProgress busy={busy || pending !== null} />
