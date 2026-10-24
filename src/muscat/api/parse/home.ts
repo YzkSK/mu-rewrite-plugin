@@ -2,7 +2,7 @@ import { assignRef } from "../driver/locator";
 import { ParseError } from "../errors";
 import type { HomePage } from "../types";
 import { parseNewsDetail } from "./newsDetail";
-import { parseHomeLessons } from "./homeLessons";
+import { parseHomeDay } from "./homeDay";
 import { parseHomeNotices } from "./homeNotices";
 
 const linkRef = (root: Document, icon: string) => {
@@ -22,7 +22,7 @@ export function parseHome(root: Document): HomePage {
     keijiRef: linkRef(root, "infoKeiji"),
     timetableChangeRef: linkRef(root, "infoTimetable"),
     notices: parseHomeNotices(root),
-    lessons: parseHomeLessons(root),
+    day: parseHomeDay(root),
     detail: parseNewsDetail(root),
   };
 }

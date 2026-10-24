@@ -5,10 +5,6 @@ import { parseHome } from "./home";
 
 const noticeRow = (title: string, date = "2026/10/19", src = "テスト部署") =>
   `<li class="ui-dataview-row"><div class="ui-dataview-content"><span>掲示</span> <span>${date}</span> <a class="ui-commandlink" href="#">${title}</a> [<span>${src}</span>]</div></li>`;
-const lesson = (o: { periods: string[]; title: string; teachers: string[]; room: string; keiji: number }) =>
-  `<li class="ui-dataview-row"><div class="lessonHead">${o.periods.map((p) => `<span class="period">${p}</span>`).join("")}</div>
-  <p class="lessonTitle"> ${o.title} </p><div class="lessonDetail"><p>${o.teachers.map((t) => `<a class="ui-commandlink" href="#">${t}</a>`).join("")}</p><div> ${o.room} </div></div>
-  <div class="lessonKeijiArea"><div class="ui-panel-content">${"<p>掲示</p>".repeat(o.keiji)}</div></div></li>`;
 
 const html = `<div id="portalSupport"><div class="ui-tabs"><ul class="ui-tabs-nav">
   <li class="ui-tabs-selected"><a href="#a">重要</a></li><li><a href="#b">期限あり</a></li></ul>
@@ -17,8 +13,7 @@ const html = `<div id="portalSupport"><div class="ui-tabs"><ul class="ui-tabs-na
   <div class="ui-tabs-panel"><div class="ui-dataview-list">情報はありません。</div></div></div></div></div>
   <div id="portalCont"><p class="newNumber">
    18
-  </p><a href="#k"><span class="infoIcon infoKeiji"></span></a><a href="#t"><span class="infoIcon infoTimetable"></span></a>
-  <ul id="portalLessonList">${lesson({ periods: ["月 3", "木５"], title: "授業甲", teachers: ["教員一", "教員二"], room: "テスト棟101", keiji: 2 })}</ul></div>`;
+  </p><a href="#k"><span class="infoIcon infoKeiji"></span></a><a href="#t"><span class="infoIcon infoTimetable"></span></a></div>`;
 const doc = (h = html) => new DOMParser().parseFromString(h, "text/html");
 
 test("#portalCont が無ければ ParseError", () => {
@@ -45,11 +40,6 @@ test("ref: 件名・タブ・インフォメーションが元の要素を引け
 test("未読数(前後の空白を除く)。取れなければ null", () => {
   expect(parseHome(doc()).unreadKeiji).toBe(18);
   const p = parseHome(doc(`<div id="portalCont"></div>`));
-  expect(p).toMatchObject({ unreadKeiji: null, keijiRef: "", timetableChangeRef: "", notices: [], lessons: [], detail: null });
+  expect(p).toMatchObject({ unreadKeiji: null, keijiRef: "", timetableChangeRef: "", notices: [], day: null, detail: null });
 });
 
-test("履修授業: 複数のコマ(全角・空白あり)、教員、教室、掲示の件数", () => {
-  expect(parseHome(doc()).lessons).toEqual([
-    { slots: [{ weekday: "月", period: 3 }, { weekday: "木", period: 5 }], title: "授業甲", teachers: ["教員一", "教員二"], room: "テスト棟101", keijiCount: 2 },
-  ]);
-});
