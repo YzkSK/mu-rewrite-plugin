@@ -2,9 +2,9 @@ import { waitForAjax, type WaitOpts, type WaitResult } from "./busy";
 import { setChecked, setValue } from "./fields";
 import { resolveRef, type Ref } from "./locator";
 
-/** click の ajax: 省略すると、要素から推定する(PrimeFaces.ab の onclick / commandlink / submit) */
+/** click の ajax: 省略すると、要素から推定する(PrimeFaces.ab の onclick / commandlink / submit)。set は change で ajax が走るときだけ ajax: true */
 export type DriveStep =
-  | { kind: "set"; ref: Ref; value: string }
+  | { kind: "set"; ref: Ref; value: string; ajax?: boolean }
   | { kind: "check"; ref: Ref; checked: boolean }
   | { kind: "click"; ref: Ref; ajax?: boolean };
 
@@ -21,7 +21,7 @@ export async function drive(doc: Document, steps: DriveStep[], opts: WaitOpts = 
     if (!el) throw new Error(`要素が見つかりません: ${s.ref}`);
     return el;
   });
-  const expectAjax = opts.expectAjax ?? steps.some((s, i) => s.kind === "click" && (s.ajax ?? looksAjax(els[i]!)));
+  const expectAjax = opts.expectAjax ?? steps.some((s, i) => (s.kind === "click" && (s.ajax ?? looksAjax(els[i]!))) || (s.kind === "set" && s.ajax === true));
   const wait = waitForAjax(doc, { ...opts, expectAjax });
   steps.forEach((s, i) => {
     const el = els[i]!;

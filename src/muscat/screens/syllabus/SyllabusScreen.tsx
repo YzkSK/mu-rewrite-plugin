@@ -40,7 +40,7 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
               busy={busy}
               act={act}
               onClick={click}
-              onSize={(ref, value) => void go("size", [{ kind: "set", ref, value }])}
+              onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])}
             />
           </BusyOverlay>
         </>

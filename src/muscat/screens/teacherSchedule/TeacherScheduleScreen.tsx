@@ -72,7 +72,7 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
           )}
           <BusyOverlay busy={busy}>
             <div className="flex flex-col gap-3">
-              {page.list && <TeacherList list={page.list} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value }])} />}
+              {page.list && <TeacherList list={page.list} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])} />}
               <TeacherCalendarView page={page} busy={busy} act={act} onClick={click} />
             </div>
           </BusyOverlay>
