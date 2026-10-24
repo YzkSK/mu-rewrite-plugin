@@ -112,7 +112,7 @@
 .mu-dots i:nth-child(3) { animation-delay: .4s; }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-slot="progress-indicator"] { animation-duration: 2.4s !important; }
+  [data-slot="progress-indicator"] { animation: none !important; left: 0 !important; width: 100% !important; opacity: .6; }
   .mu-dots i { animation: none !important; }
   [data-sw-collapsible-panel] { animation: none !important; }
   *, ::before, ::after { transition-duration: 0s !important; transition-delay: 0s !important; }

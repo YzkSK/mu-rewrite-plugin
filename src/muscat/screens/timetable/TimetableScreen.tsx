@@ -13,7 +13,7 @@ export function TimetableScreen({ client, year, term: term0 = 1, initial }: Prop
   const [term, setTerm] = useState(term0);
   const { status, timetable, error, blocked = [], setYear } = useTimetable(client, year, initial);
   const moving = status === "loading";
-  const [dir, setDir] = useState<-1 | 1>(1); // どちらのボタンを押したか(スピナーを出す側)
+  const [dir, setDir] = useState<-1 | 1 | 0>(0); // どちらのボタンを押したか(スピナーを出す側)。初回読み込みはどちらでもない
   const go = (d: -1 | 1) => {
     setDir(d);
     setYear(shownYear + d);
