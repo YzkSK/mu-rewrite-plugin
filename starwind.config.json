@@ -24,6 +24,48 @@
       "version": "1.5.0",
       "framework": "react",
       "registry": "default"
+    },
+    {
+      "name": "input",
+      "version": "2.0.2",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "separator",
+      "version": "1.1.0",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "sheet",
+      "version": "2.0.3",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "skeleton",
+      "version": "1.3.0",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "tooltip",
+      "version": "2.2.1",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "sidebar",
+      "version": "2.1.3",
+      "framework": "react",
+      "registry": "default"
+    },
+    {
+      "name": "collapsible",
+      "version": "2.0.2",
+      "framework": "react",
+      "registry": "default"
     }
   ],
   "tailwind": {

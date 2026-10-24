@@ -1,19 +1,27 @@
-import type { DrawerItem } from "@/ui/Drawer";
-import { nativeHome, nativeLogout, nativeNav } from "./nativeNav";
+import type { MenuGroup } from "../api/menuGroups";
+import { nativeHome, nativeLogout, nativeNav, SETTING_LABEL } from "./nativeNav";
 
 export const PORTAL_URL = "https://portal.musashino-u.ac.jp/";
 export const LMS_URL = "https://musashino-u.myopenlms.net/";
 
-/** ホーム + メニューの項目 + 外部リンク + ログアウト。今の画面(title と同じ項目)は除く */
-export function drawerItems(doc: Document, menuLabels: string[], title: string): DrawerItem[] {
-  const items: DrawerItem[] = [
-    { label: "ホーム", onSelect: () => void nativeHome(doc) },
-    ...menuLabels.map((label) => ({ label, onSelect: () => void nativeNav(doc, label) })),
-    { label: "MU ポータルへ", href: PORTAL_URL },
-    { label: "MU-LMS へ", href: LMS_URL },
-    { label: "ログアウト", onSelect: () => void nativeLogout(doc) },
-  ];
-  return items.filter((i) => i.label !== title);
+/** onSelect は元の画面のメニューを押す操作、href は新しいタブで開く外部リンク */
+export type NavItem = { label: string; active?: boolean } & ({ onSelect: () => void } | { href: string });
+export type NavGroup = { title: string; items: NavItem[] };
+export type NavModel = { home: NavItem; groups: NavGroup[]; footer: NavItem[] };
+
+/** ホーム + グループ別の項目 + 下の固定部分。title と同じ項目は active。 */
+export function drawerItems(doc: Document, groups: MenuGroup[], title: string): NavModel {
+  const leaf = (label: string): NavItem => ({ label, active: label === title, onSelect: () => void nativeNav(doc, label) });
+  return {
+    home: { label: "ホーム", active: title === "ホーム", onSelect: () => void nativeHome(doc) },
+    groups: groups.map((g) => ({ title: g.title, items: g.labels.map(leaf) })),
+    footer: [
+      { ...leaf(SETTING_LABEL) },
+      { label: "MU ポータルへ", href: PORTAL_URL },
+      { label: "MU-LMS へ", href: LMS_URL },
+      { label: "ログアウト", onSelect: () => void nativeLogout(doc) },
+    ],
+  };
 }
 
 /** 元のページの `p.loginInfo`(「○○さん ...」)からユーザー名。無ければ undefined */

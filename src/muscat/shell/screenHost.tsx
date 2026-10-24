@@ -4,8 +4,8 @@ import { createMuscatClient } from "../api/client";
 import { readMenuIds } from "../api/menuIds";
 import { App } from "./App";
 import { drawerItems, loginUserOf } from "./drawerItems";
+import { readMenuGroups } from "../api/menuGroups";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
-import { SETTING_LABEL } from "./nativeNav";
 import type { ScreenDef } from "./screens";
 
 let current: { key: string; root: Root } | null = null;
@@ -16,13 +16,16 @@ export function mountScreen(screen: ScreenDef, key: string): void {
   unmountScreen();
   const ids = readMenuIds(document);
   const client = createMuscatClient({ fetch: window.fetch.bind(window), doc: document, ids });
-  const items = drawerItems(document, [...Object.keys(ids), SETTING_LABEL], screen.title);
+  const found = readMenuGroups(document);
+  // グループが読めなくても項目は出す
+  const groups = found.length ? found : Object.keys(ids).length ? [{ title: "メニュー", labels: Object.keys(ids) }] : [];
+  const model = drawerItems(document, groups, screen.title);
   const mountPoint = document.createElement("div");
   mountShadowRoot(document, css).appendChild(mountPoint);
   const root = createRoot(mountPoint);
   current = { key, root };
   root.render(
-    <App title={screen.title} items={items} user={loginUserOf(document)}>
+    <App title={screen.title} model={model} user={loginUserOf(document)}>
       {screen.render(client, document)}
     </App>,
   );
