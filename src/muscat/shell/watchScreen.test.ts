@@ -49,6 +49,16 @@ test("メニューがありコードが空のまま unknownAfterMs たつと、�
   stop();
 });
 
+// 実機で「ホームへの移動だけ白い」: コードの無いホームで 1.5 秒待っていた
+test("コードが無くても #portalCont(ホーム)があれば、待たずに空コードを通知する", () => {
+  const doc = fresh("");
+  doc.body.insertAdjacentHTML("beforeend", '<ul id="menuForm:mainMenu"></ul><div id="portalCont"></div>');
+  const got: string[] = [];
+  const stop = watchScreen(doc, (c) => got.push(c));
+  expect(got).toEqual([""]);
+  stop();
+});
+
 test("メニューが無ければ、空のままでも通知しない", async () => {
   const got: string[] = [];
   const stop = watchScreen(fresh(""), (c) => got.push(c), { unknownAfterMs: 50 });
