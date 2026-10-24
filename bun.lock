@@ -5,7 +5,7 @@
     "": {
       "name": "mu-rewrite-plugin",
       "dependencies": {
-        "@starwind-ui/react": "^1.3.0",
+        "@starwind-ui/react": "^1.4.0",
         "@tabler/icons-react": "^3.49.0",
         "@tailwindcss/forms": "^0.5.11",
         "react": "^19.3.1",
@@ -81,9 +81,9 @@
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.1", "", {}, "sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw=="],
 
-    "@starwind-ui/react": ["@starwind-ui/react@1.3.0", "", { "dependencies": { "@starwind-ui/runtime": "1.3.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-XpnuXfnpZcOci+cqRqMJQRh9j8KLYhMZUmV6dO7BY61ZBBJvgUub7yjVqTTZqTwBImGgTrdylXVloPuCmg1YJQ=="],
+    "@starwind-ui/react": ["@starwind-ui/react@1.4.0", "", { "dependencies": { "@starwind-ui/runtime": "1.4.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-vJRVD4IprlOZgREGHZlFkIkV9RWoy6fnEHw1jctui/ECauZySYq1tbBdjlGZfyBF1TlaG2e/jLE49ggdXoDuLg=="],
 
-    "@starwind-ui/runtime": ["@starwind-ui/runtime@1.3.0", "", { "dependencies": { "@floating-ui/dom": "^1.7.6", "embla-carousel": "^8.6.0" } }, "sha512-TGM9NIFTfjdQftCwg9hvyYqNcl+inBOT0eepSaa9vmeVjdbfgVLNYZPUXzOgSkuTmhQcMB+isucRu6wxIx707Q=="],
+    "@starwind-ui/runtime": ["@starwind-ui/runtime@1.4.0", "", { "dependencies": { "@floating-ui/dom": "^1.8.0", "embla-carousel": "^8.6.0" } }, "sha512-qL53gXrhJUF2y4cuVNHoE9fH/7DHIEj6vObS2sU+t7SpFDJ3nBNs1Xlx8RlqpZV5Qlkqn9fLGWCnINsiyhFPcg=="],
 
     "@tabler/icons": ["@tabler/icons@3.49.0", "", {}, "sha512-l+GnSkFETx0U26icxv1VUFnxxiTqXfCcVRiRAnyMwibupM2S2L/hSaZ9gmSgz01rkrsH/93NvLsxykqdanc6lw=="],
 

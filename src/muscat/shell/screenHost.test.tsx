@@ -36,13 +36,14 @@ test("key が変わると前の画面を unmount して差し替える", async (
   expect(text()).toContain("出席確認");
 });
 
-test("ドロワーに個人設定が出る。個人設定の画面(Bsa004)では、自身は出さない", async () => {
+test("サイドバーに個人設定が出る。個人設定の画面(Bsa004)では、それが選択中になる", async () => {
   mountScreen(SCREENS.Atb005!, "Atb005");
   await flush();
   expect(text()).toContain("個人設定");
   mountScreen(SCREENS.Bsa004!, "Bsa004");
   await flush();
-  expect(text().split("個人設定").length - 1).toBe(1); // 見出しだけ
+  const current = [...(host()?.shadowRoot?.querySelectorAll('[aria-current="page"]') ?? [])].map((e) => e.textContent);
+  expect(current.some((t) => t?.includes("個人設定"))).toBe(true);
 });
 
 test("同じ key の再 mount は何もしない。汎用画面も key で出せる", async () => {
