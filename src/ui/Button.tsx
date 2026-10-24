@@ -9,11 +9,13 @@ type Props = {
   disabled?: boolean;
   /** 押した直後の処理中。丸いアイコンに変わり、押せなくなる(文字は透明で残すので幅は動かない) */
   loading?: boolean;
+  /** 記号だけのボタンの読み上げ名 */
+  label?: string;
 };
 
-export function Button({ children, onClick, variant = "primary", disabled, loading }: Props) {
+export function Button({ children, onClick, variant = "primary", disabled, loading, label }: Props) {
   return (
-    <StarwindButton variant={variant} size="sm" onClick={onClick} disabled={disabled || loading} className="relative" aria-busy={loading || undefined}>
+    <StarwindButton variant={variant} size="sm" onClick={onClick} disabled={disabled || loading} className="relative" aria-busy={loading || undefined} aria-label={label}>
       {loading ? (
         <>
           <span className="invisible">{children}</span>

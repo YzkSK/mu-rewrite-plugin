@@ -11,7 +11,11 @@ export type TimetableEntry = {
   credits: number;
 };
 
-export type TimetableTerm = { term: 1 | 2 | 3 | 4; entries: TimetableEntry[] };
+/** 曜日・時限が決まっていない授業(不定期開講) */
+export type TimetableIrregular = { code: string; subject: string; teacher: string; room: string; campus: string; credits: number };
+
+/** credits は学期の合計単位(読めなければ null) */
+export type TimetableTerm = { term: 1 | 2 | 3 | 4; entries: TimetableEntry[]; credits: number | null; irregular: TimetableIrregular[] };
 
 export type Timetable = { year: number; terms: TimetableTerm[] };
 
