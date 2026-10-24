@@ -7,6 +7,7 @@ import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { HomeScreen } from "@/muscat/screens/home/HomeScreen";
 import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
+import { SyllabusScreen } from "@/muscat/screens/syllabus/SyllabusScreen";
 import { TeacherScheduleScreen } from "@/muscat/screens/teacherSchedule/TeacherScheduleScreen";
 import { TimetableScreen } from "@/muscat/screens/timetable/TimetableScreen";
 import { SCREENS } from "./screens";
@@ -23,6 +24,7 @@ const EXPECTED = {
   Bsb007: ["健康診断情報照会", HealthInfoScreen],
   Bsa004: ["個人設定", GenericScreen],
   Bsd007: ["掲示板", NewsScreen],
+  Kmh006: ["シラバス", SyllabusScreen],
   Bsa011: ["教員スケジュール", TeacherScheduleScreen],
   Pky001: ["ホーム", HomeScreen],
 } as const;

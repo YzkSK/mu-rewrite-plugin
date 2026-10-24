@@ -13,8 +13,8 @@ test("登録済みのコードはその定義", () => {
 });
 
 test("未登録のログイン済み画面は汎用画面。題名は見出しから取る", () => {
-  const d = page(" [Kmh006]\n  シラバス   検索 ");
-  expect(resolveScreen("Kmh006", d)?.title).toBe("シラバス 検索");
+  const d = page(" [Kmh999]\n  シラバス   検索 ");
+  expect(resolveScreen("Kmh999", d)?.title).toBe("シラバス 検索");
   expect(screenTitleOf(page(""))).toBe("MUSCAT");
   // 実機の確認: 見出しの中の <script>(PrimeFaces の部品の初期化)の文字が、題名に混ざっていた
   const withScript = new DOMParser().parseFromString(`<div id="mainWrapTop">シラバス検索<script>$(function(){PrimeFaces.cw("BreadCrumb",{})});</script><style>.x{}</style> [Kmh006]</div>`, "text/html");
