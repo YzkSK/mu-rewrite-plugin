@@ -103,6 +103,21 @@ test("panelgrid: 2 セルの行は fields(値の中の部品つき)、3 セル�
   expect(b[1]).toMatchObject({ headers: ["a", "b", "c"], rows: [[{ text: "1" }, { text: "2" }, { text: "3" }]] });
 });
 
+// 実機の確認(シラバス検索): dt / dd が div.searchItemRow で包まれていて dl の直下に無く、検索条件の入力欄がすべて捨てられていた
+test("dt / dd が div で包まれた dl も fields になる(入力欄が捨てられない)", () => {
+  const b = blocks(`<dl class="searchItem"><div class="searchItemRow"><dt>授業科目</dt><dd><input type="text" name="funcForm:k"></dd></div><div class="searchItemRow"><dt>担当</dt><dd><input type="text" name="funcForm:t"></dd></div></dl>`);
+  expect(kinds(b)).toEqual(["fields"]);
+  const f = b[0] as Extract<GBlock, { kind: "fields" }>;
+  expect(f.rows.map((r) => r.label)).toEqual(["授業科目", "担当"]);
+  expect(f.rows.every((r) => r.controls.length === 1 && r.controls[0]!.kind === "text")).toBe(true);
+});
+
+test("fields にできない dl / 表は、捨てずに中身を読む", () => {
+  const b = blocks(`<dl><div><input type="text" name="funcForm:a"><button type="button">ボタン</button></div></dl><table><tr><td><input type="text" name="funcForm:b"></td></tr></table>`);
+  const all = b.flatMap((x) => (x.kind === "line" ? x.items.filter((i) => "ref" in i) : []));
+  expect(all.map((c) => c.kind)).toEqual(expect.arrayContaining(["text", "button"]));
+});
+
 test("dl は fields、th つきの表は table、入れ子の外枠の表は作らない", () => {
   expect(blocks(`<dl><dt>項目</dt><dd>値</dd></dl>`)).toEqual([{ kind: "fields", rows: [{ label: "項目", text: "値", controls: [] }] }]);
   expect(blocks(`<table><tr><th>名</th><th>操作</th></tr><tr><td>甲</td><td><button type="button">削除</button></td></tr></table>`)).toMatchObject([

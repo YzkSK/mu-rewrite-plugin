@@ -10,7 +10,9 @@ export const isHomeScreen = (code: string, doc: Document): boolean => code === "
 
 /** 見出しの題名。`[Xxx000]` と余分な空白を除く。取れなければ「MUSCAT」 */
 export function screenTitleOf(doc: Document): string {
-  const text = doc.getElementById("mainWrapTop")?.textContent ?? "";
+  const top = doc.getElementById("mainWrapTop")?.cloneNode(true) as Element | undefined;
+  top?.querySelectorAll("script, style").forEach((e) => e.remove()); // 部品の初期化の script の文字を、題名に混ぜない
+  const text = top?.textContent ?? "";
   return text.replace(CODE, "").replace(/\s+/g, " ").trim() || "MUSCAT";
 }
 

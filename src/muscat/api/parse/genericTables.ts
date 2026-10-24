@@ -29,9 +29,11 @@ export function tableBlock(t: Element): GBlock | null {
 export function dlBlock(dl: Element): GBlock | null {
   const rows: { label: string; text: string; controls: GCell["controls"] }[] = [];
   let label = "";
-  for (const c of dl.children) {
+  // dt / dd は div で包まれていることがある(実機: シラバス検索の dl.searchItem の div.searchItemRow)。この dl に属するものだけを文書順に
+  for (const c of dl.querySelectorAll("dt, dd")) {
+    if (c.closest("dl") !== dl) continue;
     if (c.tagName === "DT") label = textOf(c);
-    else if (c.tagName === "DD") rows.push({ label, ...toCell(c) });
+    else rows.push({ label, ...toCell(c) });
   }
   return rows.length > 0 ? { kind: "fields", rows } : null;
 }

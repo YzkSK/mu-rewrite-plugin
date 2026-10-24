@@ -52,10 +52,11 @@ export function parseGenericPage(root: ParentNode): GenericPage {
       const text = textOf(el);
       emit(text ? lineOf([{ kind: "text", text }], "notice") : null);
     } else if (el.matches(ACTION)) line.controls(controlsIn(el));
-    else if (el.tagName === "DL") emit(dlBlock(el));
-    else if (el.tagName === "TABLE" && !el.querySelector("table") && !el.matches(CHOICES)) emit(el.classList.contains("ui-panelgrid") ? gridBlock(el) : tableBlock(el));
     else if (el.tagName === "BR" || el.tagName === "HR") emit(null);
     else {
+      // dl / 表は、項目や行として読めたときだけ 1 つのブロックにする。読めなければ、捨てずに中身を読む
+      const special = el.tagName === "DL" ? dlBlock(el) : el.tagName === "TABLE" && !el.querySelector("table") && !el.matches(CHOICES) ? (el.classList.contains("ui-panelgrid") ? gridBlock(el) : tableBlock(el)) : null;
+      if (special) return emit(special);
       const block = BLOCK.has(el.tagName) && !el.matches(WIDGET) && !el.closest(CHOICES);
       if (block) emit(null);
       visitChildren(el);
