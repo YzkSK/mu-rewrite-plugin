@@ -13,7 +13,11 @@ export async function recover(fetchImpl: Fetch, now: () => number = Date.now): P
   const t = now();
   if (t - lastAt < MIN_INTERVAL_MS) throw new MuscatDownError("復帰は 30 秒に 1 回までです");
   lastAt = t;
+  return fetchHome(fetchImpl);
+}
 
+/** 中継ページ → autoLogin → ホームの Document。回数の制限なし(サーバーの「今の画面」をホームに戻すのにも使う) */
+export async function fetchHome(fetchImpl: Fetch): Promise<Document> {
   let relay: Response;
   try {
     relay = await fetchImpl("/uprx/ShibbolethAuthServlet");

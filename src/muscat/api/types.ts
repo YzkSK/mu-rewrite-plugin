@@ -238,6 +238,26 @@ export type TeacherSchedulePage = {
   calendar: TeacherCalendar | null;
   backRef: string;
 };
+/** ホームの履修授業の 1 件。inputName / saveId は、メモを部分更新で送るための欄の name とボタンの id */
+export type CourseListItem = {
+  title: string;
+  slots: { weekday: string; period: number }[];
+  teachers: string[];
+  room: string;
+  notices: { date: string; title: string }[];
+  memo: { value: string; inputName: string; saveId: string } | null;
+};
+/** 授業の引き出しの中身。見つからなかった部分は null か空 */
+export type CourseDetail = {
+  title: string;
+  code: string;
+  slots: CourseListItem["slots"];
+  teachers: string[];
+  room: string;
+  attendance: AttendanceCourse | null;
+  notices: CourseListItem["notices"];
+  memo: string | null;
+};
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];

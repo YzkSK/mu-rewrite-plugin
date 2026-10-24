@@ -1,5 +1,6 @@
 import { getAttendance } from "./attendance";
 import { createCore } from "./core";
+import { getCourse, saveMemo } from "./course";
 import type { Fetch } from "./recover";
 import type { MenuIds } from "./session";
 import { getGrades } from "./grades";
@@ -12,7 +13,7 @@ import { parseHome } from "./parse/home";
 import { parseRoom } from "./parse/room";
 import { parseSyllabus } from "./parse/syllabus";
 import { parseTeacherSchedule } from "./parse/teacherSchedule";
-import type { Attendance, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, RoomPage, SyllabusPage, TeacherSchedulePage, Timetable } from "./types";
+import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, RoomPage, SyllabusPage, TeacherSchedulePage, Timetable } from "./types";
 
 export type MuscatClient = {
   getTimetable(year?: number): Promise<Timetable>;
@@ -34,6 +35,10 @@ export type MuscatClient = {
   readTeacherSchedule(): Promise<TeacherSchedulePage>;
   /** 生きたページの教室予約(参照のみ)(条件の欄と、検索後のタイムライン)を読む */
   readRoom(): Promise<RoomPage>;
+  /** 授業の引き出しの中身(出席・ホームの履修授業)。別の Document で読み、ホームを開いているなら生きたページの hidden を直す */
+  getCourse(key: { title: string; code?: string }): Promise<CourseDetail>;
+  /** ホームの履修授業のメモを保存する */
+  saveMemo(title: string, text: string): Promise<void>;
 };
 
 export function createMuscatClient(deps: {
@@ -56,5 +61,7 @@ export function createMuscatClient(deps: {
     readSyllabus: () => core.runLive(async (live) => parseSyllabus(live.doc)),
     readTeacherSchedule: () => core.runLive(async (live) => parseTeacherSchedule(live.doc)),
     readRoom: () => core.runLive(async (live) => parseRoom(live.doc)),
+    getCourse: (key) => getCourse(core, deps.doc, key),
+    saveMemo: (title, text) => saveMemo(core, deps.doc, title, text),
   };
 }

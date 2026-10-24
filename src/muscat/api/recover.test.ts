@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { MuscatDownError, SsoRequiredError } from "./errors";
-import { recover, type Fetch } from "./recover";
+import { fetchHome, recover, type Fetch } from "./recover";
 
 const ORIGIN = "https://muscat.example";
 const relay = `<form id="loginForm" action="/uprx/login.xhtml"><input name="jakarta.faces.ViewState" value="vsR"><input name="loginForm:autoLogin" type="hidden"></form>`;
@@ -54,6 +54,13 @@ test("POST が 500 → MuscatDownError", async () => {
   await expect(recover(fake(res(relay), res("", { status: 500 })).f, tick)).rejects.toThrow(
     MuscatDownError,
   );
+});
+
+test("fetchHome は回数の制限なしで、続けて呼べる", async () => {
+  const { f, calls } = fake(res(relay), res(home), res(relay), res(home));
+  await fetchHome(f);
+  expect((await fetchHome(f)).getElementById("menuForm")).not.toBeNull();
+  expect(calls.length).toBe(4);
 });
 
 test("30 秒以内の 2 回目は fetch を呼ばない", async () => {

@@ -13,7 +13,7 @@ const withCourse = (marks: Attendance["courses"][0]["sessions"]): Attendance => 
   courses: [{ when: "火2 火3", code: "5300100033", subject: "合成演習", teacher: "教員A", rate: 66.7, sessions: marks }],
 });
 const render = (initial: Parameters<typeof AttendanceScreen>[0]["initial"]) =>
-  renderToString(<AttendanceScreen client={client} initial={initial} />);
+  renderToString(<AttendanceScreen client={client} doc={document} initial={initial} />);
 
 test("カード: 科目名・教員・曜日時限・出席率・印と日付", () => {
   const html = render({

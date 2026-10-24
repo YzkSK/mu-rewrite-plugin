@@ -7,7 +7,7 @@ const PERIODS = [1, 2, 3, 4, 5, 6];
 // 1 行目は曜日の見出し。昼休みは 2 限(行 3)と 3 限(行 5)の間の行 4
 const rowOf = (p: number) => (p <= 2 ? p + 1 : p + 2);
 
-export function TimetableGrid({ entries }: { entries: TimetableEntry[] }) {
+export function TimetableGrid({ entries, onOpen }: { entries: TimetableEntry[]; onOpen: (entry: TimetableEntry) => void }) {
   const cell = "border border-border bg-card";
   return (
     <div
@@ -31,15 +31,17 @@ export function TimetableGrid({ entries }: { entries: TimetableEntry[] }) {
         昼休み
       </div>
       {toBlocks(entries).map((b) => (
-        <div
+        <button
+          type="button"
           key={`${b.day}${b.start}${b.entry.code}`}
-          className="m-0.5 flex flex-col gap-0.5 overflow-hidden rounded-md bg-secondary p-1.5 text-secondary-foreground"
+          onClick={() => onOpen(b.entry)}
+          className="m-0.5 flex cursor-pointer flex-col items-start gap-0.5 overflow-hidden rounded-md border-0 bg-secondary p-1.5 text-left text-secondary-foreground"
           style={{ gridRow: `${rowOf(b.start)} / ${rowOf(b.end) + 1}`, gridColumn: DAYS.indexOf(b.day) + 2 }}
         >
           <span className="font-bold leading-tight">{b.entry.subject}</span>
           <span className="text-xs">{b.entry.room}</span>
           {b.entry.campus ? <Chip>{b.entry.campus}</Chip> : null}
-        </div>
+        </button>
       ))}
     </div>
   );

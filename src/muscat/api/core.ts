@@ -5,7 +5,7 @@ import { MuscatDownError } from "./errors";
 import { isStateLost, type ResponseKind } from "./expired";
 import { applyPartialResponse, buildPartialRequest } from "./partial";
 import { createQueue } from "./queue";
-import { recover, type Fetch } from "./recover";
+import { fetchHome, recover, type Fetch } from "./recover";
 import { createSession, type MenuIds, type MenuLabel } from "./session";
 
 export type Ctx = {
@@ -19,6 +19,8 @@ export type Ctx = {
     source: string,
     opts?: { render?: string; extra?: Record<string, string | null> },
   ): Promise<boolean>;
+  /** session の Document がホーム(#portalCont)ならそのまま。違えば取り直して取り込む。ホームでなければ false */
+  openHome(): Promise<boolean>;
 };
 
 /** 生きたページ(拡張機能が動いている document)そのものを読み、操作する */
@@ -67,6 +69,11 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
       if (text === null) return false;
       applyPartialResponse(session.doc, text);
       return true;
+    },
+    async openHome() {
+      if (session.doc.getElementById("portalCont")) return true;
+      session.adopt(await fetchHome(deps.fetch));
+      return !!session.doc.getElementById("portalCont");
     },
   };
 
