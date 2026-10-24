@@ -73,7 +73,7 @@ export function GenericControl({ control: c, run }: { control: GControl; run: Ru
           {c.label}
         </button>
       ) : (
-        <Button variant="ghost" disabled={c.disabled} onClick={() => run([{ kind: "click", ref: c.ref }])}>
+        <Button variant="secondary" disabled={c.disabled} onClick={() => run([{ kind: "click", ref: c.ref }])}>
           {c.label}
         </Button>
       );

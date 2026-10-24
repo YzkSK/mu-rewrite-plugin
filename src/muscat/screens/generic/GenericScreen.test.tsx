@@ -82,6 +82,19 @@ test("line の中の部品とボタン(link / button)", () => {
   expect(html).not.toMatch(/<button[^>]*underline[^>]*>保存/);
 });
 
+// 実機で「ボタンが真っ白」と言われた: 枠も地も無い(ghost)にしない。薄い紫の地に紫の文字(secondary)
+test("ボタンは地のある見た目(白い地に溶けない)", () => {
+  expect(html).toMatch(/<button[^>]*bg-secondary[^>]*>保存/);
+  expect(html).not.toMatch(/<button[^>]*hover:bg-muted[^>]*>保存/); // ghost の印
+});
+
+// 実機で「左寄せのほうがいい」と言われた: 横いっぱいに広げない。項目名の列は内容の幅、全体は幅を抑えて左に置く
+test("左寄せ: 画面は幅を抑え、項目名の列は内容の幅", () => {
+  expect(html).toContain("max-w-4xl");
+  expect(html).toContain("grid-cols-[max-content_minmax(0,1fr)]");
+  expect(html).not.toContain("mx-auto");
+});
+
 test("エラー・読み込み中", () => {
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
   expect(render()).toContain("読み込み中");
