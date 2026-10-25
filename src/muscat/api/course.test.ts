@@ -31,7 +31,7 @@ function server(partial?: string) {
   return { f, calls };
 }
 
-test("getCourse: 出席 → ホームの順に取り込み、ホームを開いていれば hidden を写す", async () => {
+test("getCourse: 出席 → ホームの順に取り込み、生きたページには触らない", async () => {
   const { f, calls } = server();
   const live = toDoc(menu + homeDoc("old"));
   const c = createMuscatClient({ fetch: f, doc: live, ids, now });
@@ -40,10 +40,10 @@ test("getCourse: 出席 → ホームの順に取り込み、ホームを開い�
   expect(course.attendance?.code).toBe("5300100033");
   expect(course).toMatchObject({ title: "合成演習", code: "5300100033", teachers: ["教員A"], room: "101", memo: "持ち物", slots: [{ weekday: "火", period: 2 }] });
   expect(calls.map((x) => x.url)).toEqual(["/m", "/uprx/ShibbolethAuthServlet", "/login"]);
-  expect(live.querySelector<HTMLInputElement>('[name="jakarta.faces.ViewState"]')!.value).toBe("new");
+  expect(live.querySelector<HTMLInputElement>('[name="jakarta.faces.ViewState"]')!.value).toBe("old");
 });
 
-test("getCourse: 生きたページがホームでなければ写さない。出席が無ければ null", async () => {
+test("getCourse: 出席が無ければ null", async () => {
   const { f } = server();
   const live = toDoc(menu + `<form id="funcForm"><input type="hidden" name="jakarta.faces.ViewState" value="old"></form>`);
   const c = createMuscatClient({ fetch: f, doc: live, ids, now });
@@ -52,7 +52,7 @@ test("getCourse: 生きたページがホームでなければ写さない。出
   expect(live.querySelector<HTMLInputElement>("#funcForm input")!.value).toBe("old");
 });
 
-test("saveMemo: 登録ボタンの部分更新でメモを送り、生きたページのメモ欄も直す", async () => {
+test("saveMemo: 登録ボタンの部分更新でメモを送り、複製のメモ欄を直す(生きたページは触らない)", async () => {
   const { f, calls } = server();
   const live = toDoc(menu + homeDoc("old"));
   const c = createMuscatClient({ fetch: f, doc: live, ids, now });
@@ -61,7 +61,8 @@ test("saveMemo: 登録ボタンの部分更新でメモを送り、生きたペ�
   const body = new URLSearchParams(calls[0]!.body);
   expect(body.get("jakarta.faces.source")).toBe("funcForm:save");
   expect(body.get("funcForm:memo")).toBe("新しいメモ");
-  expect(live.querySelector<HTMLInputElement>('[name="funcForm:memo"]')!.value).toBe("新しいメモ");
+  expect(await c.readLive((d) => d.querySelector<HTMLInputElement>('[name="funcForm:memo"]')!.value)).toBe("新しいメモ");
+  expect(live.querySelector<HTMLInputElement>('[name="funcForm:memo"]')!.value).toBe("持ち物");
 });
 
 test("saveMemo: ホームでなければ取り込んでから送る。授業が無ければエラー", async () => {

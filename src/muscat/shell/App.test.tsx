@@ -9,13 +9,13 @@ const groups = [
   { title: "授業", labels: ["出席確認", "成績照会"] },
   { title: "シラバス", labels: ["シラバス"] },
 ];
-const model = (title: string) => drawerItems(document, groups, title);
+const model = (title: string) => drawerItems({ go() {}, logout() {}, openNative() {} }, groups, title);
 const html = (title = "出席確認") =>
   renderToString(<App title={title} model={model(title)} user="太郎">本文</App>);
 
 test("ホーム・全グループ・全項目・固定部分が出る", () => {
   const h = html();
-  for (const t of ["ホーム", "授業", "シラバス", "出席確認", "成績照会", "個人設定", "MU ポータルへ", "MU-LMS へ", "ログアウト", "本文", "太郎"]) expect(h).toContain(t);
+  for (const t of ["ホーム", "授業", "シラバス", "出席確認", "成績照会", "個人設定", "MU ポータルへ", "MU-LMS へ", "ログアウト", "元の画面で開く", "本文", "太郎"]) expect(h).toContain(t);
   expect(h).toContain('aria-label="メニューを開閉"');
 });
 

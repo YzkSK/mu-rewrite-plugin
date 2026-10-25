@@ -1,4 +1,5 @@
 import { Button } from "./Button";
+import { NativeLink } from "./NativeLink";
 
 type Props = { title: string; message: string; onRetry?: () => void };
 
@@ -12,6 +13,7 @@ export function ErrorNotice({ title, message, onRetry }: Props) {
           <Button variant="secondary" onClick={onRetry}>もう一度読み込む</Button>
         </div>
       ) : null}
+      <NativeLink />
     </div>
   );
 }

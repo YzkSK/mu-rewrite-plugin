@@ -1,68 +1,90 @@
+import { useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import css from "@/ui/tokens.css?inline";
-import { createMuscatClient } from "../api/client";
+import { ErrorNotice } from "@/ui/ErrorNotice";
+import { NativeContext } from "@/ui/NativeLink";
+import type { MuscatClient } from "../api/client";
+import { readMenuGroups } from "../api/menuGroups";
 import { readMenuIds } from "../api/menuIds";
+import { errorMessage } from "../screens/errorMessage";
 import { App } from "./App";
 import { drawerItems, lastLoginOf, loginUserOf } from "./drawerItems";
-import { readMenuGroups } from "../api/menuGroups";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
-import { isLoggedIn } from "./resolveScreen";
-import { screenCodeOf } from "./screenCode";import type { ScreenDef } from "./screens";
+import { isHomeScreen, resolveScreen } from "./resolveScreen";
+import { screenCodeOf } from "./screenCode";
+import type { ScreenDef } from "./screens";
 
-let current: { key: string; screen: ScreenDef; root: Root; keep: MutationObserver } | null = null;
+/** シェルが外へ頼む操作(ページの移動・元の画面へ出る) */
+export type ShellActions = { assign(url: string): void; openNative(): void };
+/** 画面が替わるたびに呼ぶ(描画の直後)。screen は null なら表示できない画面 */
+export type OnScreen = (screen: ScreenDef | null, home: boolean) => void;
+
+let current: { root: Root } | null = null;
 
 /**
- * 元のサイトは画面を移るとき head・body ごと差し替え、ホストと隠す style も消える。次の mount まで元の画面が見えるので(実機で約 320ms)、
- * 消えたらすぐ元の場所へ戻す(MutationObserver は描画の前に動く)
+ * サイドバー + 今の画面。今の画面は client が持つ(移動のたびに別の Document になる)ので、ここでは見張らず、その画面コードから選ぶ。
+ * 移動のたびに App ごと作り直す(画面の中の状態を持ち越さない。元の画面を移っていたころと同じ)
  */
-function keepMounted(): MutationObserver {
-  const nodes = ["mu-react-host", "mu-react-hide", "mu-react-font", "mu-react-props"].map((id) => document.getElementById(id)).filter((n) => n !== null);
-  const host = nodes[0];
-  const keep = new MutationObserver(() => {
-    // エラー画面・ログイン画面への差し替えは戻さず、元の画面を見せる(戻すと読み込み中のまま固まる。実機で確認)
-    if (host && !host.isConnected && !isLoggedIn(document)) return unmountScreen();
-    // 戻せば、次の画面を描くまで今の画面(押した直後の読み込み中の表示)がそのまま見える
-    if (!host || host.isConnected) return;
-    for (const n of nodes) if (!n.isConnected) (n === host ? document.body : document.head).appendChild(n);
-    // 同じ画面のままなら次の mount は来ず、画面は古い DOM を見張ったままになるので、新しい DOM で描き直す
-    if (current && screenCodeOf(document) === current.key) {
-      const { screen, key } = current;
-      unmountScreen();
-      mountScreen(screen, key);
-    }
-  });
-  keep.observe(document.documentElement, { childList: true, subtree: true });
-  return keep;
-}
+function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: ShellActions; onScreen: OnScreen }) {
+  const { doc, seq } = useSyncExternalStore(client.subscribe, client.shown);
+  const [navError, setNavError] = useState<string | null>(null);
+  const code = screenCodeOf(doc);
+  const screen = resolveScreen(code, doc);
+  const home = isHomeScreen(code, doc);
+  useLayoutEffect(() => {
+    setNavError(null);
+    onScreen(screen, home);
+  }, [seq]); // 画面が替わったときだけ
 
-/** 画面を Shadow DOM に描く。同じ key なら何もせず、別の key なら前の画面を外してから描く */
-export function mountScreen(screen: ScreenDef, key: string): void {
-  if (current?.key === key) return;
-  unmountScreen();
-  const ids = readMenuIds(document);
-  const client = createMuscatClient({ fetch: window.fetch.bind(window), doc: document, ids });
-  const found = readMenuGroups(document);
+  const fail = (e: unknown) => setNavError(errorMessage(e));
+  const ids = readMenuIds(doc);
+  const found = readMenuGroups(doc);
   // グループが読めなくても項目は出す
   const groups = found.length ? found : Object.keys(ids).length ? [{ title: "メニュー", labels: Object.keys(ids) }] : [];
-  const mountPoint = document.createElement("div");
-  mountShadowRoot(document, css).appendChild(mountPoint);
-  const root = createRoot(mountPoint);
-  current = { key, screen, root, keep: keepMounted() };
-  // 描き終えてから覆いを外す(render は後で描くので、すぐ外すと 1 コマだけ元の白い地が見える。実機で確認)
-  flushSync(() =>
-    root.render(
-      <App title={screen.title} model={drawerItems(document, groups, screen.title)} user={loginUserOf(document)} lastLogin={lastLoginOf(document)}>
-        {screen.render(client, document)}
-      </App>,
-    ),
+  const title = screen?.title ?? "MUSCAT";
+  const model = drawerItems(
+    {
+      go: (label) => void client.navigate(label).catch(fail),
+      logout: () => void client.logout().then((url) => actions.assign(url), fail),
+      openNative: actions.openNative,
+    },
+    groups,
+    title,
+  );
+  return (
+    <NativeContext value={actions.openNative}>
+      <App key={seq} title={title} model={model} user={loginUserOf(doc)} lastLogin={lastLoginOf(doc)}>
+        {navError && (
+          <div className="p-4 pb-0">
+            <ErrorNotice title="画面を開けませんでした" message={navError} />
+          </div>
+        )}
+        {screen ? (
+          screen.render(client, doc)
+        ) : (
+          <div className="p-4">
+            <ErrorNotice title="この画面を表示できませんでした" message="MUSCAT の応答を読み取れませんでした" />
+          </div>
+        )}
+      </App>
+    </NativeContext>
   );
 }
 
+/** シェルを Shadow DOM に描く。描き終えてから返る(覆いを外すのはその後。render は後で描くので、すぐ外すと 1 コマだけ元の白い地が見える。実機で確認) */
+export function mountShell(client: MuscatClient, actions: ShellActions, onScreen: OnScreen): void {
+  unmountShell();
+  const mountPoint = document.createElement("div");
+  mountShadowRoot(document, css).appendChild(mountPoint);
+  const root = createRoot(mountPoint);
+  current = { root };
+  flushSync(() => root.render(<Shell client={client} actions={actions} onScreen={onScreen} />));
+}
+
 /** 描画を止めて元の本文を戻す。描画中でなければ何もしない */
-export function unmountScreen(): void {
+export function unmountShell(): void {
   if (!current) return;
-  current.keep.disconnect();
   current.root.unmount();
   current = null;
   unmountShadowRoot(document);

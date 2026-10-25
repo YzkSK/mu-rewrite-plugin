@@ -6,13 +6,8 @@ import { errorMessage } from "../errorMessage";
 
 export type HomeState = { status: "loading" | "ready" | "error"; page?: HomePage; error?: string; busy?: boolean };
 
-const QUIET_MS = 150;
-
-/**
- * 生きたページのホームを読み、操作(run)のあとと、ほかの ajax で書き換わったあとに読み直す。操作中は前の結果を残す。
- * 属性の変化は見ない(parse が ref を属性で付けるので、見ると読み直しが止まらなくなる)。initial はテスト用
- */
-export function useHome(client: MuscatClient, doc: Document, initial?: HomeState) {
+/** 複製のホームを読み、操作(run)のあとに読み直す。操作中は前の結果を残す。initial はテスト用 */
+export function useHome(client: MuscatClient, initial?: HomeState) {
   const [state, setState] = useState<HomeState>(initial ?? { status: "loading" });
   const read = useCallback(
     () =>
@@ -24,19 +19,7 @@ export function useHome(client: MuscatClient, doc: Document, initial?: HomeState
   );
   useEffect(() => {
     void read();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const observer = new MutationObserver(() => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void read(), QUIET_MS);
-    });
-    const opts = { subtree: true, childList: true, characterData: true };
-    const targets = [doc.getElementById("funcContent"), doc.getElementById("bsd00702:dialog")].filter((e): e is HTMLElement => !!e);
-    for (const t of targets.length ? targets : [doc.body]) observer.observe(t, opts);
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [client, doc, read]);
+  }, [read]);
   const run = useCallback(
     async (steps: DriveStep[]) => {
       setState((s) => ({ ...s, busy: true }));

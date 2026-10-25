@@ -1,5 +1,6 @@
 import { MuscatDownError, SsoRequiredError } from "./errors";
 import { isStateLost } from "./expired";
+import { setBase } from "./virtual/req";
 
 export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -48,5 +49,7 @@ export async function fetchHome(fetchImpl: Fetch): Promise<Document> {
   }
   const text = await res.text();
   if (isStateLost("page", res.status, text)) throw new MuscatDownError("復帰できませんでした");
-  return toDoc(text);
+  const doc = toDoc(text);
+  setBase(doc, res.url || action); // ホームの相対 action は最後の応答の URL に対して解決する
+  return doc;
 }

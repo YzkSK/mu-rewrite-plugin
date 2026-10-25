@@ -35,7 +35,7 @@ const side = () =>
   renderToString(
     <SidebarProvider>
       <Sidebar collapsible="none">
-        <AppSidebar model={drawerItems(document, [{ title: "授業", labels: ["出席確認", "成績照会"] }], "出席確認")} />
+        <AppSidebar model={drawerItems({ go() {}, logout() {}, openNative() {} }, [{ title: "授業", labels: ["出席確認", "成績照会"] }], "出席確認")} />
       </Sidebar>
     </SidebarProvider>,
   );

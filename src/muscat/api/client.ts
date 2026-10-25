@@ -1,8 +1,9 @@
 import { getAttendance } from "./attendance";
-import { createCore } from "./core";
+import { createCore, type Shown } from "./core";
 import { getCourse, saveMemo } from "./course";
+import { getExportRequest, type ExportKind, type ExportRequest } from "./exportForm";
 import type { Fetch } from "./recover";
-import type { MenuIds } from "./session";
+import type { MenuIds, MenuLabel } from "./session";
 import { getGrades } from "./grades";
 import { getInfoPage } from "./info";
 import { getTimetable } from "./timetable";
@@ -25,10 +26,12 @@ export type MuscatClient = {
   getGrades(filter?: GradeFilter): Promise<Grades>;
   getStudentInfo(): Promise<InfoPage>;
   getHealthInfo(): Promise<InfoPage>;
-  /** 生きたページ(document)の #funcForm を、構造に依らない形で読む */
+  /** 今の画面(複製の document)の #funcForm を、構造に依らない形で読む */
   readLivePage(): Promise<GenericPage>;
-  /** 生きたページの元の入力欄・ボタンを操作して、通信の終わりを待つ */
+  /** 複製の入力欄・ボタンを操作し、元の部品と同じ通信を送る。何か送れば "done" */
   driveLive(steps: DriveStep[]): Promise<"done" | "none" | "timeout">;
+  /** 複製の document を直列キューの中で読む(ref を付ける手順の組み立てなど) */
+  readLive<T>(fn: (doc: Document) => T): Promise<T>;
   /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
   readNews(): Promise<NewsPage>;
   /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
@@ -53,10 +56,19 @@ export type MuscatClient = {
   /** 教室の ⓘ(建物・収容人数など)を取る。元の画面の表は検索し直すことがある */
   roomInfo(name: string): Promise<RoomInfo>;
   /** 帯の詳細を取る。予約は承認状況・予約者・利用目的など、授業(lesson)は時限・授業・教員。title は帯の説明文 */
-  roomBooking(title: string, lesson?: boolean): Promise<{ label: string; value: string }[]>;  /** 授業の引き出しの中身(出席・ホームの履修授業)。別の Document で読み、ホームを開いているなら生きたページの hidden を直す */
+  roomBooking(title: string, lesson?: boolean): Promise<{ label: string; value: string }[]>;  /** 授業の引き出しの中身(出席・ホームの履修授業)。最後にホームへ戻す */
   getCourse(key: { title: string; code?: string }): Promise<CourseDetail>;
   /** ホームの履修授業のメモを保存する */
   saveMemo(title: string, text: string): Promise<void>;
+  /** 画面を移る(メニューの項目名・「ホーム」・「個人設定」)。もっと新しい移動が来たら捨てられる */
+  navigate(label: string): Promise<void>;
+  /** ログアウトして、移る先の URL を返す */
+  logout(): Promise<string>;
+  /** いま見せている画面の Document と移動の通し番号(移動のたびに別のオブジェクト) */
+  shown(): Shown;
+  subscribe(listener: () => void): () => void;
+  /** 出席・成績の PDF / Excel の出力。元のボタンが送る POST を組み立てる(送るのは画面側のフォーム) */
+  exportRequest(label: MenuLabel, text: ExportKind): Promise<ExportRequest>;
 };
 
 export function createMuscatClient(deps: {
@@ -90,7 +102,13 @@ export function createMuscatClient(deps: {
     roomMore: () => core.runLive((live) => roomMore(live.doc, deps.fetch)),    roomNext: () => core.runLive((live) => roomNext(live.doc, deps.fetch)),
     roomInfo: (name) => core.runLive((live) => roomInfo(live.doc, deps.fetch, name)),
     roomBooking: (title, lesson) => core.runLive((live) => roomBooking(live.doc, deps.fetch, title, lesson)),
-    getCourse: (key) => getCourse(core, deps.doc, key),
-    saveMemo: (title, text) => saveMemo(core, deps.doc, title, text),
+    readLive: (fn) => core.runLive(async (live) => fn(live.doc)),
+    getCourse: (key) => getCourse(core, key),
+    saveMemo: (title, text) => saveMemo(core, title, text),
+    navigate: core.navigate,
+    logout: core.logout,
+    shown: core.shown,
+    subscribe: core.subscribe,
+    exportRequest: (label, text) => getExportRequest(core, label, text),
   };
 }

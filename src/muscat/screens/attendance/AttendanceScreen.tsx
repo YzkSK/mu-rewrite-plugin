@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { Attendance, AttendanceCourse } from "@/muscat/api/types";
-import { nativeNav } from "@/muscat/shell/nativeNav";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { DatePicker } from "@/ui/DatePicker";
@@ -163,7 +162,7 @@ export function AttendanceScreen({ client, doc, initial }: Props) {
           </div>
           <div className="ml-auto flex flex-wrap gap-2">
             {(["PDF", "Excel"] as const).map((t) => (
-              <Button key={t} variant="secondary" disabled={loading || !findExportButton(doc, t)} onClick={() => exportFile(doc, t)}>
+              <Button key={t} variant="secondary" disabled={loading || !findExportButton(doc, t)} onClick={() => void exportFile(client, "出席確認", t)}>
                 {`${t} で出力`}
               </Button>
             ))}
@@ -185,7 +184,7 @@ export function AttendanceScreen({ client, doc, initial }: Props) {
           onClose={() => setCourse(null)}
           onNav={(label) => {
             setCourse(null);
-            nativeNav(doc, label);
+            void client.navigate(label).catch(() => {});
           }}
         />
       )}

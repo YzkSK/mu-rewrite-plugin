@@ -55,7 +55,7 @@ function Settings({ filter, busy, cols, onCols, onApply }: { filter: GradeFilter
 }
 
 export function GradesScreen({ client, doc, initial, initialView = "category", initialOpen = false, initialCols = { gpa: true, gpaYear: true } }: Props) {
-  const { status, grades, error, setFilter } = useGrades(client, doc, initial);
+  const { status, grades, error, setFilter } = useGrades(client, initial);
   const [view, setView] = useState<GradeView>(initialView);
   const [open, setOpen] = useState(initialOpen);
   const [cols, setCols] = useState(initialCols);
@@ -85,7 +85,7 @@ export function GradesScreen({ client, doc, initial, initialView = "category", i
                 <span className="min-[768px]:hidden">設定</span>
                 {open ? " ▴" : " ▾"}
               </Button>
-              <Button variant="secondary" disabled={loading || !findExportButton(doc, "PDF")} onClick={() => exportFile(doc, "PDF")}>PDF で出力</Button>
+              <Button variant="secondary" disabled={loading || !findExportButton(doc, "PDF")} onClick={() => void exportFile(client, "成績照会", "PDF")}>PDF で出力</Button>
             </div>
           </div>
           {open && <Settings key={JSON.stringify(grades.filter)} filter={grades.filter} busy={loading} cols={cols} onCols={setCols} onApply={setFilter} />}

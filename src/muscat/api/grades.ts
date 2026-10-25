@@ -13,7 +13,7 @@ const CHECKS = {
 const isReady = (d: Document) => !!d.querySelector(`#funcForm [name="${CHECKS.fail}"]`);
 
 export function getGrades(core: Core, filter?: GradeFilter): Promise<Grades> {
-  return core.run(async (ctx) => {
+  return core.aside(async (ctx) => {
     if (!(await ctx.open("成績照会", isReady))) return null;
     const form = ctx.doc().getElementById("funcForm");
     if (filter && form) {

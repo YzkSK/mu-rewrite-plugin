@@ -5,7 +5,7 @@ import type { DriveStep } from "@/muscat/api/driver/drive";
 import type { CheckOption, SettingsPage, SettingsTable } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
-import { Card } from "@/ui/Card";
+import { ErrorCard } from "@/ui/ErrorCard";
 import { Checkbox } from "@/ui/Checkbox";
 import { PageLoading } from "@/ui/PageLoading";
 import { RadioGroup } from "@/ui/RadioGroup";
@@ -180,8 +180,8 @@ function ZoomCard() {
 }
 
 /** 個人設定。タブは元の画面の TabView を押して切り替え、値は画面で持って、保存などで元の画面に入れて押す */
-export function SettingsScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<SettingsPage> }) {
-  const { status, page, error, busy = false, run } = useLiveScreen(client, doc, read, initial);
+export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<SettingsPage> }) {
+  const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
   const [ask, setAsk] = useState<DriveStep[] | null>(null);
   const [gen, setGen] = useState(0);
   // 操作のあとは元の画面の値で作り直す(追加した欄が空に戻るなど)
@@ -197,7 +197,7 @@ export function SettingsScreen({ client, doc, initial }: { client: MuscatClient;
   }, [stray]);
   return (
     <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3.5 p-4">
-      {status === "error" && <Card className="p-4 text-error">{error}</Card>}
+      {status === "error" && <ErrorCard>{error}</ErrorCard>}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>

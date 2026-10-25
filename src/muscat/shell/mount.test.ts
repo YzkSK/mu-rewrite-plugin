@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
-import { nativeNav } from "./nativeNav";
 
 const fresh = () => new DOMParser().parseFromString("<html><head></head><body><div id=wrap></div></body></html>", "text/html");
 
@@ -45,17 +44,4 @@ test("ホストは画面に固定(ページごとスクロールしない)", () 
   const doc = fresh();
   mountShadowRoot(doc);
   expect(doc.getElementById("mu-react-hide")!.textContent).toContain("#mu-react-host { position: fixed; inset: 0");
-});
-
-test("nativeNav: 一致するリンクを click、無ければ何もしない", () => {
-  const doc = new DOMParser().parseFromString(
-    '<form id="menuForm"><a id="x">出席確認</a><a id="y">成績照会</a></form>',
-    "text/html",
-  );
-  let clicked = "";
-  for (const a of doc.querySelectorAll("a")) a.addEventListener("click", () => (clicked += a.id));
-  nativeNav(doc, "出席確認");
-  expect(clicked).toBe("x");
-  expect(() => nativeNav(doc, "存在しない")).not.toThrow();
-  expect(clicked).toBe("x");
 });

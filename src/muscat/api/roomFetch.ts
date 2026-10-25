@@ -4,6 +4,7 @@ import { squash } from "./parse/genericControls";
 import { isRoomRow, parseRoomResult, parseRoomRows, roomNameOf, tableLayout } from "./parse/roomTimeline";
 import type { Fetch } from "./recover";
 import type { RoomInfo, RoomRow } from "./types";
+import { scriptIdWith } from "./virtual/widgets";
 
 const DATA_LIST = "funcForm:dataList";
 const INFO = "funcForm:kstOverlay"; // ⓘ を押すと描き直される小窓
@@ -52,7 +53,7 @@ function updateOf(xml: string, id: string): Document | null {
 
 /** 続きの行(1 回 40 行)を取る。応答の ViewState は生きたページに反映する(しないと次の通信が通らない) */
 async function moreRows(doc: Document, fetch: Fetch) {
-  const rc = [...doc.querySelectorAll("#funcForm script[id]")].find((s) => s.textContent?.includes("subTableRun"))?.id;
+  const rc = scriptIdWith(doc, "subTableRun"); // script は取り込み時に控えへ移してある(widgets.ts)
   const sub = doc.getElementById("subTbody")?.parentElement?.closest("[id]")?.id; // すぐ上の table と div には id が無い(実機で確認)
   const table = doc.getElementById("funcForm:yoyakuArea")?.querySelector("table");
   const layout = table && tableLayout(table);
@@ -102,7 +103,7 @@ async function overlay(doc: Document, fetch: Fetch, at: Addr, render: string, pr
   let xml: string;
   if (typeof at === "string") xml = await send(doc, fetch, at, {}, render, at);
   else {
-    const cmd = [...doc.querySelectorAll("#funcForm script[id]")].find((s) => s.textContent?.includes(proc))?.id;
+    const cmd = scriptIdWith(doc, proc);
     if (!cmd) throw new ParseError("小窓を開く部品がありません");
     xml = await send(doc, fetch, cmd, { "primefaces.resetvalues": "true", ...Object.fromEntries(names.map((n, i) => [n, at[i]!])) }, render, cmd);
   }

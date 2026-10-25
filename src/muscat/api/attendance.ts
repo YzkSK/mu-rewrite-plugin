@@ -12,7 +12,7 @@ const currentTerm = (d: Document) => d.querySelector<HTMLSelectElement>(`[name="
 const currentDate = (d: Document) => d.querySelector<HTMLInputElement>(`[name="${DATE}"]`)?.value;
 
 export function getAttendance(core: Core, termKey?: string, baseDate?: string): Promise<Attendance> {
-  return core.run(async (ctx) => {
+  return core.aside(async (ctx) => {
     if (!(await ctx.open("出席確認", isReady))) return null;
     const term = currentTerm(ctx.doc());
     const date = currentDate(ctx.doc());

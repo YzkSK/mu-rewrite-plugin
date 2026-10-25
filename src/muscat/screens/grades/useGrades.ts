@@ -10,7 +10,7 @@ export type GradesState = { status: "loading" | "ready" | "error"; grades?: Grad
 const FLAGS: Record<keyof GradeFilter, string> = { fail: "fail", inProgress: "rishu", noCredit: "muhaito", transfer: "furikae" };
 
 /**
- * 表示する科目の条件を、生きたページのチェックを押してから「表示」を押して変える手順。
+ * 表示する科目の条件を、複製のチェックを押してから「表示」を押して変える手順。
  * チェックの値をフォームで送るだけではサーバーに伝わらない(チェックを押した時に伝わる。実機で確認)。部品が無ければ null
  */
 export function filterSteps(doc: Document, filter: GradeFilter): DriveStep[] | null {
@@ -27,7 +27,7 @@ export function filterSteps(doc: Document, filter: GradeFilter): DriveStep[] | n
 }
 
 /** initial はテスト用(effect が動かない描画で状態を固定する)。filter が undefined の間は、今の画面の条件のまま読む。 */
-export function useGrades(client: MuscatClient, doc: Document, initial?: GradesState) {
+export function useGrades(client: MuscatClient, initial?: GradesState) {
   const [filter, setFilter] = useState<GradeFilter | undefined>(undefined);
   const [state, setState] = useState<GradesState>(initial ?? { status: "loading" });
 
@@ -35,15 +35,18 @@ export function useGrades(client: MuscatClient, doc: Document, initial?: GradesS
     let alive = true;
     // 前の結果は残したまま読み込み中にする(条件の切替で画面が白くならない)
     setState((s) => ({ status: "loading", grades: s.grades }));
-    const steps = filter && filterSteps(doc, filter);
-    (steps ? client.driveLive(steps).then(() => client.getGrades()) : client.getGrades()).then(
+    // 手順は複製の document から組み立てる(ref は複製に付く)
+    (filter
+      ? client.readLive((d) => filterSteps(d, filter)).then((steps) => (steps ? client.driveLive(steps) : null)).then(() => client.getGrades())
+      : client.getGrades()
+    ).then(
       (grades) => alive && setState({ status: "ready", grades }),
       (e) => alive && setState((s) => ({ status: "error", grades: s.grades, error: errorMessage(e) })),
     );
     return () => {
       alive = false;
     };
-  }, [client, doc, filter]);
+  }, [client, filter]);
 
   return { ...state, setFilter };
 }

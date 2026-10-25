@@ -4,6 +4,7 @@ import type { DriveStep } from "@/muscat/api/driver/drive";
 import type { RoomBar, RoomPage, RoomResult, RoomRow } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
+import { ErrorCard } from "@/ui/ErrorCard";
 import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { errorMessage } from "../errorMessage";
@@ -33,8 +34,8 @@ function Legend({ result, dates, onJump }: { result: RoomResult; dates: string[]
 }
 
 /** 教室予約(参照のみ)。条件は画面で持ち、「検索」で元の画面に値を入れて通信を直接送る。結果は教室 × 時間のタイムライン */
-export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<RoomPage> }) {
-  const { status, page, error, busy = false, run } = useLiveScreen(client, doc, read, initial);
+export function RoomScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<RoomPage> }) {
+  const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
   const [act, setAct] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ room: RoomRow; bar?: RoomBar } | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
@@ -113,7 +114,7 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
   const [jump, setJump] = useState({ date: "", n: 0 });
   return (
     <div className="flex flex-col gap-3 p-4">
-      {status === "error" && !submitError && <Card className="p-4 text-error">{error}</Card>}
+      {status === "error" && !submitError && <ErrorCard>{error}</ErrorCard>}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>

@@ -1,6 +1,6 @@
 import { installPreHide, preEpoch, releasePreHide } from "@/muscat/shell/pre";
 import { loadShell, loadTop } from "./data";
-import { blockNativeScripts } from "./block";
+import { blockNativeScripts } from "@/ui/block";
 import { mountPortal, mountPortalError, unmountPortal } from "./host";
 import { isAppPath, isTargetPath, isTopPath } from "./route";
 

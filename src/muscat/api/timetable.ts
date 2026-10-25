@@ -8,7 +8,7 @@ const currentYear = (d: Document) =>
   Number(d.querySelector<HTMLInputElement>('[name="funcForm:nendo_input"]')?.value);
 
 export function getTimetable(core: Core, year?: number): Promise<Timetable> {
-  return core.run(async (ctx) => {
+  return core.aside(async (ctx) => {
     if (!(await ctx.open("学生時間割表", hasTimetable))) return null;
     if (year !== undefined && year !== currentYear(ctx.doc())) {
       const ok = await ctx.partial("funcForm", "funcForm:search", {

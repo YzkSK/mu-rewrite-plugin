@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { blockNativeScripts } from "./block";
+import { blockNativeScripts, unblockNativeScripts } from "./block";
 
 const tick = () => new Promise((r) => setTimeout(r, 10));
 
@@ -29,4 +29,24 @@ test("パーサーが足した script と modulepreload を実行前に無効に
   await tick();
   expect(later.type).toBe(""); // 止めた後は触らない
   [inline, ext, other, later].forEach((s) => s.remove());
+});
+
+test("unblock: 止めた script を元の type・中身で作り直して動かす", async () => {
+  const stop = blockNativeScripts(document);
+  const a = document.createElement("script");
+  a.id = "ub";
+  a.setAttribute("type", "text/javascript");
+  a.textContent = "window.__ub = (window.__ub || 0) + 1";
+  document.head.append(a);
+  await tick();
+  stop();
+  expect(a.type).toBe("text/x-mu-blocked");
+  expect(a.getAttribute("data-mu-type")).toBe("text/javascript");
+  await unblockNativeScripts(document);
+  const now = document.getElementById("ub") as HTMLScriptElement;
+  expect(now).not.toBe(a);
+  expect(now.getAttribute("type")).toBe("text/javascript");
+  expect(now.hasAttribute("data-mu-type")).toBe(false);
+  expect(now.textContent).toContain("__ub");
+  now.remove();
 });

@@ -107,14 +107,19 @@ test("同時に 2 回呼んでも直列で両方解決する", async () => {
   expect(r.max()).toBe(1);
 });
 
-test("readLivePage / driveLive: 生きた doc を通信 0 回で読み、ref で操作する", async () => {
-  const r = router([() => ""]);
-  const doc = pageDoc(`<form id="funcForm"><input name="a" value="1"><button type="button" onclick="this.dataset.hit='1'">go</button></form>`);
+test("readLivePage / driveLive: 複製を読んで操作し、生きた doc には触らない。onchange の ab は自分で送る", async () => {
+  const r = router([() => `<partial-response><changes><update id="jakarta.faces.ViewState"><![CDATA[vs2]]></update></changes></partial-response>`]);
+  const doc = pageDoc(
+    `<form id="funcForm" action="/f" method="post"><input name="a" value="1" onchange="PrimeFaces.ab({s:&quot;funcForm:a&quot;,f:&quot;funcForm&quot;,u:&quot;funcForm&quot;});"><input type="hidden" name="jakarta.faces.ViewState" value="vs1"><button type="button">go</button></form>`,
+  );
+  const live = doc.documentElement.outerHTML;
   const c = createMuscatClient({ fetch: r.f, doc, ids, now });
   const page = await c.readLivePage();
   const controls = (page.blocks[0] as { items: { ref: string }[] }).items;
   expect(controls.length).toBe(2);
-  expect(await c.driveLive([{ kind: "set", ref: controls[0]!.ref, value: "2" }])).toBe("none");
-  expect(doc.querySelector<HTMLInputElement>('[name="a"]')!.value).toBe("2");
   expect(r.calls.length).toBe(0);
+  expect(await c.driveLive([{ kind: "set", ref: controls[0]!.ref, value: "2" }])).toBe("done");
+  expect(r.calls.length).toBe(1);
+  expect(await c.readLive((d) => d.querySelector<HTMLInputElement>('[name="a"]')!.value)).toBe("2");
+  expect(doc.documentElement.outerHTML).toBe(live); // 生きた doc は読み書きされない(ref も付かない)
 });

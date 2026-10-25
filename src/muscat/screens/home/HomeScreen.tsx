@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import { nativeNav } from "@/muscat/shell/nativeNav";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
@@ -15,7 +14,7 @@ import { useHome, type HomeState } from "./useHome";
 
 /** ホーム。操作は元の画面の部品を click する(通信を起こすものは ajax: true)。now・initial はテスト用 */
 export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient; doc: Document; initial?: HomeState; now?: Date }) {
-  const { status, page, error, busy = false, run, read } = useHome(client, doc, initial);
+  const { status, page, error, busy = false, run, read } = useHome(client, initial);
   const [course, setCourse] = useState<string | null>(null);
   const [month, setMonth] = useState(false); // 月のカレンダーを出しているか
   const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
@@ -57,7 +56,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
           }}
           onNav={(label) => {
             setCourse(null);
-            nativeNav(doc, label);
+            void client.navigate(label).catch(() => {});
           }}
         />
       )}

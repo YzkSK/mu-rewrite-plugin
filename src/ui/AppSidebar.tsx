@@ -7,7 +7,7 @@ import {
   SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/starwind/sidebar";
-import type { NavGroup, NavItem, NavModel } from "@/muscat/shell/drawerItems";
+import { NATIVE_LABEL, type NavGroup, type NavItem, type NavModel } from "@/muscat/shell/drawerItems";
 
 // 移動中は上の細い帯(TopProgress)で示す。項目の横に丸いアイコンを出すと未読の数がずれた
 type Props = { model: NavModel; onPick?: () => void; onPending?: (label: string) => void };
@@ -67,7 +67,8 @@ function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
 }
 
 function FooterItem({ item, pick }: { item: NavItem; pick: Pick }) {
-  const cls = `${MB} ${ACTIVE} h-8 rounded-none px-5 text-[13px] ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
+  const small = item.label === NATIVE_LABEL; // 非常口。目立たせない
+  const cls = `${MB} ${ACTIVE} ${small ? "h-7 text-[11px]" : "h-8 text-[13px]"} rounded-none px-5 ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
   return (
     <SidebarMenuItem>
       {"href" in item ? (

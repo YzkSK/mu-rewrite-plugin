@@ -4,7 +4,6 @@ import { Button } from "@/ui/Button";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
-import { nativeNav } from "@/muscat/shell/nativeNav";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
 import { TimetableGrid } from "./TimetableGrid";
@@ -97,7 +96,7 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
           onClose={() => setCourse(null)}
           onNav={(label) => {
             setCourse(null);
-            nativeNav(doc, label);
+            void client.navigate(label).catch(() => {});
           }}
         />
       )}

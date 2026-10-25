@@ -34,7 +34,8 @@ test("request", () => {
   expect(r.body.get("funcForm:nendo_input")).toBe("2026");
   expect(r.body.get("a")).toBe("b");
   expect(r.headers["Faces-Request"]).toBe("partial/ajax");
-  expect(r.headers["Content-Type"]).toBe("application/x-www-form-urlencoded");
+  expect(r.headers["Content-Type"]).toBe("application/x-www-form-urlencoded; charset=UTF-8");
+  expect(r.headers["X-Requested-With"]).toBe("XMLHttpRequest");
 });
 
 test("apply: 差し替えで消えた ViewState の項目を、method=post のフォームに足し直す(値は trim)", () => {

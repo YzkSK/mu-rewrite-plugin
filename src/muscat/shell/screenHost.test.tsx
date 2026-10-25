@@ -1,92 +1,91 @@
-import { beforeEach, expect, mock, test } from "bun:test";
+import { afterEach, expect, mock, test } from "bun:test";
+import { fakeClient } from "../screens/fakeClient";
 
 mock.module("@/ui/tokens.css?inline", () => ({ default: "" }));
-const { mountScreen, unmountScreen } = await import("./screenHost");
-const { SCREENS, genericScreen } = await import("./screens");
+const { mountShell, unmountShell } = await import("./screenHost");
 
-const menuLink = (label: string) => `<a data-pfconfirmcommand="{'menuForm:mainMenu_menuid':'${label}|1'}">${label}</a>`;
 const host = () => document.getElementById("mu-react-host");
 const flush = () => new Promise((r) => setTimeout(r, 20));
 const text = () => host()?.shadowRoot?.textContent ?? "";
 
-beforeEach(() => {
-  unmountScreen();
-  document.body.innerHTML = `<p class="loginInfo">武蔵 太郎 さん</p><form id="menuForm">${["学生時間割表", "出席確認", "成績照会"].map(menuLink).join("")}</form>`;
-  globalThis.fetch = (() => new Promise(() => {})) as unknown as typeof fetch; // 通信は止めておく
-});
+const menu = `<ul id="menuForm:mainMenu"><li class="ui-menuitem ui-menu-parent"><a>授業</a><ul>
+  <li class="ui-menuitem"><a>出席確認</a></li><li class="ui-menuitem"><a>成績照会</a></li></ul></li></ul>`;
+const page = (code: string, title: string) =>
+  new DOMParser().parseFromString(`<body><p class="loginInfo">武蔵 太郎 さん</p>${menu}<div id="wrap"><div id="mainWrapTop">[${code}] ${title}</div></div></body>`, "text/html");
 
-test("ScreenDef で mount、unmount で外れる。ユーザー名とシェルの項目が出る", async () => {
-  mountScreen(SCREENS.Atb005!, "Atb005");
+/** 画面の移動は client が持つ Document の入れ替え。navigate は渡した Document に移る */
+function setup(first: Document, pages: Record<string, Document> = {}) {
+  let shown = { doc: first, seq: 0 };
+  const listeners = new Set<() => void>();
+  const log: string[] = [];
+  const client = fakeClient({
+    shown: () => shown,
+    subscribe: (l) => (listeners.add(l), () => void listeners.delete(l)),
+    navigate: async (label) => {
+      log.push(`navigate:${label}`);
+      const doc = pages[label];
+      if (!doc) throw new Error("x");
+      shown = { doc, seq: shown.seq + 1 };
+      listeners.forEach((l) => l());
+    },
+    logout: async () => "/uprx/",
+  });
+  const actions = { assign: (u: string) => void log.push(`assign:${u}`), openNative: () => void log.push("native") };
+  const screens: string[] = [];
+  mountShell(client, actions, (s, home) => void screens.push(`${s?.title ?? "-"}:${home}`));
+  return { log, screens };
+}
+
+afterEach(() => unmountShell());
+
+test("今の画面(client が持つ Document)を描き、ユーザー名・サイドバー・元の画面で開くが出る", async () => {
+  const { screens } = setup(page("Atb005", "出席確認"));
   await flush();
   expect(host()).not.toBeNull();
   expect(text()).toContain("出席確認");
   expect(text()).toContain("武蔵 太郎");
-  for (const l of ["ホーム", "MU ポータルへ", "MU-LMS へ", "ログアウト"]) expect(text()).toContain(l);
-  unmountScreen();
+  for (const l of ["ホーム", "成績照会", "個人設定", "MU ポータルへ", "MU-LMS へ", "ログアウト", "元の画面で開く"]) expect(text()).toContain(l);
+  expect(screens).toEqual(["出席確認:false"]);
+  unmountShell();
   expect(host()).toBeNull();
 });
 
-test("key が変わると前の画面を unmount して差し替える", async () => {
-  mountScreen(SCREENS.Kmd008!, "Kmd008");
+test("サイドバーの項目で client.navigate し、移った先の画面に替わる(元の画面は触らない)", async () => {
+  const native = page("Atb005", "出席確認");
+  const before = native.documentElement.outerHTML;
+  const { log, screens } = setup(native, { 成績照会: page("Kmg006", "成績照会") });
   await flush();
-  expect(text()).toContain("学生時間割表");
-  mountScreen(SCREENS.Atb005!, "Atb005");
+  const item = [...(host()?.shadowRoot?.querySelectorAll("a, button") ?? [])].find((e) => e.textContent?.trim() === "成績照会") as HTMLElement;
+  item.click();
   await flush();
-  expect(document.querySelectorAll("#mu-react-host").length).toBe(1);
-  expect(text()).toContain("出席確認");
-});
-
-test("サイドバーに個人設定が出る。個人設定の画面(Bsa004)では、それが選択中になる", async () => {
-  mountScreen(SCREENS.Atb005!, "Atb005");
-  await flush();
-  expect(text()).toContain("個人設定");
-  mountScreen(SCREENS.Bsa004!, "Bsa004");
-  await flush();
+  expect(log).toEqual(["navigate:成績照会"]);
+  expect(screens).toEqual(["出席確認:false", "成績照会:false"]);
   const current = [...(host()?.shadowRoot?.querySelectorAll('[aria-current="page"]') ?? [])].map((e) => e.textContent);
-  expect(current.some((t) => t?.includes("個人設定"))).toBe(true);
+  expect(current.some((t) => t?.includes("成績照会"))).toBe(true);
+  expect(native.documentElement.outerHTML).toBe(before);
 });
 
-test("同じ key の再 mount は何もしない。汎用画面も key で出せる", async () => {
-  mountScreen(SCREENS.Atb005!, "Atb005");
-  const first = host();
-  mountScreen(SCREENS.Atb005!, "Atb005");
-  expect(host()).toBe(first);
-  mountScreen(genericScreen("ホーム"), "");
+test("移動に失敗したら、画面は替えずにエラーを出す。ログアウトは返った URL へ移る。元の画面で開くは openNative", async () => {
+  const { log } = setup(page("Atb005", "出席確認"));
   await flush();
-  expect(text()).toContain("ホーム");
-});
-
-test("元のサイトが body ごと差し替えてホストが消えても、どの画面でもすぐ戻り、今の画面が見えたまま", async () => {
-  for (const [def, key, title] of [[SCREENS.Atb005!, "Atb005", "出席確認"], [genericScreen("何かの画面"), "Xxx001", "何かの画面"]] as const) {
-    mountScreen(def, key);
+  const click = async (label: string) => {
+    ([...(host()?.shadowRoot?.querySelectorAll("a, button") ?? [])].find((e) => e.textContent?.trim().startsWith(label)) as HTMLElement).click();
     await flush();
-    document.head.innerHTML = "";
-    document.body.innerHTML = "<div id='menuForm:mainMenu'></div><div id='wrap'>元の画面</div>";
-    await flush();
-    expect(host()?.isConnected).toBe(true);
-    expect(document.getElementById("mu-react-hide")?.isConnected).toBe(true);
-    expect(text()).toContain(title);
-    unmountScreen();
-    expect(host()).toBeNull();
-  }
-});
-
-test("エラー画面(メニューが無い)への差し替えでは戻さず、元の画面を見せる", async () => {
-  mountScreen(SCREENS.Atb005!, "Atb005");
-  await flush();
-  document.body.innerHTML = "<p>システムエラーが発生しました</p>";
-  await flush();
-  expect(host()).toBeNull();
-  expect(document.getElementById("mu-react-hide")).toBeNull();
-});
-
-test("同じ画面のままの差し替えでは、新しい DOM で描き直す(古い DOM を見張り続けない)", async () => {
-  mountScreen(SCREENS.Atb005!, "Atb005");
-  await flush();
-  const before = host();
-  document.body.innerHTML = "<div id='menuForm:mainMenu'></div><div id='wrap'><div id='mainWrapTop'>出席確認 [Atb005]</div></div>";
-  await flush();
-  expect(host()).not.toBeNull();
-  expect(host()).not.toBe(before);
+  };
+  await click("成績照会");
+  expect(text()).toContain("画面を開けませんでした");
   expect(text()).toContain("出席確認");
+  await click("ログアウト");
+  await click("元の画面で開く");
+  expect(log).toEqual(["navigate:成績照会", "assign:/uprx/", "native"]);
+});
+
+test("ホーム(コードなし・#portalCont)は home、表示できない画面は null で案内が出る", async () => {
+  const home = new DOMParser().parseFromString(`<body>${menu}<div id="wrap"><div id="portalCont"></div></div></body>`, "text/html");
+  expect(setup(home).screens).toEqual(["ホーム:true"]);
+  unmountShell();
+  const bad = new DOMParser().parseFromString(`<body><p>エラー</p></body>`, "text/html");
+  expect(setup(bad).screens).toEqual(["-:false"]);
+  await flush();
+  expect(text()).toContain("この画面を表示できませんでした");
 });

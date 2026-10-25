@@ -1,3 +1,6 @@
+import { actionOf, PARTIAL_HEADERS } from "./virtual/req";
+import { absorbScripts } from "./virtual/widgets";
+
 export function buildPartialRequest(
   form: HTMLFormElement,
   source: string,
@@ -17,12 +20,9 @@ export function buildPartialRequest(
     else body.set(k, v);
   }
   return {
-    url: new URL(form.getAttribute("action") ?? "", location.href).href,
+    url: actionOf(form),
     body,
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Faces-Request": "partial/ajax",
-    },
+    headers: PARTIAL_HEADERS,
   };
 }
 
@@ -73,4 +73,5 @@ export function applyPartialResponse(doc: Document, xml: string, skip: string[] 
       .querySelector<HTMLInputElement>('input[name="rx-token"]')?.value;
     if (token !== undefined) setAll(doc, "rx-token", token);
   }
+  absorbScripts(doc); // 差し替えた中の script は控えに入れて取り除く(元の画面の script は動かさない)
 }

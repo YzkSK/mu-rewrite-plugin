@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { createSession } from "./session";
+import { scanWidgets } from "./virtual/widgets";
 
 const page = (action: string, token: string) =>
   new DOMParser().parseFromString(
@@ -18,6 +19,18 @@ test("menuRequest は menuForm の action に送り、項目を足す", () => {
   expect(body.get("rx.sync.source")).toBe("menuForm:mainMenu");
   expect(body.get("menuForm:mainMenu")).toBe("menuForm:mainMenu");
   expect(body.get("menuForm:mainMenu_menuid")).toBe("A|1");
+});
+
+test("取り込んだ Document(最初の複製・adopt)から script を取り除き、部品の表に移す", () => {
+  const withScript = (id: string) =>
+    new DOMParser().parseFromString(`<form id="menuForm" action="/m"><span id="${id}">題名</span><script>PrimeFaces.cw("CommandLink","w",{id:"${id}"});</script></form>`, "text/html");
+  const s = createSession(withScript("a"), ids);
+  expect(s.doc.querySelector("script")).toBeNull();
+  expect(s.doc.getElementById("menuForm")!.textContent).toBe("題名");
+  const next = withScript("b");
+  s.adopt(next);
+  expect(next.querySelector("script")).toBeNull();
+  expect(scanWidgets(next).has("b")).toBe(true);
 });
 
 test("未知のラベルは Error", () => {

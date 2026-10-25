@@ -1,5 +1,5 @@
 import type { MuscatClient } from "@/muscat/api/client";
-import { Card } from "@/ui/Card";
+import { ErrorCard } from "@/ui/ErrorCard";
 import { PageLoading } from "@/ui/PageLoading";
 import { GenericSections } from "../generic/GenericSections";
 import { useLivePage, type LiveState } from "../generic/useLivePage";
@@ -15,10 +15,10 @@ export function nothingToAnswer(doc: Document): boolean {
  * あるときの元の画面はまだ見られていないので、カードの中に汎用の画面で出す
  */
 export function SafetyScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState }) {
-  const { status, page, error, run } = useLivePage(client, doc, initial);
+  const { status, page, error, run } = useLivePage(client, initial);
   return (
     <div className="flex w-full max-w-[980px] flex-col gap-3.5 p-4">
-      {status === "error" && <Card className="p-4 text-error">{error}</Card>}
+      {status === "error" && <ErrorCard>{error}</ErrorCard>}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <section className="rounded-[4px] border border-border bg-card">

@@ -9,3 +9,13 @@ export class MuscatDownError extends Error {}
 
 /** 元のページが出した警告など、文をそのまま見せる失敗。 */
 export class NoticeError extends Error {}
+
+/** 部分更新の応答が <redirect>(セッション切れや画面の移動)だった。画面は再読み込みを案内する。 */
+export class RedirectError extends Error {
+  constructor(readonly url: string) {
+    super("redirect");
+  }
+}
+
+/** もっと新しい画面の移動が来たので、待っていた操作を捨てた。 */
+export class SupersededError extends Error {}

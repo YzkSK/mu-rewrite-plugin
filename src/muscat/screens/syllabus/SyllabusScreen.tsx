@@ -16,7 +16,7 @@ const read = (c: MuscatClient) => c.readSyllabus();
 
 /** シラバス検索。条件は画面で持ち、「検索」で元の画面に入れて押す。通信中は押したボタンが回り、結果は薄くなる。科目を開くと右から詳細が出る */
 export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<SyllabusPage> }) {
-  const { status, page, error, busy = false, run } = useLiveScreen(client, doc, read, initial);
+  const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
   const [act, setAct] = useState<string | null>(null);
   // 最初の検索は、通信が終わってから元のページを読み直して表が出るまで間がある(実機で約 0.85 秒)。表が出るまで読み込み中を出す
   const [searched, setSearched] = useState(false);

@@ -17,8 +17,8 @@ import { useNews, type NewsState } from "./useNews";
 const MORE = "__more__";
 
 /** 掲示板。操作は元の画面の部品を click / set する(通信を起こすものは ajax: true) */
-export function NewsScreen({ client, doc, initial, initialOpened = "", initialReading = false }: { client: MuscatClient; doc: Document; initial?: NewsState; initialOpened?: string; initialReading?: boolean }) {
-  const { status, page, error, busy = false, run } = useNews(client, doc, initial);
+export function NewsScreen({ client, initial, initialOpened = "", initialReading = false }: { client: MuscatClient; doc?: Document; initial?: NewsState; initialOpened?: string; initialReading?: boolean }) {
+  const { status, page, error, busy = false, run } = useNews(client, initial);
   const { toast, node } = useToast();
   const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
   // 元のページに未読の総数は無いので、覚えた数を操作に合わせて減らす。開いても一覧はすぐ既読にならないので、同じ掲示は 1 回だけ数える

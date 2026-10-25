@@ -4,6 +4,8 @@ const SEL = "script, link[rel=modulepreload]";
 /** 元のアプリの script を実行前に無効にする(同一オリジンの src か、中身だけの script)。modulepreload も消す */
 function neutralize(el: Element): void {
   if (el instanceof HTMLScriptElement) {
+    if (el.type === BLOCKED) return;
+    const type = el.getAttribute("type");
     const src = el.getAttribute("src");
     if (src !== null) {
       let same = false;
@@ -12,6 +14,7 @@ function neutralize(el: Element): void {
       el.setAttribute("data-mu-src", src);
       el.removeAttribute("src");
     }
+    if (type !== null) el.setAttribute("data-mu-type", type); // 元に戻すときのため
     el.type = BLOCKED;
   } else if (el instanceof HTMLLinkElement && el.rel === "modulepreload") el.remove();
 }
@@ -33,4 +36,23 @@ export function blockNativeScripts(doc: Document): () => void {
   const stop = () => mo.disconnect();
   doc.addEventListener("DOMContentLoaded", stop, { once: true });
   return stop;
+}
+
+/**
+ * 止めた script を元の type・src で作り直して動かす(描かないと決めたページ=ログイン・中継ページなど、元の画面にそのまま働かせる場合)。
+ * 文書の順に 1 つずつ動かす(外部のものは読み込みを待つ。読めなくても続ける)
+ */
+export async function unblockNativeScripts(doc: Document): Promise<void> {
+  for (const old of [...doc.querySelectorAll<HTMLScriptElement>(`script[type="${BLOCKED}"]`)]) {
+    const next = doc.createElement("script");
+    for (const a of old.attributes) if (!["type", "data-mu-src", "data-mu-type"].includes(a.name)) next.setAttribute(a.name, a.value);
+    const type = old.getAttribute("data-mu-type");
+    if (type !== null) next.setAttribute("type", type);
+    const src = old.getAttribute("data-mu-src");
+    if (src !== null) next.src = src;
+    else next.textContent = old.textContent;
+    const loaded = src === null ? null : new Promise<void>((r) => { next.addEventListener("load", () => r(), { once: true }); next.addEventListener("error", () => r(), { once: true }); });
+    old.replaceWith(next);
+    await loaded;
+  }
 }

@@ -6,13 +6,8 @@ import { errorMessage } from "../errorMessage";
 
 export type LiveState = { status: "loading" | "ready" | "error"; page?: GenericPage; error?: string };
 
-const QUIET_MS = 150;
-
-/**
- * 生きたページを読み、操作(run)のあとと、ほかの ajax で #funcForm が書き換わったあとに読み直す。
- * 属性の変化は aria-hidden しか見ない(parse が ref を属性で付けるので、全部見ると読み直しが止まらなくなる)。initial はテスト用
- */
-export function useLivePage(client: MuscatClient, doc: Document, initial?: LiveState) {
+/** 複製の document を読み、操作(run)のあとに読み直す(複製は自分の通信でしか変わらない)。initial はテスト用 */
+export function useLivePage(client: MuscatClient, initial?: LiveState) {
   const [state, setState] = useState<LiveState>(initial ?? { status: "loading" });
   const read = useCallback(
     () =>
@@ -24,20 +19,7 @@ export function useLivePage(client: MuscatClient, doc: Document, initial?: LiveS
   );
   useEffect(() => {
     void read();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const observer = new MutationObserver(() => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void read(), QUIET_MS);
-    });
-    // フォームごと差し替えられても追えるよう、ひとつ外側を見る。ダイアログの開閉は aria-hidden の変化だけのことがあるので、それだけ属性も見る
-    observer.observe(doc.getElementById("funcForm")?.parentElement ?? doc.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["aria-hidden"] });
-    // フォームの外(body の直下)に移されたダイアログの開閉も見る
-    observer.observe(doc.body, { subtree: true, attributes: true, attributeFilter: ["aria-hidden"] });
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [client, doc, read]);
+  }, [read]);
   const run = useCallback(
     async (steps: DriveStep[]) => {
       try {

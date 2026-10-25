@@ -1,10 +1,27 @@
-/** 生きたページの元の「PDF」「Excel」ボタン。同じ form の「非表示」ボタン(id が pdfButton / excelButton)とは別物なので、文字で探す */
-export const findExportButton = (doc: Document, text: "PDF" | "Excel") =>
-  [...doc.querySelectorAll<HTMLButtonElement>("#funcForm button")].find((b) => b.textContent?.trim() === text);
+import type { MuscatClient } from "@/muscat/api/client";
+import type { ExportKind, ExportRequest } from "@/muscat/api/exportForm";
+import type { MenuLabel } from "@/muscat/api/session";
 
-/** 押したら true。見つからなければ false */
-export function exportFile(doc: Document, text: "PDF" | "Excel"): boolean {
-  const b = findExportButton(doc, text);
-  b?.click();
-  return !!b;
+export { findExportButton } from "@/muscat/api/exportForm";
+
+/** 元のボタンが送る POST を、新しいタブへふつうのフォーム送信で送る(ダウンロードの応答はそのタブが受ける。元の画面の script は使わない) */
+export function postToNewTab(req: ExportRequest, doc: Document = document): void {
+  const form = doc.createElement("form");
+  form.method = "post";
+  form.action = req.url;
+  form.target = "_blank";
+  form.style.display = "none";
+  for (const [name, value] of req.fields) {
+    const input = doc.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.append(input);
+  }
+  doc.body.append(form);
+  form.submit();
+  form.remove();
 }
+
+/** 出席・成績の出力。label のメニューを開いて、PDF / Excel のボタンと同じ POST を新しいタブへ送る */
+export const exportFile = (client: MuscatClient, label: MenuLabel, text: ExportKind): Promise<void> => client.exportRequest(label, text).then((r) => postToNewTab(r)).catch(() => {});

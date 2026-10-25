@@ -5,6 +5,7 @@ import type { TeacherSchedulePage, TeacherSearch } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
+import { ErrorCard } from "@/ui/ErrorCard";
 import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
@@ -45,8 +46,8 @@ function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search
 }
 
 /** 教員スケジュール。検索 → 教員の一覧 → 月カレンダー(予定は通信で直接取る)。検索と一覧の操作は元の画面の部品を押し、通信中は結果を薄くして丸いアイコンを重ねる */
-export function TeacherScheduleScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<TeacherSchedulePage> }) {
-  const { status, page, error, busy = false, run } = useLiveScreen(client, doc, read, initial);
+export function TeacherScheduleScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<TeacherSchedulePage> }) {
+  const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
   const [act, setAct] = useState<string | null>(null);
   const go = async (key: string, steps: DriveStep[]) => {
     setAct(key);
@@ -59,7 +60,7 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
   const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
   return (
     <div className="flex flex-col gap-3 p-4">
-      {status === "error" && <Card className="p-4 text-error">{error}</Card>}
+      {status === "error" && <ErrorCard>{error}</ErrorCard>}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>

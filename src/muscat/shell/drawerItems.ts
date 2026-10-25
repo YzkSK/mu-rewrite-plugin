@@ -1,25 +1,30 @@
+import { HOME_LABEL, SETTING_LABEL } from "../api/labels";
 import type { MenuGroup } from "../api/menuGroups";
-import { nativeHome, nativeLogout, nativeNav, SETTING_LABEL } from "./nativeNav";
 
 export const PORTAL_URL = "https://portal.musashino-u.ac.jp/";
 export const LMS_URL = "https://musashino-u.myopenlms.net/";
+export const NATIVE_LABEL = "元の画面で開く";
 
-/** onSelect は元の画面のメニューを押す操作、href は新しいタブで開く外部リンク */
+/** onSelect は画面を移る・ログアウトなどの操作、href は新しいタブで開く外部リンク */
 export type NavItem = { label: string; active?: boolean } & ({ onSelect: () => void } | { href: string });
 export type NavGroup = { title: string; items: NavItem[] };
 export type NavModel = { home: NavItem; groups: NavGroup[]; footer: NavItem[] };
 
+/** サイドバーの操作。画面の移動は拡張機能の中で完結し、元の画面は動かさない */
+export type NavActions = { go(label: string): void; logout(): void; openNative(): void };
+
 /** ホーム + グループ別の項目 + 下の固定部分。title と同じ項目は active。 */
-export function drawerItems(doc: Document, groups: MenuGroup[], title: string): NavModel {
-  const leaf = (label: string): NavItem => ({ label, active: label === title, onSelect: () => void nativeNav(doc, label) });
+export function drawerItems(nav: NavActions, groups: MenuGroup[], title: string): NavModel {
+  const leaf = (label: string): NavItem => ({ label, active: label === title, onSelect: () => nav.go(label) });
   return {
-    home: { label: "ホーム", active: title === "ホーム", onSelect: () => void nativeHome(doc) },
+    home: { label: HOME_LABEL, active: title === HOME_LABEL, onSelect: () => nav.go(HOME_LABEL) },
     groups: groups.map((g) => ({ title: g.title, items: g.labels.map(leaf) })),
     footer: [
       { ...leaf(SETTING_LABEL) },
       { label: "MU ポータルへ", href: PORTAL_URL },
       { label: "MU-LMS へ", href: LMS_URL },
-      { label: "ログアウト", onSelect: () => void nativeLogout(doc) },
+      { label: "ログアウト", onSelect: nav.logout },
+      { label: NATIVE_LABEL, onSelect: nav.openNative },
     ],
   };
 }
