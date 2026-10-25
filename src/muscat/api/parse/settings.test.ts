@@ -52,13 +52,13 @@ const portal = `<span>カレンダーの開始曜日を設定します。</span>
 const page = (active: number, body: string) =>
   new DOMParser().parseFromString(`${dialogs}<form id="funcForm"><div class="ui-tabs" id="funcForm:tabArea"><ul class="ui-tabs-nav">${tabs(active)}</ul><div class="ui-tabs-panels"><div class="ui-tabs-panel" id="funcForm:tabArea:j_id_${active}">${body}</div><div class="ui-tabs-panel" id="funcForm:tabArea:j_id_9"><p>※読み込み済みの別のタブ</p><button>保存</button></div></div></div></form>${confirm}`, "text/html");
 
-test("タブ: テーマ設定は除き、開いているタブを示す", () => {
+test("タブ: テーマ設定とお気に入り機能設定は除き、開いているタブを示す", () => {
   const d = page(0, mail);
   const p = parseSettings(d);
-  expect(p.tabs.map((t) => t.label)).toEqual(["メール設定", "お気に入り機能設定", "ポータル表示設定"]);
-  expect(p.tabs.map((t) => t.active)).toEqual([true, false, false]);
-  expect(p.tabs.map((t) => t.loaded)).toEqual([true, false, false]); // 中身のあるパネルだけ読み込み済み
-  expect(resolveRef(d, p.tabs[1]!.ref)?.getAttribute("href")).toBe("#funcForm:tabArea:j_id_2");
+  expect(p.tabs.map((t) => t.label)).toEqual(["メール設定", "ポータル表示設定"]);
+  expect(p.tabs.map((t) => t.active)).toEqual([true, false]);
+  expect(p.tabs.map((t) => t.loaded)).toEqual([true, false]); // 中身のあるパネルだけ読み込み済み
+  expect(resolveRef(d, p.tabs[1]!.ref)?.getAttribute("href")).toBe("#funcForm:tabArea:j_id_3");
 });
 
 test("メール設定: アドレスの表・種類・追加/削除/保存、時刻、配信停止、注釈、確認の OK", () => {

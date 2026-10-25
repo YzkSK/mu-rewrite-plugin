@@ -5,7 +5,8 @@ import { buttonByText, checkOptions, refOf, selectField, textField } from "./liv
 import { radios } from "./room";
 
 /** 画面に出さないタブ(テーマ設定は拡張の配色と食い違うので出さない) */
-const HIDDEN_TABS = ["テーマ設定"];
+// お気に入りは拡張のメニューに出さないので、その設定のタブも出さない
+const HIDDEN_TABS = ["テーマ設定", "お気に入り機能設定"];
 
 /** 枠(.ui-chkbox-box)を CheckOption にする。操作は枠を click する */
 const boxOption = (label: string, scope: Element | null): CheckOption => {

@@ -9,6 +9,7 @@ import { readMenuGroups } from "../api/menuGroups";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
 import { isLoggedIn } from "./resolveScreen";
 import { screenCodeOf } from "./screenCode";
+import { rememberedUnread } from "../screens/news/unreadCount";
 import type { ScreenDef } from "./screens";
 
 let current: { key: string; screen: ScreenDef; root: Root; keep: MutationObserver } | null = null;
@@ -46,7 +47,6 @@ export function mountScreen(screen: ScreenDef, key: string): void {
   const found = readMenuGroups(document);
   // グループが読めなくても項目は出す
   const groups = found.length ? found : Object.keys(ids).length ? [{ title: "メニュー", labels: Object.keys(ids) }] : [];
-  const model = drawerItems(document, groups, screen.title);
   const mountPoint = document.createElement("div");
   mountShadowRoot(document, css).appendChild(mountPoint);
   const root = createRoot(mountPoint);
@@ -54,7 +54,7 @@ export function mountScreen(screen: ScreenDef, key: string): void {
   // 描き終えてから覆いを外す(render は後で描くので、すぐ外すと 1 コマだけ元の白い地が見える。実機で確認)
   flushSync(() =>
     root.render(
-      <App title={screen.title} model={model} user={loginUserOf(document)} lastLogin={lastLoginOf(document)}>
+      <App title={screen.title} model={drawerItems(document, groups, screen.title, rememberedUnread())} user={loginUserOf(document)} lastLogin={lastLoginOf(document)}>
         {screen.render(client, document)}
       </App>,
     ),

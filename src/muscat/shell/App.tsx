@@ -31,7 +31,7 @@ export function App({ title, model, user, lastLogin, children }: Props) {
     const id = requestAnimationFrame(() => setMounting(false));
     return () => cancelAnimationFrame(id);
   }, []);
-  const body = <AppSidebar model={model} pendingLabel={pending ?? undefined} onPending={setPending} onPick={narrow ? () => change(false) : undefined} />;
+  const body = <AppSidebar model={model} onPending={setPending} onPick={narrow ? () => change(false) : undefined} />;
   return (
     <PageTitleContext value={title}>
     <SidebarProvider

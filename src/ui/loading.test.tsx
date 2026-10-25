@@ -31,20 +31,17 @@ test("Button loading: 押せなくなりスピナーが出る(文字は残して
   expect(renderToString(<Button>表示</Button>)).not.toContain('mu-spin');
 });
 
-const side = (pendingLabel?: string) =>
+const side = () =>
   renderToString(
     <SidebarProvider>
       <Sidebar collapsible="none">
-        <AppSidebar model={drawerItems(document, [{ title: "授業", labels: ["出席確認", "成績照会"] }], "出席確認")} pendingLabel={pendingLabel} />
+        <AppSidebar model={drawerItems(document, [{ title: "授業", labels: ["出席確認", "成績照会"] }], "出席確認")} />
       </Sidebar>
     </SidebarProvider>,
   );
 
-test("AppSidebar: 移動中の項目の横だけにスピナー", () => {
-  expect(side()).not.toContain('mu-spin');
-  const h = side("成績照会");
-  expect(h.match(/mu-spin/g)?.length).toBe(1);
-  expect(h).toMatch(/成績照会<\/span><span[^>]*mu-spin/);
+test("AppSidebar: 項目の横にスピナーは出さない(移動中は上の帯で示す)", () => {
+  expect(side()).not.toContain("mu-spin");
 });
 
 // 実機で「画面を移るたびにサイドバーのグループが開く動きをする」: 最初は動かさない印を付ける

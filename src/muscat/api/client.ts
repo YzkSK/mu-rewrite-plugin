@@ -46,8 +46,7 @@ export type MuscatClient = {
   /** 教室予約の検索を、元のボタンを押さず同じ通信で直接送る */
   roomSubmit(): Promise<void>;
   /** 検索のあとの続きの教室(1 回 40 行)を直接取る。[] で終わり */
-  roomMore(): Promise<RoomRow[]>;
-  /** 次のページ(約 340 件ずつ)へ進み、その最初の教室を読む。最後のページなら null */
+  roomMore(): Promise<RoomRow[]>;  /** 次のページ(約 340 件ずつ)へ進み、その最初の教室を読む。最後のページなら null */
   roomNext(): Promise<RoomRow[] | null>;
   /** 教室の ⓘ(建物・収容人数など)を取る。元の画面の表は検索し直すことがある */
   roomInfo(name: string): Promise<RoomInfo>;
@@ -85,8 +84,7 @@ export function createMuscatClient(deps: {
         if (!live.doc.getElementById("funcForm:search")) throw new ParseError("教室予約の検索ボタンがありません");
         await roomSubmit(live.doc, deps.fetch, "funcForm:search", "funcForm:search funcForm:conditionArea");
       }),
-    roomMore: () => core.runLive((live) => roomMore(live.doc, deps.fetch)),
-    roomNext: () => core.runLive((live) => roomNext(live.doc, deps.fetch)),
+    roomMore: () => core.runLive((live) => roomMore(live.doc, deps.fetch)),    roomNext: () => core.runLive((live) => roomNext(live.doc, deps.fetch)),
     roomInfo: (name) => core.runLive((live) => roomInfo(live.doc, deps.fetch, name)),
     roomBooking: (title, lesson) => core.runLive((live) => roomBooking(live.doc, deps.fetch, title, lesson)),
     getCourse: (key) => getCourse(core, deps.doc, key),

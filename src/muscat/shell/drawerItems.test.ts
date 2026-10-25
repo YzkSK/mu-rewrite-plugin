@@ -11,6 +11,11 @@ test("ホーム・グループ別の項目・固定部分が元の並びで出�
   expect(m.footer.map((i) => i.label)).toEqual(["個人設定", "MU ポータルへ", "MU-LMS へ", "ログアウト"]);
 });
 
+test("掲示板には未読の数(0 なら出さない)", () => {
+  expect(drawerItems(doc(""), [{ title: "お知らせ", labels: ["掲示板"] }], "掲示板", 3).groups[0]!.items[0]!.badge).toBe(3);
+  expect(drawerItems(doc(""), [{ title: "お知らせ", labels: ["掲示板"] }], "x", 0).groups[0]!.items[0]!.badge).toBeUndefined();
+});
+
 test("今の画面の項目は active(除かない)", () => {
   expect(drawerItems(doc(""), groups, "出席確認").groups[0]!.items.map((i) => i.active)).toEqual([true, false]);
   expect(drawerItems(doc(""), groups, "ホーム").home.active).toBe(true);
