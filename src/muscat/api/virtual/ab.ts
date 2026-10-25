@@ -61,9 +61,10 @@ export type AbExt = { params?: [string, string][]; ignoreAutoUpdate?: boolean; /
 export function buildAbRequest(doc: Document, cfg: AbConfig, src?: Element | null, ext: AbExt = {}): Req {
   const source = cfg.s ?? src?.id;
   if (!source) throw new Error("送信元がありません");
-  // f が無ければ送信元を含むフォーム。小窓はフォームの外にあって、中にフォームを持つことがある(掲示板の詳細の ✕。実機で確認)
+  // f が無ければ送信元を含むフォーム、それも無ければ文書の先頭のフォーム(PrimeFaces と同じ)。
+  // 小窓は body 直下にあり、掲示板の詳細の close は headerForm を送る(2026-10-26 実機で記録)
   const at = src ?? doc.getElementById(source);
-  const form = (cfg.f ? doc.getElementById(cfg.f) : null) ?? at?.closest("form") ?? at?.querySelector("form");
+  const form = (cfg.f ? doc.getElementById(cfg.f) : null) ?? at?.closest("form") ?? (at ? doc.querySelector("form") : null);
   if (form?.tagName !== "FORM") throw new Error("フォームが見つかりません");
   const body = new URLSearchParams();
   body.append("jakarta.faces.partial.ajax", "true");

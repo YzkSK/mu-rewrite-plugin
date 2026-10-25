@@ -97,6 +97,17 @@ test("要求: rv / p(検索式)/ pa、u の @none は render を付けない。f
   expect(() => buildAbRequest(d, { s: "a", f: "nothing" })).toThrow();
 });
 
+test("f が無く送信元がフォームの外(body 直下の小窓)なら、文書の先頭のフォーム。中のフォームではない(実機で記録)", () => {
+  const d = new DOMParser().parseFromString(
+    `<form id="headerForm" action="/h"><input type="hidden" name="headerForm_SUBMIT" value="1"></form>
+     <div id="bsd00702:dialog"><form id="bsd00702:ch" action="/c"><input name="bsd00702:ch:x" value="on"></form></div>`,
+    "text/html",
+  );
+  const { body } = buildAbRequest(d, { s: "bsd00702:dialog", e: "close", p: "bsd00702:dialog", rv: true }, d.getElementById("bsd00702:dialog"));
+  expect(body.has("headerForm_SUBMIT")).toBe(true);
+  expect(body.has("bsd00702:ch:x")).toBe(false);
+});
+
 test("要求 4(確認付きの小窓のボタン): 送信元 = execute、`<s>=<s>`、render なし、小窓のフォームの項目だけ", () => {
   const d = doc();
   const cfg = parseAb(
