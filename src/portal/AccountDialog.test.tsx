@@ -49,6 +49,50 @@ test("登録デバイス: 種類と登録日、トークンは出さない", asy
   expect(host.textContent).not.toContain("SECRET");
 });
 
+test("登録デバイス: サインアウトは確認を挟み、DELETE に CSRF ヘッダが付く", async () => {
+  document.cookie = "_csrf=" + encodeURIComponent('a:2:{i:0;s:5:"_csrf";i:1;s:32:"abcdEFGH1234abcdEFGH1234abcdEFGH";}');
+  await mount();
+  const base = globalThis.fetch;
+  const calls: { u: string; init?: RequestInit }[] = [];
+  globalThis.fetch = (async (u: string, init?: RequestInit) => {
+    if (init?.method === "DELETE") { calls.push({ u, init }); return ok({}); }
+    return base(u, init);
+  }) as unknown as typeof fetch;
+  tab("登録デバイス").click();
+  await flush();
+  const btn = (t: string) => [...host.querySelectorAll("button")].filter((b) => b.textContent === t);
+  btn("サインアウト")[0]!.click(); // 行のボタン: 確認に替わるだけ
+  await flush();
+  expect(calls.length).toBe(0);
+  expect(host.textContent).toContain("この端末をサインアウトしますか?");
+  btn("サインアウト")[0]!.click();
+  await flush();
+  expect(calls.length).toBe(1);
+  expect(calls[0]!.u).toBe("/api/device/delete/1");
+  expect((calls[0]!.init!.headers as Record<string, string>)["X-CSRF-Token"]).toBe("abcdEFGH1234abcdEFGH1234abcdEFGH");
+  btn("すべての端末をサインアウト")[0]!.click();
+  await flush();
+  expect(calls.length).toBe(1);
+  btn("サインアウト").at(-1)!.click(); // 確認の行のボタン(最後)
+  await flush();
+  expect(calls[1]!.u).toBe("/api/device/delete-all");
+  document.cookie = "_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+});
+
+test("登録デバイス: 失敗したら表示する", async () => {
+  await mount();
+  const base = globalThis.fetch;
+  globalThis.fetch = (async (u: string, init?: RequestInit) => (init?.method === "DELETE" ? new Response("", { status: 500 }) : base(u, init))) as unknown as typeof fetch;
+  tab("登録デバイス").click();
+  await flush();
+  const row = () => [...host.querySelectorAll("button")].filter((b) => b.textContent === "サインアウト");
+  row()[0]!.click();
+  await flush();
+  row()[0]!.click();
+  await flush();
+  expect(host.textContent).toContain("サインアウトできませんでした");
+});
+
 test("アクティビティログ: ラベル変換と さらに表示", async () => {
   await mount();
   tab("アクティビティログ").click();

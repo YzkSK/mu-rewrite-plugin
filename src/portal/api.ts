@@ -51,8 +51,28 @@ export async function fetchCategories(): Promise<FlatCategory[]> {
   return flattenCategories((await fetchJson("/api/information-category/tree")).result?.items);
 }
 
-export async function sendJson(method: string, url: string, body: unknown): Promise<Json> {
-  const r = await fetch(url, { method, credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+/** 元のサイトと同じ CSRF ヘッダ。_csrf クッキー(PHP のシリアライズ文字列)から token を取り出す */
+export function csrfHeaders(cookie: string): Record<string, string> {
+  const get = (name: string): string | null => {
+    const c = cookie.split(/;\s*/).find((p) => p.startsWith(name + "="));
+    if (!c) return null;
+    try { return decodeURIComponent(c.slice(name.length + 1)); } catch { return null; }
+  };
+  const h: Record<string, string> = {};
+  const token = get("_csrf")?.match(/i:1;s:\d+:"([^"]+)"/)?.[1];
+  if (token) h["X-CSRF-Token"] = token;
+  const xsrf = get("XSRF-TOKEN");
+  if (xsrf) h["X-XSRF-TOKEN"] = xsrf;
+  return h;
+}
+
+/** 書き込み系(PUT/POST/DELETE)。body が undefined なら本文なし */
+export async function sendJson(method: string, url: string, body?: unknown): Promise<Json> {
+  const r = await fetch(url, {
+    method, credentials: "include",
+    headers: { "Content-Type": "application/json", ...csrfHeaders(document.cookie) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
   if (!r.ok) throw new Error(url + " " + r.status);
   const j = await r.json();
   if (j && j.is_successful === false) throw new Error(url + " " + (j.result?.message || "failed"));
@@ -102,21 +122,7 @@ export async function fetchMe(): Promise<PortalUser> {
   return u;
 }
 
-/** 元のユーザーメニューを操作して項目を実行する。項目名は言語で変わるので、危険色のクラスと言語メニューの除外で選ぶ */
-export function proxyUserMenu(kind: "account" | "signout"): void {
-  const t = document.querySelector("#menu .ant-dropdown-trigger");
-  if (t) for (const ev of ["mouseover", "mouseenter", "click"]) t.dispatchEvent(new MouseEvent(ev, { bubbles: true }));
-  setTimeout(() => {
-    const items = [...document.querySelectorAll<HTMLElement>('.ant-dropdown [role="menuitem"]')];
-    const danger = (n: Element) => n.classList.contains("ant-dropdown-menu-item-danger");
-    const it = items.find((n) => (kind === "signout" ? danger(n) : !danger(n) && !/language/i.test(n.className)));
-    if (it) it.click(); else return console.warn("[mu-portal] user menu item not found", kind);
-    // 「アカウントとセキュリティ」は元の画面の小窓(.ant-modal)で開く。元の画面ごと隠しているので、小窓の入れ物だけ見せる
-    if (kind === "account") setTimeout(() => {
-      const modal = document.querySelector(".ant-modal-root");
-      let box = modal;
-      while (box && box.parentElement !== document.body) box = box.parentElement;
-      box?.setAttribute("data-mu-show", "");
-    }, 300);
-  }, 300);
-}
+/** サインアウト(GET)。成功後の移動は呼び出し側 */
+export const logout = (): Promise<Json> => fetchJson("/api/auth/logout");
+export const deleteDevice = (id: string | number): Promise<Json> => sendJson("DELETE", "/api/device/delete/" + encodeURIComponent(String(id)));
+export const deleteAllDevices = (): Promise<Json> => sendJson("DELETE", "/api/device/delete-all");

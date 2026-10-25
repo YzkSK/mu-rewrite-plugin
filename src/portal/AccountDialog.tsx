@@ -2,7 +2,7 @@ import { IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { Spin } from "@/ui/Spin";
-import { fetchActionLog, fetchDevices, fetchMe, proxyUserMenu, type DeviceItem, type LogItem, type Paged, type PortalUser } from "./api";
+import { fetchActionLog, fetchDevices, fetchMe, deleteAllDevices, deleteDevice, type DeviceItem, type LogItem, type Paged, type PortalUser } from "./api";
 import { fmtFull } from "./lib/lib";
 
 type Tab = "info" | "device" | "log";
@@ -112,7 +112,43 @@ function PagedTable<T>({ load, head, row, empty, note, foot }: {
   );
 }
 
-/** アカウントとセキュリティ(読み取りだけ)。Esc・外側クリックで閉じる */
+const BTN = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] whitespace-nowrap hover:bg-muted disabled:cursor-default disabled:opacity-60";
+
+/** 登録デバイス。サインアウトは押すと確認の行に替わり、もう一度押して実行(ask: "all" か端末の id) */
+function DevicesTab() {
+  const [ask, setAsk] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [n, setN] = useState(0); // 成功したら一覧を読み直す
+  const run = (job: () => Promise<unknown>) => {
+    setBusy(true);
+    setFailed(false);
+    job().then(() => { setAsk(null); setN((x) => x + 1); }, (e) => { console.error("[mu-portal]", e); setFailed(true); }).finally(() => setBusy(false));
+  };
+  const confirm = (text: string, job: () => Promise<unknown>) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[13px]">{text}</span>
+      <button type="button" className={BTN} disabled={busy} onClick={() => setAsk(null)}>キャンセル</button>
+      <button type="button" className={`${BTN} text-error`} disabled={busy} onClick={() => run(job)}>サインアウト</button>
+    </div>
+  );
+  return (
+    <PagedTable<DeviceItem> key={n} load={fetchDevices} head={["登録日", "端末の種類", "操作"]} empty="登録されている端末はありません"
+      note="端末をなくしたときや使わなくなったときは、その端末をサインアウトしてください。"
+      row={(d) => [when(d.created_at), lbl(DEVICE, d.device_type),
+        ask === String(d.id) ? confirm("この端末をサインアウトしますか?", () => deleteDevice(d.id))
+          : <button type="button" className={`${BTN} text-error`} disabled={busy} onClick={() => { setFailed(false); setAsk(String(d.id)); }}>サインアウト</button>]}
+      foot={
+        <div className="flex flex-col items-start gap-2">
+          {failed ? <p role="alert" className="m-0 text-[13px] text-error">サインアウトできませんでした</p> : null}
+          {ask === "all" ? confirm("すべての端末をサインアウトしますか?", deleteAllDevices)
+            : <button type="button" className={`${BTN} text-error`} disabled={busy} onClick={() => { setFailed(false); setAsk("all"); }}>すべての端末をサインアウト</button>}
+          <p className="m-0 text-[13px] text-muted-foreground">スマートフォンのアプリから、すべてサインアウトします。</p>
+        </div>} />
+  );
+}
+
+/** アカウントとセキュリティ。Esc・外側クリックで閉じる */
 export function AccountDialog({ userName, onClose }: { userName: string; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("info");
   const [seen, setSeen] = useState<Tab[]>(["info"]); // 一度開いたタブは閉じるまで残す(再読み込みしない)
@@ -150,11 +186,7 @@ export function AccountDialog({ userName, onClose }: { userName: string; onClose
             {seen.includes("info") ? <div className={show("info")}><InfoTab /></div> : null}
             {seen.includes("device") ? (
               <div className={show("device")}>
-                <PagedTable<DeviceItem> load={fetchDevices} head={["登録日", "端末の種類"]} empty="登録されている端末はありません"
-                  note="端末をなくしたときは、その端末をサインアウトしてください。"
-                  row={(d) => [when(d.created_at), lbl(DEVICE, d.device_type)]}
-                  foot={<div><button type="button" onClick={() => { proxyUserMenu("account"); onClose(); }}
-                    className="h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted">端末のサインアウトは元の画面で開く</button></div>} />
+                <DevicesTab />
               </div>
             ) : null}
             {seen.includes("log") ? (

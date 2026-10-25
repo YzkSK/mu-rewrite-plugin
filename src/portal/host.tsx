@@ -4,6 +4,7 @@ import css from "@/ui/tokens.css?inline";
 import { mountShadowRoot, unmountShadowRoot } from "@/muscat/shell/mount";
 import type { PortalData } from "./data";
 import { PortalApp } from "./PortalApp";
+import { PortalError } from "./PortalError";
 
 let root: Root | null = null;
 
@@ -15,6 +16,17 @@ export function mountPortal(data: PortalData): void {
   root = createRoot(point);
   const r = root;
   flushSync(() => r.render(<PortalApp data={data} />));
+}
+
+/** 読み込み失敗の画面を Shadow DOM に出す */
+export function mountPortalError(): void {
+  if (root) return;
+  const point = document.createElement("div");
+  point.style.height = "100%";
+  mountShadowRoot(document, css).appendChild(point);
+  root = createRoot(point);
+  const r = root;
+  flushSync(() => r.render(<PortalError />));
 }
 
 /** 描画を止めて元の本文を戻す。描画中でなければ何もしない */

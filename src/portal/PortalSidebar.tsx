@@ -2,7 +2,7 @@ import { IconChevronDown } from "@tabler/icons-react";
 import { useState, type MouseEvent } from "react";
 import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/starwind/sidebar";
 import { ACTIVE, MB } from "@/ui/AppSidebar";
-import { proxyUserMenu, type PageNode } from "./api";
+import type { PageNode } from "./api";
 import { TOP } from "./data";
 import { isHttp } from "./lib/sanitize";
 import { navigate, NOTICES, NOTICES_URL } from "./route";
@@ -72,7 +72,7 @@ function Node({ node, slug, depth, onPick }: { node: PageNode; slug: string; dep
 const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
 
 /** 左の一覧。項目は本物のリンク(全画面の遷移)。開閉・幅・押し出しは App(Sidebar)の仕事。 */
-export function PortalSidebar({ tree, slug, onPick, onAccount }: { tree: PageNode[]; slug: string; onPick?: () => void; onAccount: () => void }) {
+export function PortalSidebar({ tree, slug, onPick, onAccount, onSignOut }: { tree: PageNode[]; slug: string; onPick?: () => void; onAccount: () => void; onSignOut: () => void }) {
   return (
     <>
       <SidebarContent className="gap-0 p-0">
@@ -110,7 +110,7 @@ export function PortalSidebar({ tree, slug, onPick, onAccount }: { tree: PageNod
             <SidebarMenuButton size="sm" className={FOOT} onClick={() => { onAccount(); onPick?.(); }}>アカウントとセキュリティ</SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" className={`${FOOT.replace("text-muted-foreground", "text-error hover:text-error")}`} onClick={() => proxyUserMenu("signout")}>サインアウト</SidebarMenuButton>
+            <SidebarMenuButton size="sm" className={`${FOOT.replace("text-muted-foreground", "text-error hover:text-error")}`} onClick={() => { onSignOut(); onPick?.(); }}>サインアウト</SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

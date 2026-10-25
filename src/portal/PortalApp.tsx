@@ -6,6 +6,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { fetchCalendar } from "./api";
 import { loadTop, TOP, type PortalData, type TopData } from "./data";
 import { PortalSidebar } from "./PortalSidebar";
+import { SignOutDialog } from "./SignOutDialog";
 import { NAV_EVENT, NOTICES, routeOf, slugOf } from "./route";
 import { NoticesScreen } from "./screens/NoticesScreen";
 import { PageScreen, usePage } from "./screens/PageScreen";
@@ -38,21 +39,25 @@ function Top({ initial }: { initial: TopData | null }) {
 export function PortalApp({ data }: { data: PortalData }) {
   const [account, setAccount] = useState(false);
   const closeAccount = useCallback(() => setAccount(false), []);
+  const [signOut, setSignOut] = useState(false);
+  const closeSignOut = useCallback(() => setSignOut(false), []);
   const url = useSyncExternalStore(subscribe, here, () => "");
   const u = new URL(url, location.origin);
   const route = routeOf(u);
   const slug = route === "page" ? slugOf(u.pathname) : route === "notices" ? NOTICES : TOP;
   const page = usePage(route === "page" ? slug : null);
   const title = "page" in page ? page.page.title : slug;
+  // 元のアプリを止めたので、タブの題名もこちらで付ける(元と同じ「<ページ名> - MUポータル」)
+  useEffect(() => { document.title = `${title} - MUポータル`; }, [title]);
   return (
     <>
     {/* 小窓を開いている間は後ろを操作させない(Tab で後ろに抜けない) */}
-    <div inert={account} className="contents">
+    <div inert={account || signOut}className="contents">
     <App
       title={title}
       brand="MU Portal"
       headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
-      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} onAccount={() => setAccount(true)} />}
+      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} onAccount={() => setAccount(true)} onSignOut={() => setSignOut(true)} />}
     >
       {route === "notices" ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} />
         : route === "page" ? <PageScreen key={slug} slug={slug} state={page} />
@@ -60,6 +65,7 @@ export function PortalApp({ data }: { data: PortalData }) {
     </App>
     </div>
     {account ? <AccountDialog userName={data.shell.userName ?? ""} onClose={closeAccount} /> : null}
+    {signOut ? <SignOutDialog onClose={closeSignOut} /> : null}
     </>
   );
 }
