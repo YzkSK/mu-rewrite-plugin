@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { DriveStep } from "@/muscat/api/driver/drive";
+import { errorToast } from "@/ui/Toast";
 import { errorMessage } from "./errorMessage";
 
 export type LiveState<T> = { status: "loading" | "ready" | "error"; page?: T; error?: string; busy?: boolean };
@@ -12,6 +13,8 @@ export type LiveState<T> = { status: "loading" | "ready" | "error"; page?: T; er
  */
 export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) => Promise<T>, initial?: LiveState<T>) {
   const [state, setState] = useState<LiveState<T>>(initial ?? { status: "loading" });
+  const latest = useRef(state);
+  latest.current = state;
   const load = useCallback(
     () =>
       read(client).then(
@@ -33,7 +36,10 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
       } catch (e) {
         // 失敗の応答でも元の画面は描き直されていることがある(検索 1000 件超など)。読み直さないと次の操作が古い要素を指す
         const page = await read(client).catch(() => undefined);
-        setState((s) => ({ ...s, page: page ?? s.page, status: "error", error: errorMessage(e), busy: false }));
+        // 画面が出ていれば中身は残してトーストで知らせる。何も出ていないときだけ画面にエラーを出す
+        const p = page ?? latest.current.page;
+        if (p) errorToast("操作できませんでした", errorMessage(e));
+        setState((s) => (p ? { ...s, page: p, status: "ready", busy: false } : { ...s, status: "error", error: errorMessage(e), busy: false }));
         return false;
       }
       await load();

@@ -1,9 +1,10 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import css from "@/ui/tokens.css?inline";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { NativeContext } from "@/ui/NativeLink";
+import { ErrorToast, errorToast } from "@/ui/Toast";
 import type { MuscatClient } from "../api/client";
 import { readMenuGroups } from "../api/menuGroups";
 import { readMenuIds } from "../api/menuIds";
@@ -28,16 +29,14 @@ let current: { root: Root } | null = null;
  */
 function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: ShellActions; onScreen: OnScreen }) {
   const { doc, seq } = useSyncExternalStore(client.subscribe, client.shown);
-  const [navError, setNavError] = useState<string | null>(null);
   const code = screenCodeOf(doc);
   const screen = resolveScreen(code, doc);
   const home = isHomeScreen(code, doc);
   useLayoutEffect(() => {
-    setNavError(null);
     onScreen(screen, home);
   }, [seq]); // 画面が替わったときだけ
 
-  const fail = (e: unknown) => setNavError(errorMessage(e));
+  const fail = (e: unknown) => errorToast("画面を開けませんでした", errorMessage(e));
   const ids = readMenuIds(doc);
   const found = readMenuGroups(doc);
   // グループが読めなくても項目は出す
@@ -55,11 +54,6 @@ function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: S
   return (
     <NativeContext value={actions.openNative}>
       <App key={seq} title={title} model={model} user={loginUserOf(doc)} lastLogin={lastLoginOf(doc)}>
-        {navError && (
-          <div className="p-4 pb-0">
-            <ErrorNotice title="画面を開けませんでした" message={navError} />
-          </div>
-        )}
         {screen ? (
           screen.render(client, doc)
         ) : (
@@ -68,6 +62,7 @@ function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: S
           </div>
         )}
       </App>
+      <ErrorToast />
     </NativeContext>
   );
 }
