@@ -20,7 +20,8 @@ function parseTable(table: Element | null | undefined): SettingsTable {
   if (!table) return { headers: [], rows: [] };
   const headers = [...table.querySelectorAll("thead th")].filter((th) => !th.classList.contains("ui-selection-column")).map((th) => squash(th.textContent));
   const rows = [...table.querySelectorAll("tbody tr")]
-    .filter((tr) => !tr.classList.contains("ui-datatable-empty-message"))
+    // 見出しを表の本体側にも持つ作り(th だけの行)があり、空の行として出た(実機で確認)
+    .filter((tr) => !tr.classList.contains("ui-datatable-empty-message") && !!tr.querySelector("td"))
     .map((tr): SettingsRow => {
       const tds = [...tr.querySelectorAll("td")];
       const sel = tds.find((td) => td.classList.contains("ui-selection-column")) ?? null;
@@ -36,9 +37,13 @@ function parseTable(table: Element | null | undefined): SettingsTable {
 const leafTexts = (root: Element) =>
   [...new Set([...root.querySelectorAll("*")].filter((e) => [...e.children].every((c) => c.tagName === "BR")).map((e) => squash(e.textContent)).filter(Boolean))];
 
-/** 見出し(.ui-panel-titlebar)に text を含む小パネル */
+/** 見出しに text を含む小パネルの中身 */
+// 実機のメール設定はアコーディオン(見出し .ui-accordion-header の次が中身)だった。見つからないとタブ全体を読み、
+// 3 つのカードに同じ注意書きと表が出た(実機で確認)
 const panelByTitle = (root: Element, text: string) =>
-  [...root.querySelectorAll(".ui-panel")].find((p) => squash([...p.children].find((c) => c.classList.contains("ui-panel-titlebar"))?.textContent).includes(text)) ?? null;
+  [...root.querySelectorAll(".ui-accordion-header")].find((h) => squash(h.textContent).includes(text))?.nextElementSibling ??
+  [...root.querySelectorAll(".ui-panel")].find((p) => squash([...p.children].find((c) => c.classList.contains("ui-panel-titlebar"))?.textContent).includes(text)) ??
+  null;
 
 // 選ばれているタブの印(汎用画面の genericTabs と同じ)
 const SELECTED = ".ui-tabs-selected, .ui-state-active, .ui-tabs-active";

@@ -7,7 +7,8 @@ const tabs = (active: number) =>
   ["メール設定", "テーマ設定", "お気に入り機能設定", "ポータル表示設定"]
     .map((l, i) => `<li class="${i === active ? "ui-state-active" : ""}"><a href="#funcForm:tabArea:j_id_${i}">${l}</a></li>`)
     .join("");
-const panel = (title: string, body: string) => `<div class="ui-panel"><div class="ui-panel-titlebar"><span class="ui-panel-title">${title}</span></div><div class="ui-panel-content">${body}</div></div>`;
+// 実機のメール設定はアコーディオン(見出しの次が中身)
+const panel = (title: string, body: string) => `<div class="ui-accordion-header">${title}</div><div class="ui-accordion-content">${body}</div>`;
 const save = `<button type="button" onclick="PrimeFaces.confirm({message:'保存します。よろしいですか？'})"><span>保存</span></button>`;
 const box = (on = false) => `<div class="ui-chkbox"><div class="ui-helper-hidden-accessible"><input type="checkbox" ${on ? "checked" : ""}></div><div class="ui-chkbox-box ${on ? "ui-state-active" : ""}"></div></div>`;
 const radio = (i: number, label: string, on = false) =>
@@ -26,7 +27,7 @@ const mail = `
     <button type="button" onclick="PrimeFaces.ab({s:'x'})"><span>追加</span></button>
     <div id="funcForm:tabArea:mailAddr:mailAddrList" class="ui-datatable"><table>
       <thead><tr><th class="ui-selection-column">${box()}</th><th>メールアドレス</th><th>種類</th></tr></thead>
-      <tbody class="ui-datatable-data"><tr data-rk="1"><td class="ui-selection-column">${box(true)}</td><td>a@example.com</td><td>連絡用</td></tr></tbody>
+      <tbody class="ui-datatable-data"><tr><th></th><th>メールアドレス</th><th>種類</th></tr><tr data-rk="1"><td class="ui-selection-column">${box(true)}</td><td>a@example.com</td><td>連絡用</td></tr></tbody>
     </table></div>
     <button type="button" onclick="PrimeFaces.ab({s:'y'})"><span>選択した行を削除</span></button>
     <span>※追加ボタンをクリックすると、メールアドレスが追加されます。</span>
@@ -78,6 +79,8 @@ test("メール設定: アドレスの表・種類・追加/削除/保存、時�
   expect(m.times.options.filter((o) => o.checked).map((o) => o.label)).toEqual(["08:00"]);
   expect(m.stop.table.headers).toEqual(["用途", "カテゴリ", "配信停止"]);
   expect(m.stop.table.rows).toEqual([]);
+  // 注意書きと表はそのカードのものだけ(タブ全体から読まない)
+  expect([m.times.notes, m.stop.notes]).toEqual([[], []]);
   // 保存はそれぞれの小パネルのもの
   const saves = [m.address.saveRef, m.times.saveRef, m.stop.saveRef];
   expect(new Set(saves).size).toBe(3);
