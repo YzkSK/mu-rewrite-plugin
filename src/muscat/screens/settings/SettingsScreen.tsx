@@ -170,8 +170,16 @@ export function SettingsScreen({ client, doc, initial }: { client: MuscatClient;
   const [ask, setAsk] = useState<DriveStep[] | null>(null);
   const [gen, setGen] = useState(0);
   // 操作のあとは元の画面の値で作り直す(追加した欄が空に戻るなど)
-  const go = (steps: DriveStep[]) => void run(steps).then(() => setGen((g) => g + 1));
+  // 失敗したときは作り直さない(入力途中の値が消える)
+  const go = (steps: DriveStep[]) => void run(steps).then((ok) => ok && setGen((g) => g + 1));
   const active = page?.tabs.find((t) => t.active);
+  // 出さないタブ(テーマ設定)が開いた状態で来たら、先頭のタブへ移る
+  const first = page?.tabs[0];
+  const stray = !!page && !active && !!first;
+  useEffect(() => {
+    if (stray && first) go([click(first.ref, !first.loaded)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stray]);
   return (
     <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3.5 p-4">
       {status === "error" && <Card className="p-4 text-error">{error}</Card>}
