@@ -1,5 +1,6 @@
 import { IconChevronDown } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { onUnreadChange, rememberedUnread } from "@/muscat/screens/news/unreadCount";
 import { flushSync } from "react-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
@@ -16,6 +17,12 @@ type Pick = (i: NavItem) => void;
 const MB = "transition-[background-color,color,transform,width,height,padding] duration-200 active:scale-[0.98]";
 // 選択中: 薄い紫の地・紫の文字・左に 3px の線(どの項目も同じ)
 const ACTIVE = "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--mu-primary)]";
+
+/** 掲示板の横の未読の数。ホームや掲示板で数が変わったらすぐ描き直す(0 なら出さない) */
+function UnreadBadge() {
+  const n = useSyncExternalStore(onUnreadChange, rememberedUnread, () => 0);
+  return n > 0 ? <span aria-label={`未読 ${n} 件`} className="ml-auto rounded-[3px] bg-primary px-1.5 text-[11px] font-semibold leading-[17px] text-primary-foreground">{n}</span> : null;
+}
 
 function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
   // 画面を移るたびに作り直されるので、最初は開く動きを出さない。自分で開閉したら動かす
@@ -48,7 +55,7 @@ function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
                   }}
                 >
                   <span>{item.label}</span>
-                  {item.badge ? <span aria-label={`未読 ${item.badge} 件`} className="ml-auto rounded-[3px] bg-primary px-1.5 text-[11px] font-semibold leading-[17px] text-primary-foreground">{item.badge}</span> : null}
+                  {item.label === "掲示板" && <UnreadBadge />}
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             ))}
