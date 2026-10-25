@@ -1,16 +1,21 @@
 import { installPreHide, preEpoch, releasePreHide } from "@/muscat/shell/pre";
-import { loadTop, type PortalData } from "./data";
+import { loadShell, loadTop } from "./data";
 import { mountPortal, unmountPortal } from "./host";
-import { isTargetPath, isTopPath } from "./route";
+import { isAppPath, isTargetPath, isTopPath } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 
-// document_start で動く。トップページ以外は元のポータルに任せる(他のページは後続の PR)
+// 開発用: localStorage["mu-dev"]="1" のブラウザだけ、ページの postMessage("mu-dev-reload") で拡張を読み込み直す
+try {
+  if (localStorage.getItem("mu-dev") === "1")
+    window.addEventListener("message", (e) => { if (e.source === window && e.data === "mu-dev-reload") (globalThis as { chrome?: { runtime?: { sendMessage(m: unknown): void } } }).chrome?.runtime?.sendMessage({ type: "mu-dev-reload" }); });
+} catch { /* 読めなければ何もしない */ }
+
+// document_start で動く。トップページとお知らせ一覧以外は元のポータルに任せる(他のページは後続の PR)
 if (window === window.top && isTargetPath(location.pathname)) {
   type State = "off" | "loading" | "on" | "failed";
   let state: State = "off";
   let token = 0; // 古い非同期処理を無効化する
-  let data: PortalData | null = null; // 一度取ったものを使い回す(戻ってきたときの再取得を避ける)
 
   const cover = () => {
     installPreHide(document);
@@ -31,9 +36,11 @@ if (window === window.top && isTargetPath(location.pathname)) {
     state = "loading";
     cover();
     try {
-      data ??= await loadTop();
+      // 取ったものは data.ts が覚えている。一覧から始めるときはトップを待たない
+      const shell = await loadShell();
+      const top = isTopPath(location.pathname) ? await loadTop() : null;
       if (my !== token) return;
-      mountPortal(data);
+      mountPortal({ shell, top });
       state = "on";
       release();
     } catch (e) {
@@ -52,14 +59,14 @@ if (window === window.top && isTargetPath(location.pathname)) {
     releasePreHide(document);
   };
 
-  // 元のポータルは SPA で、隠れたまま動き続ける。URL が変わったら出し入れする
+  // 元のポータルは SPA で、隠れたまま動き続ける。URL(パスと ?view=all)が変わったら出し入れする
   const check = () => {
-    const top = isTopPath(location.pathname);
-    if (top && state === "off") void show();
-    else if (!top && state !== "off") hide();
+    const app = isAppPath(location);
+    if (app && state === "off") void show();
+    else if (!app && state !== "off") hide();
   };
 
-  if (isTopPath(location.pathname)) cover();
+  if (isAppPath(location)) cover();
   const run = () => {
     check();
     window.addEventListener("popstate", check);

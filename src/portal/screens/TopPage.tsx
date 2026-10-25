@@ -4,6 +4,7 @@ import type { TopData } from "../data";
 import { fmtDue, fmtWhen, type CalEvent } from "../lib/lib";
 import { courseName, dueName, type LmsResult } from "../lib/lms";
 import { sanitize } from "../lib/sanitize";
+import { navigate, NOTICES_URL } from "../route";
 import { AcademicCalendar } from "./AcademicCalendar";
 
 const LMS_URL = "https://musashino-u.myopenlms.net/my/";
@@ -155,7 +156,7 @@ export function TopPage({ data, loadMonth, now = new Date() }: Props) {
             actions={
               <>
                 {unread ? <span className="rounded-[3px] bg-primary px-1.5 text-[11px] font-semibold leading-[17px] text-primary-foreground">{`未読 ${unread}`}</span> : null}
-                <button type="button" className={LINK} onClick={() => { location.href = "/dashboard/page/" + encodeURIComponent("お知らせ"); }}>
+                <button type="button" className={LINK} onClick={() => navigate(NOTICES_URL)}>
                   {`すべて見る${news?.count != null ? `(${news.count}件)` : ""}`}
                 </button>
               </>

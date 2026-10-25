@@ -1,13 +1,22 @@
 import { IconChevronDown } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/starwind/sidebar";
 import { ACTIVE, MB } from "@/ui/AppSidebar";
 import { proxyUserMenu, type PageNode } from "./api";
 import { TOP } from "./data";
 import { isHttp } from "./lib/sanitize";
+import { navigate, NOTICES, NOTICES_URL } from "./route";
 
 const PAGE = "/dashboard/page/";
-const hrefOf = (n: PageNode) => PAGE + encodeURIComponent(n.slug || n.title);
+const isNotices = (n: PageNode) => !n.external_link && (n.slug || n.title) === NOTICES;
+// お知らせは一覧(?view=all)を自前で描くので、そこへ向ける
+const hrefOf = (n: PageNode) => (isNotices(n) ? NOTICES_URL : PAGE + encodeURIComponent(n.slug || n.title));
+/** 自前で描くページへは普通のクリックだけ画面内で移る(修飾キー付きは新しいタブなどに任せる) */
+const local = (url: string) => (e: MouseEvent) => {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  navigate(url);
+};
 // トップページ自体は先頭に自前で足し、その子は最上位として並べる
 const topLevel = (tree: PageNode[]): PageNode[] => tree.flatMap((n) => (n.title === TOP ? (n.children ?? []) : [n]));
 const hasCur = (n: PageNode, slug: string): boolean => (!n.external_link && n.slug === slug) || (n.children ?? []).some((c) => hasCur(c, slug));
@@ -27,6 +36,7 @@ function Node({ node, slug, depth }: { node: PageNode; slug: string; depth: numb
         href={ext || hrefOf(node)}
         isActive={cur}
         aria-current={cur ? "page" : undefined}
+        onClick={isNotices(node) ? local(NOTICES_URL) : undefined}
         {...(ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         className={`${cls} ${depth ? "" : "px-5"}`}
         style={pad}
@@ -72,6 +82,7 @@ export function PortalSidebar({ tree, slug }: { tree: PageNode[]; slug: string }
               href={PAGE + encodeURIComponent(TOP)}
               isActive={slug === TOP}
               aria-current={slug === TOP ? "page" : undefined}
+              onClick={local("/dashboard")}
               className={`${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm font-semibold`}
             >
               {TOP}

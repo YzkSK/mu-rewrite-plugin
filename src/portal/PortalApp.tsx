@@ -1,20 +1,51 @@
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { App } from "@/muscat/shell/App";
+import { ErrorNotice } from "@/ui/ErrorNotice";
+import { PageLoading } from "@/ui/PageLoading";
 import { fetchCalendar } from "./api";
-import { TOP, type PortalData } from "./data";
+import { loadTop, TOP, type PortalData, type TopData } from "./data";
 import { PortalSidebar } from "./PortalSidebar";
+import { NAV_EVENT, NOTICES, routeOf } from "./route";
+import { NoticesScreen } from "./screens/NoticesScreen";
 import { TopPage } from "./screens/TopPage";
 
-/** 枠(上の段 + サイドバー)にトップページを入れる。他のページは後続の PR で足す */
+const subscribe = (cb: () => void) => {
+  window.addEventListener("popstate", cb);
+  window.addEventListener(NAV_EVENT, cb);
+  return () => { window.removeEventListener("popstate", cb); window.removeEventListener(NAV_EVENT, cb); };
+};
+const here = () => location.pathname + location.search;
+
+/** 開始が一覧のときトップのデータは無い。トップへ移ったとき取る(取れたものは data.ts が覚える) */
+function Top({ initial }: { initial: TopData | null }) {
+  const [top, setTop] = useState(initial);
+  const [failed, setFailed] = useState(false);
+  const [tries, setTries] = useState(0);
+  useEffect(() => {
+    if (top) return;
+    setFailed(false);
+    loadTop().then(setTop).catch((e) => { console.error("[mu-portal]", e); setFailed(true); });
+  }, [top, tries]);
+  if (failed) return <div className="p-4"><ErrorNotice title="トップページを読み込めませんでした" message="" onRetry={() => setTries(tries + 1)} /></div>;
+  if (!top) return <PageLoading title={TOP} />;
+  const cal = top.calendar;
+  return <TopPage data={top} loadMonth={(y, m) => fetchCalendar(cal?.sources ?? [], !!cal?.addOutLook, y, m)} />;
+}
+
+/** 枠(上の段 + サイドバー)にトップページかお知らせ一覧を入れる。他のページは後続の PR で足す */
 export function PortalApp({ data }: { data: PortalData }) {
-  const cal = data.top.calendar;
+  const url = useSyncExternalStore(subscribe, here, () => "");
+  const u = new URL(url, location.origin);
+  const route = routeOf(u);
+  const notices = route === "notices";
   return (
     <App
-      title={TOP}
+      title={notices ? NOTICES : TOP}
       brand="MU Portal"
-      headerRight={data.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.userName} さん</span> : null}
-      sidebar={<PortalSidebar tree={data.tree} slug={TOP} />}
+      headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
+      sidebar={<PortalSidebar tree={data.shell.tree} slug={notices ? NOTICES : TOP} />}
     >
-      <TopPage data={data.top} loadMonth={(y, m) => fetchCalendar(cal?.sources ?? [], !!cal?.addOutLook, y, m)} />
+      {notices ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} /> : <Top initial={data.top} />}
     </App>
   );
 }

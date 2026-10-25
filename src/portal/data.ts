@@ -19,7 +19,8 @@ export type TopData = {
   calendar: CalendarData | null; // null はブロックなし。first が null なら失敗
   lms: LmsResult;
 };
-export type PortalData = { tree: PageNode[]; userName: string; top: TopData };
+export type Shell = { tree: PageNode[]; userName: string };
+export type PortalData = { shell: Shell; top: TopData | null }; // top は開始が一覧のとき null(トップへ移るとき取る)
 
 type LinkRow = { href: string; text: string };
 
@@ -40,10 +41,21 @@ const safe = <T,>(p: Promise<T>): Promise<T | null> => p.catch((e) => { console.
 const lmsCapped = (): Promise<LmsResult> =>
   Promise.race([fetchLmsDue(), new Promise<LmsResult>((r) => setTimeout(() => r({ error: "timeout" }), 5000))]);
 
-/** トップページに要るデータを全部いっぺんに取る。ページ本体が取れなければ throw(元のUIに戻す) */
-export async function loadTop(): Promise<PortalData> {
+const once = <T,>(f: () => Promise<T>): (() => Promise<T>) => {
+  let p: Promise<T> | undefined;
+  return () => (p ??= f().catch((e) => { p = undefined; throw e; })); // 一度取れたら使い回す。失敗は次に取り直す
+};
+
+/** 枠(サイドバー・ユーザー名)に要るデータ。ツリーが取れなくても枠は出す */
+export const loadShell = once(async (): Promise<Shell> => {
+  const [tree, userName] = await Promise.all([safe(fetchTree()), readUserName()]);
+  return { tree: tree ?? [], userName };
+});
+
+/** トップページに要るデータを全部いっぺんに取る。ページ本体が取れなければ throw */
+export const loadTop = once(async (): Promise<TopData> => {
   const lms = lmsCapped();
-  const [page, tree, userName] = await Promise.all([fetchPageView(TOP), safe(fetchTree()), readUserName()]);
+  const page = await fetchPageView(TOP);
   const blocks = pickBlocks(page, "ja");
   if (!blocks) throw new Error("page has no blocks");
   const notes = findBlocks(blocks, "notification");
@@ -56,14 +68,14 @@ export async function loadTop(): Promise<PortalData> {
     newsBlock ? safe(fetchInfo(infoQuery(newsBlock.data ?? {}))) : Promise.resolve(null),
     cal ? safe(fetchCalendar(cal.sources ?? [], !!cal.addOutLook, now.getFullYear(), now.getMonth() + 1)) : Promise.resolve(null),
   ]);
-  return { tree: tree ?? [], userName, top: {
+  return {
     ...fromBlocks(blocks),
     personal: personalLists && { items: personalLists.flatMap((l) => l.items), count: null },
     news,
     calendar: cal ? { header: cal.header || "学年暦", sources: cal.sources ?? [], addOutLook: !!cal.addOutLook, first } : null,
     lms: await lms,
-  } };
-}
+  };
+});
 
 /** ブロックだけから決まる部分(通信なし) */
 export function fromBlocks(blocks: Block[]): Pick<TopData, "muscatUrl" | "lmsUrl" | "links" | "callout"> {

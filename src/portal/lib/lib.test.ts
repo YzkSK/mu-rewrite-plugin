@@ -1,5 +1,16 @@
 import { expect, test } from "bun:test";
-import { buildMonthGrid, catOf, fileKind, findBlocks, fmtDue, fmtWhen, flattenCategories, infoQuery, linkLabel, pickBlocks, shortLabel, unreadTotal, type Block } from "./lib";
+import { buildMonthGrid, catOf, fileKind, findBlocks, fmtDue, fmtFull, fmtWhen, flattenCategories, infoQuery, linkLabel, notifyQuery, pickBlocks, readAllPath, shortLabel, unreadTotal, type Block } from "./lib";
+
+test("notifyQuery / readAllPath / fmtFull", () => {
+  expect(notifyQuery()).toBe("/api/information/1?page_size=20&recursive=true");
+  expect(notifyQuery({ page: 3, category: "a b", unread: true, pinned: true, query: " 履修 " }))
+    .toBe("/api/information/3?page_size=20&recursive=true&category_uuid=a%20b&status=unread&is_pinned=1&fulltext=" + encodeURIComponent("履修"));
+  expect(notifyQuery({ query: "あ" })).not.toContain("fulltext");
+  expect(readAllPath()).toBe("/api/information/set-read-all/");
+  expect(readAllPath({ pinned: true })).toBe("/api/information/set-read-all/?is_pinned=1");
+  expect(readAllPath({ pinned: true, category: "c1" })).toBe("/api/information/set-read-all/c1");
+  expect(fmtFull(new Date(2026, 9, 23, 9, 0).getTime() / 1000)).toBe("2026.10.23(金) 09:00");
+});
 
 test("findBlocks は column の中も出現順に辿る", () => {
   const tree: Block[] = [

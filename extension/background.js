@@ -53,6 +53,11 @@ chrome.webRequest.onCompleted.addListener((d) => {
   if (d.statusCode >= 500) bounce(d.tabId);
 }, { urls: [MUSCAT + "up/*"], types: ["main_frame"] });
 
+// 開発用: ポータルのページから拡張を読み込み直す(localStorage["mu-dev"]="1" のときだけ content script が送る)
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === "mu-dev-reload") chrome.runtime.reload();
+});
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || !sender.tab || !["mu-screen", "mu-restore", "mu-bounce", "mu-bouncing"].includes(msg.type)) return;
   const k = key(sender.tab.id);

@@ -137,7 +137,35 @@ export function fmtDue(sec: number): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
 
-export type FlatCategory = { uuid: string; name: string; name_en?: string; unread_count?: unknown; depth: number };
+const WEEKDAYS = "日月火水木金土";
+
+/** y.m.d(曜) HH:MM */
+export function fmtFull(sec: number): string {
+  const d = new Date(sec * 1000);
+  return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}(${WEEKDAYS[d.getDay()]}) ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
+
+export type NotifyOpts = { page?: number; query?: string; unread?: boolean; pinned?: boolean; category?: string };
+
+/** お知らせ一覧の URL。検索語は 2 文字以上のときだけ付ける */
+export function notifyQuery({ page, query, unread, pinned, category }: NotifyOpts = {}): string {
+  const p = ["page_size=20", "recursive=true"];
+  if (category) p.push("category_uuid=" + encodeURIComponent(category));
+  if (unread) p.push("status=unread");
+  if (pinned) p.push("is_pinned=1");
+  const q = (query ?? "").trim();
+  if (q.length >= 2) p.push("fulltext=" + encodeURIComponent(q));
+  return "/api/information/" + (page || 1) + "?" + p.join("&");
+}
+
+/** 「すべて既読にする」の URL。カテゴリがあればそれを優先(検索・未読のみは対象外) */
+export function readAllPath({ pinned, category }: { pinned?: boolean; category?: string } = {}): string {
+  const base = "/api/information/set-read-all/";
+  if (category) return base + encodeURIComponent(category);
+  return pinned ? base + "?is_pinned=1" : base;
+}
+
+export type FlatCategory ={ uuid: string; name: string; name_en?: string; unread_count?: unknown; depth: number };
 
 export function flattenCategories(items: any[] | undefined, depth = 0): FlatCategory[] {
   return (items ?? []).flatMap((c) => [
