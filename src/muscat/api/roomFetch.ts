@@ -30,9 +30,18 @@ export async function roomSubmit(doc: Document, fetch: Fetch, source: string, ex
   const page = { drained: false, rooms: new Map<string, Addr>(), bookings: new Map<string, Addr>() };
   pages.set(doc, page);
   remember(page, [...doc.querySelectorAll("#funcForm\\:yoyakuArea tbody.ui-datatable-data > tr")]);
-  // 結果が多すぎると元のページは警告を出して検索をやめ、前の結果を残す(全教室だと 1 日約 170 件で、6 日分で超えた。実機で確認)
-  const over = /検索結果が\d+件を超えたため[^<\]"']*/.exec(xml)?.[0]; // 文はスクリプトの文字列の中に来るので引用符で止める(実機で確認)
-  if (over) throw new NoticeError(over);
+  // 結果が多すぎる(999 件超)・期間が 30 日を超えるなどでは、元のページはメッセージの小窓を出して検索をやめ、前の結果を残す(実機で確認)
+  const notice = dialogMessages(xml);
+  if (notice) throw new NoticeError(notice);
+}
+
+/**
+ * 応答の <eval> にある、元のページのエラー・警告の小窓の文。MessageDialog.openDialog('errorMessageDialog', 設定, 'errDialogOpen', "<li>文<li>文")
+ * の最後の文字列に入る(実機で確認)。<eval> は動かさないので、ここで読まないと何も出ない。無ければ ""
+ */
+export function dialogMessages(xml: string): string {
+  const html = [...xml.matchAll(/MessageDialog\.openDialog\('(?:error|warning)MessageDialog'[\s\S]*?,\s*"((?:[^"\\]|\\.)*)"\s*\)/g)].map((m) => m[1]!).join("");
+  return html.split(/<li>/i).map((s) => squash(s.replace(/<[^>]*>/g, " ").replace(/\\(.)/g, "$1"))).filter(Boolean).join(" ");
 }
 
 /** 応答の中の、ある id の update の HTML を別の Document として読む。無ければ null */

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { ParseError } from "./errors";
-import { roomBooking, roomInfo, roomMore, roomSubmit } from "./roomFetch";
+import { dialogMessages, roomBooking, roomInfo, roomMore, roomSubmit } from "./roomFetch";
 
 const RC = "funcForm:j_id_rc";
 const SUB = "funcForm:j_id_sub";
@@ -149,9 +149,22 @@ test("roomSubmit: dataList を反映し、<eval> は動かさない", async () =
   expect(b.get("funcForm:search")).toBe("funcForm:search");
 });
 
-test("roomSubmit: 999 件を超えて中断されたら、その警告文で失敗する", async () => {
-  const msg = "検索結果が999件を超えたため、処理を中断しました。検索条件を変更して再検索するか、制限値の変更をシステム管理者に依頼して下さい。";
-  const { f } = reply(`<partial-response><changes><update id="frameGrowl"><![CDATA[<script>$(function(){PrimeFaces.warn("${msg}");}});;</script>]]></update>${vs}</changes></partial-response>`);
-  const e = await roomSubmit(makeDoc(), f, "funcForm:search", "funcForm:search").catch((x: Error) => x);
-  expect((e as Error).message).toBe(msg); // スクリプトの閉じかっこまで拾わない
+// 元のページはメッセージの小窓を <eval> で開く(実機の応答の形)
+const dialogEval = (kind: string, msgs: string) =>
+  `<eval><![CDATA[$(function() {if (typeof MessageDialog !== 'undefined') {MessageDialog.destroyDialog('errorMessageDialog', 'errDialogOpen');}});;$(function() {if (typeof MessageDialog !== 'undefined') {MessageDialog.openDialog('${kind}MessageDialog', '{"maxHeight":350,"width":560}', 'errDialogOpen', "${msgs}");}});;]]></eval>`;
+
+test("roomSubmit: 元のページがエラー・警告の小窓を出したら、その文で失敗する(30 日超・999 件超)", async () => {
+  for (const [kind, msgs, want] of [
+    ["error", "<li>期間指定された日数が30日を超えています。", "期間指定された日数が30日を超えています。"],
+    ["warning", "<li>検索結果が999件を超えたため、処理を中断しました。", "検索結果が999件を超えたため、処理を中断しました。"],
+    ["error", "<li>一つ目。<li>二つ目。", "一つ目。 二つ目。"],
+  ] as const) {
+    const { f } = reply(`<partial-response><changes>${vs}</changes>${dialogEval(kind, msgs)}</partial-response>`);
+    const e = await roomSubmit(makeDoc(), f, "funcForm:search", "funcForm:search").catch((x: Error) => x);
+    expect((e as Error).message).toBe(want);
+  }
+});
+
+test("dialogMessages: 小窓を閉じるだけの応答は空", () => {
+  expect(dialogMessages(`<partial-response>${dialogEval("x", "")}</partial-response>`)).toBe("");
 });
