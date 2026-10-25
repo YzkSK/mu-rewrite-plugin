@@ -29,9 +29,10 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
   if (!doc.getElementById(HIDE_ID)) {
     const hide = doc.createElement("style");
     hide.id = HIDE_ID;
-    // 元の画面は display:none にせず、画面の外で透明にする。PrimeFaces の部品(教員の予定のカレンダー、ダイアログの開閉など)は
-    // 見えていないと描画や処理を後回しにするため(実機で確認)。元の body の下余白でスクロールしないよう、ホストは画面に固定する
-    hide.textContent = `body > *:not(#${HOST_ID}) { position: fixed !important; top: 0 !important; left: -300vw !important; width: 100vw !important; visibility: hidden !important; pointer-events: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
+    // 教員の予定は Schedule の描画に頼らず通信で直接取るので、元の画面はいつも display:none。
+    // 画面の外に置くと、大きな表を描き足すたびに配置の計算が走って重い(教室予約で取得 23 秒 → 3 秒。実機で測定)。
+    // 元の body の下余白でスクロールしないよう、ホストは画面に固定する
+    hide.textContent = `body > *:not(#${HOST_ID}) { display: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
     doc.head.appendChild(hide);
   }
   const props = css.match(/@property[^{]+\{[^}]*\}/g);

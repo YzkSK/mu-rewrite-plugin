@@ -33,7 +33,7 @@ export const SCREENS: Record<string, ScreenDef> = {
   Bsa004: genericScreen("個人設定"),
   Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },
   Kmh006: { title: "シラバス", render: (client, doc) => <SyllabusScreen client={client} doc={doc} /> },
-  Bsa011: { title: "教員スケジュール", render: (client, doc) => <TeacherScheduleScreen client={client} doc={doc} /> },
+  Bsa011: { title: "教員スケジュール",render: (client, doc) => <TeacherScheduleScreen client={client} doc={doc} /> },
   // URL は bsa001 だが、見出しの画面コードは Ksa008
   Ksa008: { title: "教室予約(参照のみ)", render: (client, doc) => <RoomScreen client={client} doc={doc} /> },
   Pky001: { title: "ホーム", render: (client, doc) => <HomeScreen client={client} doc={doc} /> },

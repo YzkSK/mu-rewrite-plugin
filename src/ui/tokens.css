@@ -131,3 +131,8 @@
   [data-sw-collapsible-panel] { animation: none !important; }
   *, ::before, ::after { transition-duration: 0s !important; transition-delay: 0s !important; }
 }
+
+/* Spin(回る読み込みのしるし)。will-change で別の層にし、ページの処理が止まっても回る */
+@keyframes mu-spin { to { transform: rotate(360deg); } }
+.mu-spin { animation: mu-spin .8s linear infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .mu-spin { animation-duration: 2.4s; } }

@@ -1,4 +1,4 @@
-import { IconChevronDown, IconX } from "@tabler/icons-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import type { DriveStep } from "@/muscat/api/driver/drive";
@@ -6,6 +6,7 @@ import type { CheckOption, RoomPage, RoomRange, SelectField } from "@/muscat/api
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { Checkbox } from "@/ui/Checkbox";
+import { DatePicker } from "@/ui/DatePicker";
 import { Radio } from "@/ui/Radio";
 import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
@@ -29,13 +30,12 @@ const initial = (p: RoomPage): Values => ({
   on: Object.fromEntries(checksOf(p).map((c) => [c.ref, c.checked])),
 });
 
-/** 画面の値を元の画面の部品に入れる手順。チェックは違うものだけ押す(空き教室のスイッチは時刻の欄より先) */
+/** 画面の値を元の画面の部品に入れる手順(検索ボタンは押さず、呼び出し側が通信を直接送る)。チェックは違うものだけ押す(空き教室のスイッチは時刻の欄より先) */
 function searchSteps(p: RoomPage, v: Values): DriveStep[] {
   const radio = new Set(p.showCapacity.map((c) => c.ref));
   return [
     ...checksOf(p).filter((c) => (radio.has(c.ref) ? v.on[c.ref] && !c.checked : v.on[c.ref] !== c.checked)).map((c): DriveStep => ({ kind: "click", ref: c.ref, ajax: false })),
     ...fieldsOf(p).map((f): DriveStep => ({ kind: "set", ref: f.ref, value: v.text[f.ref] ?? f.value })),
-    { kind: "click", ref: p.searchRef, ajax: true },
   ];
 }
 
@@ -53,8 +53,14 @@ function filterCount(p: RoomPage, v: Values): number {
   ].filter(Boolean).length;
 }
 
-const TWO = "grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2";
 const SEP = "text-[13px] text-muted-foreground";
+/** 絞り込みの 1 行(左に項目名、右に中身)。grid の 2 列に並べる */
+const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <>
+    <span className="self-start pt-1.5 text-xs font-bold text-muted-foreground">{label}</span>
+    <div className="min-w-0">{children}</div>
+  </>
+);
 
 export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPage; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onClear: () => void }) {
   const [v, setV] = useState(() => initial(page));
@@ -63,21 +69,17 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
   const setText = (ref: string, value: string) => setV((x) => ({ ...x, text: { ...x.text, [ref]: value } }));
   const setOn = (ref: string, on: boolean, group?: CheckOption[]) =>
     setV((x) => ({ ...x, on: { ...x.on, ...Object.fromEntries((group ?? []).map((g) => [g.ref, false])), [ref]: on } }));
-  const search = () => onSearch(searchSteps(page, v));
+  // 終了日が開始日より前だと、元の画面は何も出さず理由も言わない(実機で確認)ので、送る前に止める
+  const [from, to] = [text(page.period.from), text(page.period.to)];
+  const backwards = !!from && !!to && from > to; // どちらも「2026/10/25」の形なので文字の大小で比べられる
+  const search = () => !backwards && onSearch(searchSteps(page, v));
   const n = filterCount(page, v);
   const free = page.free;
   const sel = (label: string, f: SelectField) => <Select label={label} value={text(f)} options={f.options} disabled={busy} onChange={(x) => setText(f.ref, x)} />;
   const input = (label: string, f: { ref: string; value: string }, w = "w-24") => (
     <div className={w}><TextInput label={label} value={text(f)} disabled={busy} onChange={(x) => setText(f.ref, x)} /></div>
   );
-  const date = (label: string, f: { ref: string; value: string }) => (
-    <div className="flex items-center gap-1">
-      {input(label, f, "w-32")}
-      <button type="button" aria-label={`${label}を消す`} disabled={busy || !text(f)} onClick={() => setText(f.ref, "")} className="cursor-pointer rounded p-1 text-muted-foreground hover:text-foreground disabled:opacity-30">
-        <IconX className="size-4" />
-      </button>
-    </div>
-  );
+  const date = (label: string, f: { ref: string; value: string }) => <DatePicker label={label} value={text(f)} disabled={busy} clearable onChange={(x) => setText(f.ref, x)} />;
   const range = (label: string, r: RoomRange, unit?: string) => (
     <div className="flex items-center gap-2">
       <span className="w-14 text-[13px]">{label}</span>
@@ -89,18 +91,15 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
   const showOn = page.showCapacity.length > 1 && !!v.on[page.showCapacity[1]!.ref];
   return (
     <Card className="gap-3.5 p-4">
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h3 className="text-base font-extrabold">教室予約</h3>
-        <small className="text-muted-foreground">参照のみ</small>
-      </div>
       <div className="flex flex-wrap items-start gap-x-6 gap-y-3" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !busy && search()}>
         <Field label="期間">
           <div className="flex flex-wrap items-center gap-2">{date("開始日", page.period.from)}<span className={SEP}>〜</span>{date("終了日", page.period.to)}</div>
+          {backwards && <p role="alert" className="m-0 mt-1 text-xs text-error">終了日を開始日より後にしてください</p>}
         </Field>
         {page.targets.length > 0 && (
-          <Field label="表示">
-            <div className="flex flex-wrap gap-1.5">
-              {page.targets.map((o) => <Button key={o.ref} variant={v.on[o.ref] ? "primary" : "ghost"} disabled={busy} onClick={() => setOn(o.ref, !v.on[o.ref])}>{o.label}</Button>)}
+          <Field label="表示する予約">
+            <div className="flex h-8 flex-wrap items-center gap-3">
+              {page.targets.map((o) => <Checkbox key={o.ref} label={o.label.replace("の予約", "")} checked={!!v.on[o.ref]} disabled={busy} onChange={(c) => setOn(o.ref, c)} />)}
             </div>
           </Field>
         )}
@@ -113,13 +112,14 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
             <IconChevronDown className={`size-4 transition-transform duration-200 ${more ? "rotate-180" : ""}`} />
           </CollapsibleTrigger>
           <span className="flex-1" />
-          <Button variant="ghost" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
-          <Button disabled={busy} loading={act === "search"} onClick={search}>検索</Button>
+          <Button variant="secondary" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
+          <Button disabled={busy || backwards} loading={act === "search"} onClick={search}>検索</Button>
         </div>
         <CollapsibleContent>
-          <div className={`${TWO} mt-3`}>
+          {/* 項目名は左、中身は右の行を縦に並べる(2 列だと高さがずれて、場所の見出しの下が空いた) */}
+          <div className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-5 gap-y-3">
             {free && (
-              <Field label="空き教室">
+              <Row label="空き教室">
                 <div className="flex flex-wrap items-center gap-2">
                   <Checkbox label="空き教室を検索する" checked={!!v.on[free.boxRef]} disabled={busy} onChange={(c) => setOn(free.boxRef, c)} />
                   {v.on[free.boxRef] && (
@@ -129,34 +129,45 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
                     </>
                   )}
                 </div>
-              </Field>
+              </Row>
             )}
             {page.days.length > 0 && (
-              <Field label="曜日">
-                <div className="flex flex-wrap gap-1.5">
-                  {page.days.map((o) => <Button key={o.ref} variant={v.on[o.ref] ? "primary" : "ghost"} disabled={busy} onClick={() => setOn(o.ref, !v.on[o.ref])}>{o.label}</Button>)}
-                </div>
-              </Field>
+              <Row label="曜日">
+                <span className="inline-flex w-fit overflow-hidden rounded-[4px] border border-input">
+                  {page.days.map((o, i) => (
+                    <button
+                      key={o.ref}
+                      type="button"
+                      aria-pressed={!!v.on[o.ref]}
+                      disabled={busy}
+                      onClick={() => setOn(o.ref, !v.on[o.ref])}
+                      className={`h-8 min-w-9 cursor-pointer border-0 px-2.5 text-[13px] disabled:cursor-default ${i ? "border-l border-input" : ""} ${v.on[o.ref] ? "bg-primary font-semibold text-primary-foreground" : "bg-card"}`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </span>
+              </Row>
             )}
-            <Field label="場所">
-              <div className="flex flex-wrap items-center gap-2">
-                {page.campus.options.length > 0 && sel("キャンパス", page.campus)}
-                {page.building.options.length > 0 && sel("建物", page.building)}
-                {page.floor.options.length > 0 && sel("階", page.floor)}
+            <Row label="場所">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {page.campus.options.length > 0 && <label className="flex items-center gap-2 text-[13px]">キャンパス{sel("キャンパス", page.campus)}</label>}
+                {page.building.options.length > 0 && <label className="flex items-center gap-2 text-[13px]">建物{sel("建物", page.building)}</label>}
+                {page.floor.options.length > 0 && <label className="flex items-center gap-2 text-[13px]">階{sel("階", page.floor)}</label>}
               </div>
-            </Field>
-            <Field label="収容人数">
+            </Row>
+            <Row label="収容人数">
               <div className="grid gap-1.5">{range("平常時", cap.regular, "人")}{range("試験時", cap.exam, "人")}{range("入試時", cap.entrance, "人")}</div>
-            </Field>
+            </Row>
             {page.showCapacity.length > 0 && (
-              <Field label="一覧の収容人数">
+              <Row label="一覧の収容人数">
                 <div className="flex flex-wrap items-center gap-3">
                   {page.showCapacity.map((o) => (
                     <Radio key={o.ref} name="room-capacity" label={o.label.replace("一覧に列を", "")} checked={!!v.on[o.ref]} disabled={busy} onChange={() => setOn(o.ref, true, page.showCapacity)} />
                   ))}
                   {showOn && page.capacityKind.options.length > 0 && sel("収容人数の種類", page.capacityKind)}
                 </div>
-              </Field>
+              </Row>
             )}
           </div>
         </CollapsibleContent>

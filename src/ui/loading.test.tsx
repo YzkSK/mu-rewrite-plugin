@@ -26,9 +26,9 @@ test("PageLoading: 題名ありは「○○を読み込んでいます」、題�
 test("Button loading: 押せなくなりスピナーが出る(文字は残して幅を保つ)", () => {
   const h = renderToString(<Button loading>表示</Button>);
   expect(h).toMatch(/ disabled[ =>]/);
-  expect(h).toContain('data-slot="spinner"');
+  expect(h).toContain('mu-spin');
   expect(h).toContain("表示");
-  expect(renderToString(<Button>表示</Button>)).not.toContain('data-slot="spinner"');
+  expect(renderToString(<Button>表示</Button>)).not.toContain('mu-spin');
 });
 
 const side = (pendingLabel?: string) =>
@@ -41,10 +41,10 @@ const side = (pendingLabel?: string) =>
   );
 
 test("AppSidebar: 移動中の項目の横だけにスピナー", () => {
-  expect(side()).not.toContain('data-slot="spinner"');
+  expect(side()).not.toContain('mu-spin');
   const h = side("成績照会");
-  expect(h.match(/data-slot="spinner"/g)?.length).toBe(1);
-  expect(h).toMatch(/成績照会<\/span><svg[^>]*data-slot="spinner"/);
+  expect(h.match(/mu-spin/g)?.length).toBe(1);
+  expect(h).toMatch(/成績照会<\/span><span[^>]*mu-spin/);
 });
 
 // 実機で「画面を移るたびにサイドバーのグループが開く動きをする」: 最初は動かさない印を付ける

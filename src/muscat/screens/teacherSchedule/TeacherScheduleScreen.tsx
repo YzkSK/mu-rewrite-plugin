@@ -44,7 +44,7 @@ function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search
   );
 }
 
-/** 教員スケジュール。検索 → 教員の一覧 → 月カレンダー。操作は元の画面の部品を押し、通信中は結果を薄くして丸いアイコンを重ねる */
+/** 教員スケジュール。検索 → 教員の一覧 → 月カレンダー(予定は通信で直接取る)。検索と一覧の操作は元の画面の部品を押し、通信中は結果を薄くして丸いアイコンを重ねる */
 export function TeacherScheduleScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<TeacherSchedulePage> }) {
   const { status, page, error, busy = false, run } = useLiveScreen(client, doc, read, initial);
   const [act, setAct] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
           <BusyOverlay busy={busy}>
             <div className="flex flex-col gap-3">
               {page.list && <TeacherList list={page.list} note={page.search?.name.value ? `氏名「${page.search.name.value}」` : ""} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])} />}
-              <TeacherCalendarView page={page} busy={busy} act={act} onClick={click} />
+              <TeacherCalendarView key={page.teacher} page={page} client={client} busy={busy} onBack={click} />
             </div>
           </BusyOverlay>
         </>

@@ -3,12 +3,13 @@ export function buildPartialRequest(
   source: string,
   extra: Record<string, string | null> = {}, // null のキーは本文から除く(外したチェックボックス)
   render: string = form.id,
+  execute = "@all",
 ): { url: string; body: URLSearchParams; headers: Record<string, string> } {
   const body = new URLSearchParams();
   for (const [k, v] of new FormData(form)) if (typeof v === "string") body.set(k, v);
   body.set("jakarta.faces.partial.ajax", "true");
   body.set("jakarta.faces.source", source);
-  body.set("jakarta.faces.partial.execute", "@all");
+  body.set("jakarta.faces.partial.execute", execute);
   body.set("jakarta.faces.partial.render", render);
   body.set(source, source);
   for (const [k, v] of Object.entries(extra)) {
@@ -53,11 +54,12 @@ function setViewState(doc: Document, value: string) {
   }
 }
 
-/** 部分更新の XML を doc に反映する。rx-token は menuForm を含む全フォームに揃える。 */
-export function applyPartialResponse(doc: Document, xml: string): void {
+/** 部分更新の XML を doc に反映する。rx-token は menuForm を含む全フォームに揃える。skip の id の update は適用しない。 */
+export function applyPartialResponse(doc: Document, xml: string, skip: string[] = []): void {
   // DOMParser の XML は CDATA の扱いが環境で違うため、<update> を直接読む
   for (const m of xml.matchAll(/<update\s+id="([^"]*)"[^>]*>([\s\S]*?)<\/update>/g)) {
     const id = m[1] ?? "";
+    if (skip.includes(id)) continue;
     const content = (m[2] ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
     if (id.includes("ViewState")) {
       setViewState(doc, content);

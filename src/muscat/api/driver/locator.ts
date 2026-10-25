@@ -10,9 +10,14 @@ const excluded = (e: Element) => {
   return name.startsWith("rx-") || /ViewState/i.test(name) || e.id.includes("ViewState");
 };
 
-/** これまでに付けた最大の連番(ページが差し替わって消えた分は、残っている印から数え直す) */
+/**
+ * これまでに付けた最大の連番。ページ全体を数えるのは、そのページで最初の 1 回だけ(以後は覚えた数の続き。連番は増える一方なので重ならない)。
+ * 毎回数えると、印の付いた要素が数千ある画面(教室予約)で 1 回の読み取りに何秒もかかった(実機で測定)
+ */
 function maxRef(doc: Document): number {
-  let n = counters.get(doc) ?? 0;
+  const known = counters.get(doc);
+  if (known !== undefined) return known;
+  let n = 0;
   for (const e of doc.querySelectorAll("[data-mu-ref]")) n = Math.max(n, Number(REF.exec(e.getAttribute("data-mu-ref") ?? "")?.[1] ?? 0));
   return n;
 }

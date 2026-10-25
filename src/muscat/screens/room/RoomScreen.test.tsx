@@ -27,7 +27,7 @@ const base = (): RoomPage => ({
 });
 const result = (rooms: RoomResult["rooms"]): RoomResult => ({
   date: "2026/10/24(土)", dates: { ref: "d", value: "index_1", options: [{ value: "index_1", label: "2026/10/24" }] },
-  moveRef: "mv", prevRef: "pv", nextRef: "nx", from: 480, to: 1440,
+  from: 480, to: 1440,
   legend: [{ kind: "jugyo", label: "授業" }, { kind: "resOther", label: "他ユーザ予約" }], rooms,
 });
 const bar = (o = {}) => ({ kind: "jugyo", text: "情報リテラシー", title: "13:10～14:50 情報リテラシー", start: 790, end: 890, lane: 0, openRef: "b1", ...o });
@@ -35,7 +35,7 @@ const ready = (p: Partial<RoomPage> = {}, busy = false): LiveState<RoomPage> => 
 
 test("初期: 見出し・期間・表示のチップ・絞り込み・クリア・検索、結果なし、出力とダウンロードは無い", () => {
   const html = render(ready());
-  for (const s of ["教室予約", "参照のみ", "期間", "本人の予約", "学生の予約", "絞り込み", "クリア", "検索"]) expect(html).toContain(s);
+  for (const s of ["期間", "表示する予約", ">本人<", ">学生<", 'type="checkbox"', "絞り込み", "クリア", "検索"]) expect(html).toContain(s);
   expect(html).not.toContain("教室利用状況表を出力");
   expect(html).not.toContain("ダウンロード");
   expect(html).not.toContain("教室 · ");
@@ -50,10 +50,17 @@ test("絞り込み: 選んだ条件の数がバッジに出る(無いときは�
 });
 
 test("結果あり: 凡例・日付移動・教室名・予約・下の件数", () => {
-  const html = render(ready({ result: result([{ name: "有明１－１１Ａ", capacity: "", infoRef: "i1", bars: [bar(), bar({ kind: "resOther", text: "TOEIC", start: 480, end: 1440, openRef: "b2" })] }, { name: "有明１－１２Ｂ", capacity: "", infoRef: "i2", bars: [] }]) }));
-  for (const s of ["授業", "他ユーザ予約", "この日へ移動", "‹ 前へ", "次へ ›", "2026/10/24(土)", "有明１－１１Ａ", "情報リテラシー", "TOEIC", "mu-row", "#fbd6ee", "#cfd0f7", "2 教室 · 8:00 から 23:00", "有明１－１１Ａの情報"]) expect(html).toContain(s);
+  const html = render(ready({ result: result([{ date: "2026/10/24(土)", name: "有明１－１１Ａ", capacity: "", infoRef: "i1", bars: [bar(), bar({ kind: "resOther", text: "TOEIC", start: 480, end: 1440, openRef: "b2" })] }, { date: "2026/10/24(土)", name: "有明１－１２Ｂ", capacity: "", infoRef: "i2", bars: [] }]) }));
+  for (const s of ["授業", "他ユーザ予約", "2026/10/24(土)", "有明１－１１Ａ", "情報リテラシー", "TOEIC", "mu-row", "#e4d9ef", "#dddae1", "2 教室 · 8:00 から 23:00", "有明１－１１Ａの情報"]) expect(html).toContain(s);
+  for (const s of ["前へ", "次へ"]) expect(html).not.toContain(s); // 期間の全日が表に入っているので、日の移動の通信はいらない
   // 1 時間 96px: 13:10 は (790-480)/60*96 = 496px
   expect(html).toContain("left:496px");
+});
+
+test("期間が何日もあれば、日ごとに見出しを出し、同じ教室も日ごとに並べる", () => {
+  const room = (date: string) => ({ date, name: "R", capacity: "", infoRef: "", bars: [] });
+  const html = render(ready({ result: result([room("2026/10/25(日)"), room("2026/10/26(月)")]) }));
+  for (const s of ["data-date=\"2026/10/25(日)\"", "data-date=\"2026/10/26(月)\"", "1 教室 × 2 日", "日付へ移動"]) expect(html).toContain(s);
 });
 
 test("0 教室", () => {
@@ -62,7 +69,7 @@ test("0 教室", () => {
 });
 
 test("通信中: 結果は薄く(inert)、検索は押せない", () => {
-  const html = render(ready({ result: result([{ name: "R", capacity: "", infoRef: "", bars: [bar()] }]) }, true));
+  const html = render(ready({ result: result([{ date: "", name: "R", capacity: "", infoRef: "", bars: [bar()] }]) }, true));
   expect(html).toContain('aria-busy="true"');
   expect(html).toContain("opacity-45");
   expect(html).toMatch(/disabled=""[^>]*>検索</);

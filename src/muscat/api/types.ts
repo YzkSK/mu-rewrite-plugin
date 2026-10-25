@@ -207,15 +207,14 @@ export type SyllabusDetail = { title: string; code: string; rows: SyllabusDetail
 
 /** kind は元の画面の種類 class(zoneJugyo → "jugyo", zoneResOther → "resOther")。start/end は 0:00 からの分、lane は重なったときの段 */
 export type RoomBar = { kind: string; text: string; title: string; start: number; end: number; lane: number; openRef: string };
-export type RoomRow = { name: string; capacity: string; infoRef: string; bars: RoomBar[] };
-export type RoomLegend = { kind: string; label: string };
+export type RoomRow = { date: string; name: string; capacity: string; infoRef: string; bars: RoomBar[] };
+/** 教室の ⓘ。place は「武蔵野6号館5F」、fields は「教室グループ」「収容人数」などの見出しと中身 */
+export type RoomInfo = { place: string; fields: { label: string; value: string }[] };
+export type RoomLegend ={ kind: string; label: string };
 /** 検索後のタイムライン。from/to はタイムラインの時刻(分)。date は「2026/10/24(土)」 */
 export type RoomResult = {
   date: string;
   dates: SelectField;
-  moveRef: string;
-  prevRef: string;
-  nextRef: string;
   legend: RoomLegend[];
   from: number;
   to: number;
@@ -242,17 +241,15 @@ export type RoomPage = {
 };
 
 export type TeacherRow = { name: string; kana: string; english: string; dept: string; openRef: string };
-export type CalendarEvent = { time: string; title: string };
-/** date は "2026-10-02"(読めなければ "")。other は表示中の月の外 */
-export type CalendarDay = { day: number; date: string; other: boolean; today: boolean; events: CalendarEvent[] };
-export type TeacherCalendar = { title: string; prevRef: string; nextRef: string; todayRef: string; days: CalendarDay[] };
+/** 教員の予定の 1 件。start / end は応答の文字のまま(例 "2026-11-02T18:40:00+09:00")。kind は授業かそれ以外 */
+export type TeacherEvent = { start: string; end: string; allDay: boolean; title: string; kind: "class" | "other" };
 export type TeacherSearch = { name: TextField; sort: SelectField; ascending: boolean; toggleRef: string; clearRef: string; searchRef: string };
-/** 検索欄(search)・一覧(list)・選んだ教員の月カレンダー(calendar)のうち、いま画面にあるもの */
+/** 検索欄(search)・一覧(list)・選んだ教員の予定の入れ物の id(scheduleId、無ければ "")のうち、いま画面にあるもの */
 export type TeacherSchedulePage = {
   teacher: string;
   search: TeacherSearch | null;
   list: ListResult<TeacherRow> | null;
-  calendar: TeacherCalendar | null;
+  scheduleId: string;
   backRef: string;
 };
 /** ホームの履修授業の 1 件。inputName / saveId は、メモを部分更新で送るための欄の name とボタンの id */

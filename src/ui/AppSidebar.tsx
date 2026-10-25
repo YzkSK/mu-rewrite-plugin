@@ -1,7 +1,7 @@
 import { IconChevronDown } from "@tabler/icons-react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
-import { Spinner } from "@/components/starwind/spinner";
+import { Spin } from "./Spin";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
 import {
   SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton,
@@ -18,7 +18,7 @@ const MB = "transition-[background-color,color,transform,width,height,padding] d
 const ACTIVE = "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--mu-primary)]";
 
 /** 移動中の項目の横の小さな丸いアイコン */
-export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spinner className="ml-auto size-4 text-primary" /> : null);
+export const PendingSpinner = ({ on }: { on: boolean }) => (on ? <Spin className="ml-auto size-4" /> : null);
 
 function Group({ group, pick, pendingLabel }: { group: NavGroup; pick: Pick; pendingLabel?: string }) {
   // 画面を移るたびに作り直されるので、最初は開く動きを出さない。自分で開閉したら動かす

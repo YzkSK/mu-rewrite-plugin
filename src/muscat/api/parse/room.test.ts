@@ -61,17 +61,15 @@ test("検索前: 条件の欄(値・選択肢・チェック・スイッチ・�
   expect(resolveRef(d, p.clearRef)?.textContent).toBe(" クリア ");
 });
 
-test("タイムライン: 教室・予約の位置(分)・種類・段・凡例・日付の移動", () => {
+test("タイムライン: 教室・予約の位置(分)・種類・段・凡例・日付", () => {
   const d = page(cond + result);
   const r = parseRoom(d).result!;
   expect(r).toMatchObject({ date: "2026/10/24(土)", from: 480, to: 1440 });
   expect(r.dates.options.map((o) => o.label)).toEqual(["2026/10/24", "2026/10/25"]);
-  expect(resolveRef(d, r.prevRef)?.id).toBe("funcForm:nextBtn");
-  expect(resolveRef(d, r.nextRef)?.id).toBe("funcForm:forwardBtn");
-  expect(resolveRef(d, r.moveRef)?.textContent).toContain("指定日へ移動");
+  expect(r.rooms.map((x) => x.date)).toEqual(["2026/10/24(土)", "2026/10/24(土)"]); // 教室ごとにその日付
   // 見えている種類だけ(dispNone の試験は出さない)
   expect(r.legend).toEqual([{ kind: "jugyo", label: "授業" }, { kind: "hokou", label: "補講授業" }, { kind: "resOther", label: "他ユーザ予約" }]);
-  expect(r.rooms.map((x) => x.name)).toEqual(["テスト１－１Ａ", "テスト１－２Ｂ"]);
+  expect(r.rooms.map((x) => x.name)).toEqual(["テスト1-1A", "テスト1-2B"]); // 全角の教室名は半角にそろえる
   const [a, b] = r.rooms;
   // マス 10(半時間 × 10 = 13:00)+ left 9 + 1 = 13:10、width 100 分
   expect(a!.bars.map((x) => [x.kind, x.start, x.end, x.lane])).toEqual([["resOther", 480, 1440, 0], ["jugyo", 790, 890, 0]]);

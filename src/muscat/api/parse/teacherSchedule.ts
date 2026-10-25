@@ -2,7 +2,6 @@ import { ParseError } from "../errors";
 import type { TeacherRow, TeacherSchedulePage, TeacherSearch } from "../types";
 import { squash } from "./genericControls";
 import { parseDataTable } from "./dataTable";
-import { parseCalendar } from "./teacherCalendar";
 import { buttonByText, refOf, selectField, textField } from "./liveFields";
 
 function parseRow(tr: Element): TeacherRow {
@@ -28,20 +27,19 @@ function parseSearch(root: Document, form: Element): TeacherSearch | null {
 }
 
 /**
- * 教員スケジュール(#funcForm)。検索欄・教員の一覧・選んだ教員の月カレンダーのうち、いま出ているものを読む。
+ * 教員スケジュール(#funcForm)。検索欄・教員の一覧・選んだ教員の予定の入れ物のうち、いま出ているものを読む。
  * 「検索に戻る」は枠(#funcHeader)のパンくず。副作用: 操作する要素に data-mu-ref を付ける
  */
 export function parseTeacherSchedule(root: Document): TeacherSchedulePage {
   const form = root.getElementById("funcForm");
   if (!form) throw new ParseError("funcForm がありません");
   const table = parseDataTable(root.getElementById("funcForm:jinjiListMd4"));
-  const fc = form.querySelector(".fc");
   const back = [...root.querySelectorAll(".ui-breadcrumb-items a")].find((a) => squash(a.textContent) === "教職員検索");
   return {
     teacher: squash(form.querySelector(".teacherBaseInfoLeft p")?.textContent).replace(/^教員名[:：]\s*/, ""),
     search: parseSearch(root, form),
     list: table && { pager: table.pager, rows: table.rows.map(parseRow), empty: table.rows.length === 0 },
-    calendar: fc ? parseCalendar(fc) : null,
+    scheduleId: form.querySelector(".kyoinSchedule")?.id ?? "",
     backRef: refOf(back),
   };
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import StarwindButton from "@/components/starwind/button/Button";
-import { Spinner } from "@/components/starwind/spinner";
+import { Spin } from "./Spin";
 
 type Props = {
   children: ReactNode;
@@ -19,7 +19,7 @@ export function Button({ children, onClick, variant = "primary", disabled, loadi
       {loading ? (
         <>
           <span className="invisible">{children}</span>
-          <Spinner className="absolute size-4" />
+          <Spin className="absolute size-4" />
         </>
       ) : (
         children

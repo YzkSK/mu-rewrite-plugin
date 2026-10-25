@@ -8,6 +8,8 @@ type Props = {
   onChange: (value: string) => void;
   /** 今日の印。テスト用 */
   today?: Date;
+  /** 空にできる欄なら「消す」を出す */
+  clearable?: boolean;
 };
 
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
@@ -30,7 +32,7 @@ export function monthCells(y: number, m: number): (number | null)[] {
 }
 
 /** 欄を押すと下に月のカレンダーが開く日付の選び方(ブラウザ標準の date 入力の代わり) */
-export function DatePicker({ value, label, disabled, onChange, today = new Date() }: Props) {
+export function DatePicker({ value, label, disabled, onChange, today = new Date(), clearable = false }: Props) {
   const sel = parseYmd(value);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => ({ y: sel?.y ?? today.getFullYear(), m: sel?.m ?? today.getMonth() }));
@@ -105,7 +107,19 @@ export function DatePicker({ value, label, disabled, onChange, today = new Date(
               ),
             )}
           </div>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end gap-1">
+            {clearable && value && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+                className="cursor-pointer rounded-[4px] border-0 bg-transparent px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+              >
+                消す
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

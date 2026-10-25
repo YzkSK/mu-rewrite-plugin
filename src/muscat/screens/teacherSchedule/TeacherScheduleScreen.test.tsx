@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import type { CalendarDay, ListPager, TeacherSchedulePage } from "@/muscat/api/types";
+import type { ListPager, TeacherSchedulePage } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
 import type { LiveState } from "../useLiveScreen";
 import { TeacherScheduleScreen } from "./TeacherScheduleScreen";
@@ -16,9 +16,7 @@ const search = {
 };
 const pager = (o: Partial<ListPager> = {}): ListPager => ({ total: 1, page: 1, pages: 1, pageLinks: [], firstRef: "", prevRef: "", nextRef: "", lastRef: "", size: null, ...o });
 const row = { name: "山田 太郎", kana: "ヤマダ タロウ", english: "Yamada Taro", dept: "データサイエンス学部", openRef: "o1" };
-const day = (n: number, o: Partial<CalendarDay> = {}): CalendarDay => ({ day: n, date: `2026-10-${String(n).padStart(2, "0")}`, other: false, today: false, events: [], ...o });
-const days = Array.from({ length: 42 }, (_, i) => day((i % 31) + 1, i === 3 ? { events: [{ time: "08:50", title: "統計学入門" }] } : i === 10 ? { today: true } : {}));
-const base: TeacherSchedulePage = { teacher: "", search, list: null, calendar: null, backRef: "" };
+const base: TeacherSchedulePage = { teacher: "", search, list: null, scheduleId: "", backRef: "" };
 const ready = (p: Partial<TeacherSchedulePage> = {}, busy = false): LiveState<TeacherSchedulePage> => ({ status: "ready", page: { ...base, ...p }, busy });
 
 test("検索欄: 氏名・並び順(昇順の切替)・クリア・検索", () => {
@@ -37,12 +35,17 @@ test("0 件", () => {
   expect(render(ready({ list: { pager: pager({ total: 0 }), rows: [], empty: true } }))).toContain("該当する教職員はいません");
 });
 
-test("カレンダー: 教員名・月・移動・戻る・予定・今日・斜めに出るマス", () => {
-  const html = render(ready({ teacher: "山田 太郎", search: null, backRef: "b", calendar: { title: "2026年10月", prevRef: "p", nextRef: "n", todayRef: "", days } }));
-  for (const s of ["山田 太郎 の予定", "見るだけ。変更はできません", "2026年10月", 'aria-label="前の月"', 'aria-label="次の月"', "‹ 検索に戻る", "08:50 統計学入門", "mu-cell", "bg-primary", "text-error"]) expect(html).toContain(s);
+test("カレンダー: 教員名・月・移動・戻る・凡例・今日・斜めに出るマス", () => {
+  const html = render(ready({ teacher: "山田 太郎", search: null, backRef: "b", scheduleId: "funcForm:j_id_3x" }));
+  const now = new Date();
+  for (const s of ["山田 太郎 の予定", "見るだけ。変更はできません", `${now.getFullYear()}年${now.getMonth() + 1}月`, 'aria-label="前の月"', 'aria-label="次の月"', "‹ 検索に戻る", "授業", "そのほかの予定", "mu-cell", "bg-primary", "text-error"]) expect(html).toContain(s);
   expect(html.match(/mu-cell/g)).toHaveLength(42);
   expect(html).not.toContain("昇順 ↑");
   expect(html).toMatch(/disabled=""[^>]*>今月</);
+});
+
+test("カレンダー: 予定の入れ物が無ければ出さない", () => {
+  expect(render(ready({ teacher: "山田 太郎", search: null }))).not.toContain("の予定");
 });
 
 test("通信中: 結果は薄く、検索は押せない", () => {
@@ -54,12 +57,4 @@ test("通信中: 結果は薄く、検索は押せない", () => {
 test("初回の読み込み中・エラー", () => {
   expect(render()).toContain("読み込んでいます");
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
-});
-
-test("カレンダー: 1 日の予定は 3 件まで、多い日は「ほか N 件」", () => {
-  const many = Array.from({ length: 42 }, (_, i) => day((i % 31) + 1, i === 5 ? { events: Array.from({ length: 30 }, (_, k) => ({ time: "13:10", title: `授業${k}` })) } : {}));
-  const html = render(ready({ teacher: "山田 太郎", search: null, calendar: { title: "2026年10月", prevRef: "p", nextRef: "n", todayRef: "t", days: many } }));
-  expect(html).toContain("ほか 27 件");
-  expect(html).toContain("授業2");
-  expect(html).not.toContain("授業3<");
 });
