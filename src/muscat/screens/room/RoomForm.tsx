@@ -7,7 +7,7 @@ import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { Checkbox } from "@/ui/Checkbox";
 import { DatePicker } from "@/ui/DatePicker";
-import { Radio } from "@/ui/Radio";
+import { RadioGroup } from "@/ui/RadioGroup";
 import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 import { Field } from "../Field";
@@ -163,9 +163,13 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
             {page.showCapacity.length > 0 && (
               <Row label="一覧の収容人数">
                 <div className="flex flex-wrap items-center gap-3">
-                  {page.showCapacity.map((o) => (
-                    <Radio key={o.ref} name="room-capacity" label={o.label.replace("一覧に列を", "")} checked={!!v.on[o.ref]} disabled={busy} onChange={() => setOn(o.ref, true, page.showCapacity)} />
-                  ))}
+                  <RadioGroup
+                    label="一覧の収容人数"
+                    options={page.showCapacity.map((o) => ({ value: o.ref, label: o.label.replace("一覧に列を", "") }))}
+                    value={page.showCapacity.find((o) => v.on[o.ref])?.ref ?? ""}
+                    disabled={busy}
+                    onChange={(ref) => setOn(ref, true, page.showCapacity)}
+                  />
                   {showOn && page.capacityKind.options.length > 0 && sel("収容人数の種類", page.capacityKind)}
                 </div>
               </Row>
