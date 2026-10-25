@@ -7,6 +7,7 @@ import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { HomeScreen } from "@/muscat/screens/home/HomeScreen";
 import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
 import { RoomScreen } from "@/muscat/screens/room/RoomScreen";
+import { SafetyScreen } from "@/muscat/screens/safety/SafetyScreen";
 import { SettingsScreen } from "@/muscat/screens/settings/SettingsScreen";
 import { SyllabusScreen } from "@/muscat/screens/syllabus/SyllabusScreen";
 import { TeacherScheduleScreen } from "@/muscat/screens/teacherSchedule/TeacherScheduleScreen";
@@ -32,6 +33,7 @@ export const SCREENS: Record<string, ScreenDef> = {
   Bsb004: { title: "学籍情報照会", render: (client, doc) => <StudentInfoScreen client={client} doc={doc} /> },
   Bsb007: { title: "健康診断情報照会", render: (client) => <HealthInfoScreen client={client} /> },
   Bsa004: { title: "個人設定", render: (client, doc) => <SettingsScreen client={client} doc={doc} /> },
+  Bse003: { title: "安否確認回答", render: (client, doc) => <SafetyScreen client={client} doc={doc} /> },
   Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },
   Kmh006: { title: "シラバス", render: (client, doc) => <SyllabusScreen client={client} doc={doc} /> },
   Bsa011: { title: "教員スケジュール",render: (client, doc) => <TeacherScheduleScreen client={client} doc={doc} /> },
