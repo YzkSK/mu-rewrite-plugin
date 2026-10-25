@@ -56,7 +56,13 @@ const html = `<form id="funcForm" action="/f" method="post">
     <div id="dlg2" class="ui-dialog" aria-hidden="false"><a class="ui-dialog-titlebar-close" id="dlg2x"></a></div>
     ${cw("Dialog", "dlg", ',visible:false').replace("w_dlg", "dlgVar")}
     ${cw("Dialog", "dlg2", `,behaviors:{close:function(ext,event){PrimeFaces.ab({s:"dlg2",e:"close",p:"dlg2",u:"@none"},ext);}}`)}
-  </form>`;
+  </form>
+  ${[3, 4].map((n) => `<form id="dlg${n}:f" action="/d${n}" method="post"><input type="hidden" name="dlg${n}:f_SUBMIT" value="1"><input type="hidden" name="jakarta.faces.ViewState" value="vs1">
+    <div id="dlg${n}" class="ui-dialog" aria-hidden="false"><a class="ui-dialog-titlebar-close" id="dlg${n}x"></a>
+      <button id="dlg${n}:f:cb" class="dispNone" type="button" onclick="PrimeFaces.confirm({source:&quot;dlg${n}:f:cb&quot;,type:&quot;dialog&quot;});return false;"></button></div>
+    ${cw("CommandButton", `dlg${n}:f:cb`, `,behaviors:{click:function(ext,event){PrimeFaces.ab({s:"dlg${n}:f:cb",f:"dlg${n}:f",p:"dlg${n}:f:cb"},ext);}}`).replace(`w_dlg${n}fcb`, `dlg${n}Var-closeBtn`)}
+    ${cw("Dialog", `dlg${n}`, n === 4 ? `,behaviors:{close:function(ext,event){PrimeFaces.ab({s:"dlg4",e:"close",p:"dlg4",rv:true},ext);}}` : "").replace(`w_dlg${n}`, `dlg${n}Var`)}
+  </form>`).join("")}`;
 
 const OK = `<partial-response><changes><update id="j_id__v_0:jakarta.faces.ViewState:1"><![CDATA[vs2]]></update></changes></partial-response>`;
 
@@ -193,6 +199,31 @@ test("小窓の ✕: 閉じた記録にし、close の behavior があれば送�
   expect(await click("dlg2x")).toBe("done");
   expect(el("dlg2").getAttribute("aria-hidden")).toBe("true");
   expect(sent[0]!.body.get("jakarta.faces.behavior.event")).toBe("close");
+});
+
+test("小窓の ✕(実機で記録): <widgetVar>-closeBtn の隠しボタンの通信を送る。close の behavior もあれば、そのあとに送る", async () => {
+  const only = setup();
+  expect(await only.click("dlg3x")).toBe("done");
+  expect(only.el("dlg3").getAttribute("aria-hidden")).toBe("true");
+  expect([...only.sent[0]!.body]).toEqual([
+    ["jakarta.faces.partial.ajax", "true"], ["jakarta.faces.source", "dlg3:f:cb"], ["jakarta.faces.partial.execute", "dlg3:f:cb"],
+    ["dlg3:f:cb", "dlg3:f:cb"], ["dlg3:f_SUBMIT", "1"], ["jakarta.faces.ViewState", "vs1"],
+  ]);
+  expect(only.sent.length).toBe(1);
+
+  const both = setup();
+  expect(await both.click("dlg4x")).toBe("done");
+  expect(both.sent.map((r) => [r.body.get("jakarta.faces.source"), r.body.get("jakarta.faces.behavior.event")])).toEqual([
+    ["dlg4:f:cb", null],
+    ["dlg4", "close"],
+  ]);
+});
+
+test("小窓の ✕: 同じ widgetVar の消えた closeBtn が表に先にあっても、今ある要素のボタンを送る", async () => {
+  const { doc, sent, click } = setup();
+  doc.body.insertAdjacentHTML("afterbegin", cw("CommandButton", "gone:cb", `,behaviors:{click:function(ext,event){PrimeFaces.ab({s:"gone:cb",f:"dlg3:f",p:"gone:cb"},ext);}}`).replace("w_gonecb", "dlg3Var-closeBtn"));
+  expect(await click("dlg3x")).toBe("done");
+  expect(sent.map((r) => r.body.get("jakarta.faces.source"))).toEqual(["dlg3:f:cb"]);
 });
 
 const TBL = "funcForm:jinjiListMd4";

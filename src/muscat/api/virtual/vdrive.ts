@@ -201,7 +201,15 @@ export async function vdrive(doc: Document, steps: DriveStep[], io: { post: Post
   async function closeDialog(dlg: Element | null) {
     if (!dlg) return;
     setOpen(dlg, false);
-    const cfg = behaviorOf(scanWidgets(doc), dlg.id, "close");
+    const widgets = scanWidgets(doc);
+    // MUSCAT 独自の JS は ✕ で「<小窓の widgetVar>-closeBtn」の隠しボタンの通信を先に送り、そのあと close の behavior が続く(実機で記録)
+    // shortcut: 書きかけ(isModified)のときの確認の小窓は出さない。書き込みのある小窓を ✕ で閉じる画面ができたら考える
+    const wv = widgets.get(dlg.id)?.widgetVar;
+    // 表には部分更新で消えた部品も残るので、今ある要素のものを選ぶ
+    const el = wv ? [...widgets.values()].filter((w) => w.widgetVar === `${wv}-closeBtn`).map((w) => doc.getElementById(w.id)).find((e) => e) : null;
+    const act = el ? findAction(el, widgets) : null;
+    if (act && "ab" in act) await sendAb(act.ab, act.src);
+    const cfg = behaviorOf(widgets, dlg.id, "close");
     if (cfg) await sendAb(cfg, dlg);
   }
 
