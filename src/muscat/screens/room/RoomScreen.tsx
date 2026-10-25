@@ -50,6 +50,7 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
   const [fetching, setFetching] = useState(false);
   const [moreError, setMoreError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [cleared, setCleared] = useState(false);
   const [ticket, setTicket] = useState(0);
   const started = useRef(false);
   const pageRef = useRef(page);
@@ -60,6 +61,8 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
       generation.current++;
       setExtra([]);
       setBase(null);
+      // クリアしても元のページの表は残る(最後のページの先頭 40 教室)ので、次に検索するまで結果を出さない
+      setCleared(key === "clear");
       // 検索を押したときから取り切るまで読み込み中にする(前の結果や最初の 40 教室だけの表を出さない)
       setFetching(submit);
       setMoreError("");
@@ -123,7 +126,7 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
             <div className="rounded-[4px] border border-border bg-card">
               <PageLoading title={act === "search" || !shown ? "教室の予約" : `教室の予約(${shown.rooms.length} 教室)`} />
             </div>
-          ) : r && shown && !submitError && (
+          ) : r && shown && !submitError && !cleared && (
             <BusyOverlay busy={busy}>
               <div className="flex flex-col gap-3">
                 <Legend result={r} dates={dates} onJump={(date) => setJump((j) => ({ date, n: j.n + 1 }))} />
