@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { Sidebar, SidebarInset, SidebarProvider } from "@/components/starwind/sidebar";
 import { AppSidebar } from "@/ui/AppSidebar";
 import { Header } from "@/ui/Header";
@@ -7,6 +7,7 @@ import { TopProgress } from "@/ui/TopProgress";
 import { useSidebarState } from "@/ui/useSidebarState";
 import type { NavModel } from "./drawerItems";
 import { useBusy } from "./useBusy";
+import { getZoom, onZoomChange } from "./zoom";
 
 type Props = { title: string; model: NavModel; user?: string; lastLogin?: string; children: ReactNode };
 
@@ -32,6 +33,8 @@ export function App({ title, model, user, lastLogin, children }: Props) {
     return () => cancelAnimationFrame(id);
   }, []);
   const body = <AppSidebar model={model} onPending={setPending} onPick={narrow ? () => change(false) : undefined} />;
+  // 個人設定の「表示の大きさ」。zoom で全体を変え、高さは拡大したぶん割って画面に収める
+  const zoom = useSyncExternalStore(onZoomChange, getZoom, () => 100) / 100;
   return (
     <PageTitleContext value={title}>
     <SidebarProvider
@@ -40,8 +43,8 @@ export function App({ title, model, user, lastLogin, children }: Props) {
       mobileQuery="(max-width: 0px)"
       keyboardShortcut=""
       data-narrow={narrow}
-      style={FRAME_STYLE}
-      className={`${mounting ? "mu-noanim " : ""}group/frame relative h-screen min-h-0 flex-col overflow-hidden bg-background text-foreground`}
+      style={{ ...FRAME_STYLE, zoom, height: `calc(100vh / ${zoom})` }}
+      className={`${mounting ? "mu-noanim " : ""}group/frame relative min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
       <Header title={title} user={user} lastLogin={lastLogin} />
       <TopProgress busy={busy || pending !== null} />
