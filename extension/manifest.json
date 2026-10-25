@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "permissions": ["webRequest", "storage"],
   "host_permissions": [
     "https://portal.musashino-u.ac.jp/*",
@@ -11,8 +11,7 @@
   "content_scripts": [
     {
       "matches": ["https://portal.musashino-u.ac.jp/*"],
-      "js": ["lib.js", "content.js"],
-      "css": ["content.css"],
+      "js": ["dist/portal-react.js"],
       "run_at": "document_start"
     },
     {

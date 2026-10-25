@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vite build --mode portal",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

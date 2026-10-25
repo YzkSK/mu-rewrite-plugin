@@ -14,9 +14,9 @@ type Props = { model: NavModel; onPick?: () => void; onPending?: (label: string)
 type Pick = (i: NavItem) => void;
 
 // 押すと沈む・選択の地はフェードで移る
-const MB = "transition-[background-color,color,transform,width,height,padding] duration-200 active:scale-[0.98]";
+export const MB = "transition-[background-color,color,transform,width,height,padding] duration-200 active:scale-[0.98]";
 // 選択中: 薄い紫の地・紫の文字・左に 3px の線(どの項目も同じ)
-const ACTIVE = "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--mu-primary)]";
+export const ACTIVE = "data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--mu-primary)]";
 
 /** 掲示板の横の未読の数。ホームや掲示板で数が変わったらすぐ描き直す(0 なら出さない) */
 function UnreadBadge() {

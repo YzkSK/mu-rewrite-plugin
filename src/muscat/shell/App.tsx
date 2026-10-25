@@ -9,14 +9,15 @@ import type { NavModel } from "./drawerItems";
 import { useBusy } from "./useBusy";
 import { getZoom, onZoomChange } from "./zoom";
 
-type Props = { title: string; model: NavModel; user?: string; lastLogin?: string; children: ReactNode };
+// sidebar を渡すと AppSidebar の代わりに描く(ポータル用)。brand / headerRight は Header へそのまま渡す
+type Props = { title: string; model?: NavModel; user?: string; lastLogin?: string; brand?: string; headerRight?: ReactNode; sidebar?: ReactNode; children: ReactNode };
 
 const PENDING_MS = 8000;
 
 const FRAME_STYLE = { "--sidebar-width": "15rem", "--bar-h": "56px" } as CSSProperties;
 
 /** 上の段 + サイドバー + 本文。広い画面は押し出し、狭い画面は本文に重ねて幕を出す(Sheet は body に出てしまうので使わない)。 */
-export function App({ title, model, user, lastLogin, children }: Props) {
+export function App({ title, model, user, lastLogin, brand, headerRight, sidebar, children }: Props) {
   const { narrow, open, change } = useSidebarState();
   const busy = useBusy();
   // 移動が終わると新しい画面として作り直されるので、ここで戻すのは移動が起きなかったときの保険
@@ -32,7 +33,7 @@ export function App({ title, model, user, lastLogin, children }: Props) {
     const id = requestAnimationFrame(() => setMounting(false));
     return () => cancelAnimationFrame(id);
   }, []);
-  const body = <AppSidebar model={model} onPending={setPending} onPick={narrow ? () => change(false) : undefined} />;
+  const body = sidebar ?? (model ? <AppSidebar model={model} onPending={setPending} onPick={narrow ? () => change(false) : undefined} /> : null);
   // 個人設定の「表示の大きさ」。zoom で全体を変え、高さは拡大したぶん割って画面に収める
   const zoom = useSyncExternalStore(onZoomChange, getZoom, () => 100) / 100;
   return (
@@ -46,7 +47,7 @@ export function App({ title, model, user, lastLogin, children }: Props) {
       style={{ ...FRAME_STYLE, zoom, height: `calc(100vh / ${zoom})` }}
       className={`${mounting ? "mu-noanim " : ""}group/frame relative min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
-      <Header title={title} user={user} lastLogin={lastLogin} />
+      <Header title={title} user={user} lastLogin={lastLogin} brand={brand} right={headerRight} />
       <TopProgress busy={busy || pending !== null} />
       <div className="relative flex min-h-0 flex-1">
         {narrow ? (
