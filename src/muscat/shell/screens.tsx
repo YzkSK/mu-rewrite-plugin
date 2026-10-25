@@ -28,7 +28,7 @@ export const SCREENS: Record<string, ScreenDef> = {
   },
   Atb005: { title: "出席確認", render: (client, doc) => <AttendanceScreen client={client} doc={doc} /> },
   Kmg006: { title: "成績照会", render: (client, doc) => <GradesScreen client={client} doc={doc} /> },
-  Bsb004: { title: "学籍情報照会", render: (client) => <StudentInfoScreen client={client} /> },
+  Bsb004: { title: "学籍情報照会", render: (client, doc) => <StudentInfoScreen client={client} doc={doc} /> },
   Bsb007: { title: "健康診断情報照会", render: (client) => <HealthInfoScreen client={client} /> },
   Bsa004: genericScreen("個人設定"),
   Bsd007: { title: "掲示板", render: (client, doc) => <NewsScreen client={client} doc={doc} /> },

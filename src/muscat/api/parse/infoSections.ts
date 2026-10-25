@@ -32,5 +32,7 @@ export function parseInfoSections(root: ParentNode): InfoPage {
   if (!form) throw new ParseError("funcForm がありません");
   const headers = [...form.querySelectorAll(".ui-accordion-header")];
   if (headers.length === 0) throw new ParseError("アコーディオンがありません");
-  return { sections: headers.map(parseSection) };
+  // 学籍情報照会の顔写真は img.photoSize に data URI で入っている(実機で確認)。画像の data URI だけ受け取る
+  const photo = form.querySelector("img.photoSize")?.getAttribute("src") ?? "";
+  return { sections: headers.map(parseSection), ...(/^data:image\/(jpeg|png|gif|webp);base64,/.test(photo) ? { photo } : {}) };
 }

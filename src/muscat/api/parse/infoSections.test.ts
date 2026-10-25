@@ -39,3 +39,10 @@ test("アコーディオンも funcForm も無ければ ParseError", () => {
   expect(() => parseInfoSections(doc("<p>x</p>"))).toThrow(ParseError);
   expect(() => parseInfoSections(new DOMParser().parseFromString("<p>x</p>", "text/html"))).toThrow(ParseError);
 });
+
+test("顔写真は img.photoSize の画像の data URI だけ取る", () => {
+  const img = (src: string) => `<img class="photoSize" src="${src}">`;
+  const body = section("学生基本情報", grid(row("氏名", "甲")) + img("data:image/jpeg;base64,AAAA"));
+  expect(parseInfoSections(doc(body)).photo).toBe("data:image/jpeg;base64,AAAA");
+  expect(parseInfoSections(doc(section("学生基本情報", img("https://example.com/x.jpg")))).photo).toBeUndefined();
+});

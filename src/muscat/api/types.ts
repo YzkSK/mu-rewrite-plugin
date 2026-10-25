@@ -62,7 +62,8 @@ export type CreditRow = {
 export type InfoGrid = { rows: string[][] };
 export type InfoTable = { headers: string[]; rows: string[][] };
 export type InfoSection = { title: string; grids: InfoGrid[]; tables: InfoTable[] };
-export type InfoPage = { sections: InfoSection[] };
+/** photo は学籍情報照会の顔写真(画像の data URI) */
+export type InfoPage = { sections: InfoSection[]; photo?: string };
 /** 汎用画面: 生きたページの DOM から読んだ、構造に依らない最低限の表現。ref は driver の data-mu-ref */
 export type GControl =
   | { kind: "text"; ref: string; label: string; value: string; disabled: boolean }

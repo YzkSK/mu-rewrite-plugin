@@ -16,7 +16,7 @@ const render = (initial?: Parameters<typeof HealthInfoScreen>[0]["initial"]) =>
 
 test("行列の節は表(1 行目が見出し)、2 列の節は項目名と値、空の値は —", () => {
   const html = render({ status: "ready", page });
-  for (const s of ["健康診断情報", "<th>実施年度</th>", "<th>2026</th>", "170.0", "血圧検査年月日", "検査日", "—"]) expect(html).toContain(s);
+  for (const s of ["健康診断情報", ">実施年度</th>", ">2026</th>", "170.0", "血圧検査年月日", "検査日", "—"]) expect(html).toContain(s);
   expect(html).toContain("<dl");
 });
 

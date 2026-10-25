@@ -15,15 +15,16 @@ const page: InfoPage = {
 };
 const render = (initial?: Parameters<typeof StudentInfoScreen>[0]["initial"]) => renderToString(<StudentInfoScreen client={client} initial={initial} />);
 
-test("項目名と値、空の値は —、複数 grid、表、空の節、開閉ボタン", () => {
+test("項目名と値、空の値は —、複数 grid、表、空の節、節の目次", () => {
   const html = render({ status: "ready", page });
-  for (const s of ["学生基本情報", "氏名", "テスト 太郎", "—", "甲", "乙", "異動開始日", "テスト大学", "情報はありません", "すべて開く", "すべて閉じる"]) expect(html).toContain(s);
-  expect(html).toContain('aria-expanded="true"');
+  for (const s of ["学生基本情報", "氏名", "テスト 太郎", "—", "甲", "乙", "異動開始日", "テスト大学", "情報はありません", 'aria-label="節"']) expect(html).toContain(s);
+  expect(html).toContain('aria-current="true"'); // 最初の節が選ばれている
+  expect(html).not.toContain("すべて開く");
 });
 
 test("3 セル以上の行がある grid は表", () => {
   const html = render({ status: "ready", page: { sections: [{ title: "T", grids: [{ rows: [["a", "b", "c"], ["1", "2", "3"]] }], tables: [] }] } });
-  expect(html).toContain("<th>a</th>");
+  expect(html).toMatch(/<th[^>]*>a<\/th>/);
   expect(html).not.toContain("<dl");
 });
 
