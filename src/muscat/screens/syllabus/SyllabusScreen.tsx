@@ -5,6 +5,7 @@ import { BusyOverlay } from "@/ui/BusyOverlay";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { GenericScreen } from "../generic/GenericScreen";
+import { useBackClose } from "../useBackClose";
 import { useLiveScreen, type LiveState } from "../useLiveScreen";
 import type { SyllabusPage } from "@/muscat/api/types";
 import { SyllabusDetailView } from "./SyllabusDetailView";
@@ -37,10 +38,16 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
   const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
-  // 検索欄も詳細も無い(想定外の画面)ときは汎用画面で見せる
-  if (page && !page.searchRef && !page.detail) return <GenericScreen client={client} doc={doc} />;
   const detail = page?.detail && page.detail.title !== dismissed ? page.detail : null;
   const note = () => page && void go("note", [{ kind: "click", ref: page.noteRef }]);
+  const closeDetail = () => {
+    if (!detail) return;
+    setDismissed(detail.title);
+    void run([{ kind: "click", ref: detail.closeRef, ajax: false }], undefined, "詳細を閉じられませんでした");
+  };
+  useBackClose(!!detail, closeDetail); // ブラウザの戻るでも詳細を閉じる(フックなので、下の早期 return より前)
+  // 検索欄も詳細も無い(想定外の画面)ときは汎用画面で見せる
+  if (page && !page.searchRef && !page.detail) return <GenericScreen client={client} doc={doc} />;
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={error ?? ""} />}
@@ -79,10 +86,7 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
               busy={busy}
               onNote={() => void run([{ kind: "click", ref: detail.noteRef, ajax: true }], undefined, "ふせんを操作できませんでした")}
               onPrint={() => void run([{ kind: "click", ref: detail.printRef, ajax: false }], undefined, "印刷できませんでした")}
-              onClose={() => {
-                setDismissed(detail.title);
-                void run([{ kind: "click", ref: detail.closeRef, ajax: false }], undefined, "詳細を閉じられませんでした");
-              }}
+              onClose={closeDetail}
             />
           )}
         </>

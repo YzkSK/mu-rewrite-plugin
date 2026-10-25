@@ -11,6 +11,7 @@ import { Select } from "@/ui/Select";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
 import { exportFile, findExportButton } from "../exportFile";
+import { useBackClose } from "../useBackClose";
 import { Legend, Mark } from "./SessionMarks";
 import { useAttendance, type AttendanceState } from "./useAttendance";
 
@@ -147,6 +148,7 @@ export function AttendanceScreen({ client, doc, initial }: Props) {
   const loading = status === "loading";
   const options = attendance ? termOptions(attendance) : [];
   const open = (c: AttendanceCourse) => setCourse({ title: c.subject, code: c.code });
+  useBackClose(course !== null, () => setCourse(null)); // ブラウザの戻るでも引き出しを閉じる
 
   return (
     <div className="flex flex-col gap-3 p-4">

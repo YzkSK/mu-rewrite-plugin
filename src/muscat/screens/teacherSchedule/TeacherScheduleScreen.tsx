@@ -10,6 +10,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 import { Field } from "../Field";
+import { useBackClose } from "../useBackClose";
 import { useLiveScreen, type LiveState } from "../useLiveScreen";
 import { TeacherCalendarView } from "./TeacherCalendarView";
 import { TeacherList } from "./TeacherList";
@@ -60,6 +61,8 @@ export function TeacherScheduleScreen({ client, initial }: { client: MuscatClien
     const open = page?.list?.rows.some((r) => r.openRef === ref);
     void go(ref, [{ kind: "click", ref }], open ? "予定を開けませんでした" : ref === page?.backRef ? "一覧に戻れませんでした" : "ページを移れませんでした");
   };
+  // カレンダーを開いている間は、ブラウザの戻るで「検索に戻る」と同じにする
+  useBackClose(!!page?.scheduleId && !!page.backRef, () => click(page!.backRef));
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
   const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));

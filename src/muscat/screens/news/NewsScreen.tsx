@@ -13,6 +13,7 @@ import { markAllReadSteps, toggleSteps } from "./newsSteps";
 import { NewsToolbar } from "./NewsToolbar";
 import { addUnread } from "./unreadCount";
 import { useNews, type NewsState } from "./useNews";
+import { useBackClose } from "../useBackClose";
 
 const MORE = "__more__";
 
@@ -111,7 +112,8 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
   const lastNext = more ? MORE : after;
   const detail = page?.detail && reading ? { ...page.detail, prevRef: prevUnread?.openRef ?? "", nextRef: firstUnread?.openRef ?? "" } : page?.detail && list ? { ...page.detail, prevRef: pos === 0 ? before : page.detail.prevRef, nextRef: pos === list.length - 1 ? lastNext : page.detail.nextRef } : page?.detail;
   const showDetail = !!page?.detail && page.detail.title !== dismissed;
-  const detailClick = (ref: string, ajax: boolean) => {
+  useBackClose(showDetail, closeDetail); // ブラウザの戻るでも詳細を閉じる
+  const detailClick =(ref: string, ajax: boolean) => {
     if (ref === page?.detail?.closeRef) return closeDetail();
     setDismissed("");
     if (ref !== MORE) return click(ref, ajax);

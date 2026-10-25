@@ -6,6 +6,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { CourseDrawer } from "../course/CourseDrawer";
 import { NewsDetailView } from "../news/NewsDetailView";
 import { rememberUnread } from "../news/unreadCount";
+import { useBackClose } from "../useBackClose";
 import { HomeCalendar } from "./HomeCalendar";
 import { NoticePanel } from "./NoticePanel";
 import { daysFrom } from "./dayRows";
@@ -23,6 +24,19 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
     void run([{ kind: "click", ref, ajax }], undefined, fail);
   };
   if (page?.unreadKeiji != null) rememberUnread(page.unreadKeiji); // 掲示板の未読ボタンも同じ数にする
+  const closeCourse = () => {
+    setCourse(null);
+    // 引き出しが裏でホームを取り直すと、サーバー側の日表示は「今日」に戻る(画面は見ていた日のまま)。
+    // 「今日」を押してから、見ていた日まで送り直して揃える(実機で確認)
+    const day = page?.day;
+    if (!day?.nav.today) return void read();
+    const diff = daysFrom(day.date, now ?? new Date());
+    const step = diff > 0 ? day.nav.nextDay : day.nav.prevDay;
+    void run([{ kind: "click", ref: day.nav.today, ajax: true }, ...Array.from({ length: Math.abs(diff) }, () => ({ kind: "click" as const, ref: step, ajax: true }))], undefined, "日付を移れませんでした");
+  };
+  useBackClose(course !== null, closeCourse); // ブラウザの戻るでも引き出しを閉じる
+  const detailClose = page?.detail?.closeRef;
+  useBackClose(!!page?.detail, () => detailClose && click(detailClose, false)); // お知らせの詳細も同じ
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -48,16 +62,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
           key={course}
           client={client}
           course={{ title: course }}
-          onClose={() => {
-            setCourse(null);
-            // 引き出しが裏でホームを取り直すと、サーバー側の日表示は「今日」に戻る(画面は見ていた日のまま)。
-            // 「今日」を押してから、見ていた日まで送り直して揃える(実機で確認)
-            const day = page?.day;
-            if (!day?.nav.today) return void read();
-            const diff = daysFrom(day.date, now ?? new Date());
-            const step = diff > 0 ? day.nav.nextDay : day.nav.prevDay;
-            void run([{ kind: "click", ref: day.nav.today, ajax: true }, ...Array.from({ length: Math.abs(diff) }, () => ({ kind: "click" as const, ref: step, ajax: true }))], undefined, "日付を移れませんでした");
-          }}
+          onClose={closeCourse}
           onNav={(label) => {
             setCourse(null);
             void client.navigate(label).catch(() => {});
