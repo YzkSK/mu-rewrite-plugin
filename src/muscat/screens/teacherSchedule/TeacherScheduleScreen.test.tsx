@@ -23,7 +23,8 @@ const ready = (p: Partial<TeacherSchedulePage> = {}, busy = false): LiveState<Te
 
 test("検索欄: 氏名・並び順(昇順の切替)・クリア・検索", () => {
   const html = render(ready());
-  for (const s of ["教員スケジュール", "氏名", "並び順", "カナ氏名", "昇順 ↑", "クリア", "検索"]) expect(html).toContain(s);
+  for (const s of ["氏名(姓か名の一部、カナでも)", "並び順", "カナ氏名", "昇順 ↑", "クリア", "検索"]) expect(html).toContain(s);
+  expect(html).toMatch(/<button[^>]*bg-secondary[^>]*aria-label="昇順\(押すと降順\)"/); // 文字だけだとボタンに見えない
   expect(html).not.toContain("該当する教職員はいません");
 });
 
@@ -38,7 +39,7 @@ test("0 件", () => {
 
 test("カレンダー: 教員名・月・移動・戻る・予定・今日・斜めに出るマス", () => {
   const html = render(ready({ teacher: "山田 太郎", search: null, backRef: "b", calendar: { title: "2026年10月", prevRef: "p", nextRef: "n", todayRef: "", days } }));
-  for (const s of ["山田 太郎", "さんの予定を見ています", "2026年10月", "‹ 前の月", "次の月 ›", "‹ 検索に戻る", "08:50 統計学入門", "mu-cell", "bg-primary"]) expect(html).toContain(s);
+  for (const s of ["山田 太郎 の予定", "見るだけ。変更はできません", "2026年10月", 'aria-label="前の月"', 'aria-label="次の月"', "‹ 検索に戻る", "08:50 統計学入門", "mu-cell", "bg-primary", "text-error"]) expect(html).toContain(s);
   expect(html.match(/mu-cell/g)).toHaveLength(42);
   expect(html).not.toContain("昇順 ↑");
   expect(html).toMatch(/disabled=""[^>]*>今月</);
@@ -53,4 +54,12 @@ test("通信中: 結果は薄く、検索は押せない", () => {
 test("初回の読み込み中・エラー", () => {
   expect(render()).toContain("読み込んでいます");
   expect(render({ status: "error", error: "MUSCAT が応答しません" })).toContain("応答しません");
+});
+
+test("カレンダー: 1 日の予定は 3 件まで、多い日は「ほか N 件」", () => {
+  const many = Array.from({ length: 42 }, (_, i) => day((i % 31) + 1, i === 5 ? { events: Array.from({ length: 30 }, (_, k) => ({ time: "13:10", title: `授業${k}` })) } : {}));
+  const html = render(ready({ teacher: "山田 太郎", search: null, calendar: { title: "2026年10月", prevRef: "p", nextRef: "n", todayRef: "t", days: many } }));
+  expect(html).toContain("ほか 27 件");
+  expect(html).toContain("授業2");
+  expect(html).not.toContain("授業3<");
 });

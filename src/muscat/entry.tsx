@@ -45,12 +45,11 @@ if (window === window.top && location.pathname.startsWith("/uprx/")) {
       release: () => {
         mark("release");
         const at = preEpoch(); // 待つ間に次の画面へ移って覆いが掛け直されたら、それは外さない
-        // 書体が届く前に外すと、文字が別の書体から切り替わってちらつく。待つのは最大 600ms。
-        // 書体の CSS(link)がまだ届いていないと fonts.load はすぐ終わるので、先に link の読み込みを待つ
+        // 書体は font-display: block(届くまで文字を描かない)なので、書体そのものは待たずに外す(待つと読み込み中の枠が約 0.1 秒見え、
+        // ちらついて見えた。実機で測定)。書体の定義(link の CSS)が届く前だと別の書体で描いてから替わるので、それだけ待つ(最大 300ms)
         const link = document.getElementById("mu-react-font") as HTMLLinkElement | null;
         const sheet = !link || link.sheet ? Promise.resolve() : new Promise((r) => { link.addEventListener("load", r, { once: true }); link.addEventListener("error", r, { once: true }); });
-        const font = sheet.then(() => document.fonts.load('400 1em "IBM Plex Sans JP"', "あ")).catch(() => undefined);
-        void Promise.race([font, new Promise((r) => setTimeout(r, 600))]).then(() => {
+        void Promise.race([sheet, new Promise((r) => setTimeout(r, 300))]).then(() => {
           mark("font");
           if (preEpoch() === at) releasePreHide(document);
         });

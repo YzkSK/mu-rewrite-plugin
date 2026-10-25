@@ -29,8 +29,9 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
   if (!doc.getElementById(HIDE_ID)) {
     const hide = doc.createElement("style");
     hide.id = HIDE_ID;
-    // 元の body の下余白(80px)でページごとスクロールし、サイドバーまで動くので、ホストを画面に固定する
-    hide.textContent = `body > *:not(#${HOST_ID}) { display: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
+    // 元の画面は display:none にせず、画面の外で透明にする。PrimeFaces の部品(教員の予定のカレンダー、ダイアログの開閉など)は
+    // 見えていないと描画や処理を後回しにするため(実機で確認)。元の body の下余白でスクロールしないよう、ホストは画面に固定する
+    hide.textContent = `body > *:not(#${HOST_ID}) { position: fixed !important; top: 0 !important; left: -300vw !important; width: 100vw !important; visibility: hidden !important; pointer-events: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
     doc.head.appendChild(hide);
   }
   const props = css.match(/@property[^{]+\{[^}]*\}/g);
@@ -44,7 +45,7 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
     const link = doc.createElement("link");
     link.id = FONT_ID;
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=block";
     doc.head.appendChild(link);
   }
   return root;

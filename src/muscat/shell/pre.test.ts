@@ -14,25 +14,15 @@ test("install は冪等、release でスタイルごと消える(何度でも)",
   expect(root.classList.contains("mu-pre")).toBe(false);
 });
 
-test("覆いは真ん中の回るアイコン。掛けるたびに回数が進む", () => {
+// 枠や文字を描くと、そこで前のページの表示が終わり、枠 → 画面と切り替わってちらついた
+test("覆いは元の画面を隠すだけで、枠も文字も描かない。掛けるたびに回数が進み、書体を先に読み始める", () => {
   const before = preEpoch();
   installPreHide(document);
   expect(preEpoch()).toBe(before + 1);
   const css = document.getElementById("mu-react-pre")!.textContent!;
-  expect(css).toContain("left: 50%");
-  expect(css).toContain("mu-pre-spin");
+  expect(css).toContain("visibility: hidden");
+  expect(css).not.toContain("::after");
+  expect(css).not.toContain("gradient");
+  expect(document.getElementById("mu-react-font")).not.toBeNull();
   releasePreHide(document);
-});
-
-test("枠(上の段の線)を描き、サイドバーを閉じていれば地を描かない", () => {
-  localStorage.setItem("mu-m-drawer", "closed");
-  installPreHide(document);
-  expect(document.getElementById("mu-react-pre")!.textContent!).toContain("0 0/100% 56px");
-  expect(root.classList.contains("mu-pre-side")).toBe(false);
-  releasePreHide(document);
-  localStorage.removeItem("mu-m-drawer");
-  installPreHide(document);
-  expect(root.classList.contains("mu-pre-side")).toBe(!matchMedia("(max-width: 767.98px)").matches);
-  releasePreHide(document);
-  expect(root.classList.contains("mu-pre-side")).toBe(false);
 });

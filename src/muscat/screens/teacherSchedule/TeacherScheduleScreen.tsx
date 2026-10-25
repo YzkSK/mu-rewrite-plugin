@@ -25,23 +25,19 @@ function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search
       { kind: "click", ref: search.searchRef, ajax: true },
     ]);
   return (
-    <Card className="gap-3.5 p-4">
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h3 className="text-base font-extrabold">教員スケジュール</h3>
-        <small className="text-muted-foreground">教職員を探して、予定を見ます</small>
-      </div>
+    <Card className="gap-3 p-4">
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !busy && submit()}>
-        <Field label="氏名"><TextInput label="氏名(姓か名の一部。カナでも)" value={name} disabled={busy} onChange={setName} /></Field>
+        <Field label="氏名(姓か名の一部、カナでも)"><TextInput label="氏名(姓か名の一部、カナでも)" value={name} disabled={busy} onChange={setName} /></Field>
         <Field label="並び順">
           <div className="flex flex-wrap items-center gap-2">
             <Select label="並び順" value={sort} options={search.sort.options} disabled={busy} onChange={setSort} />
-            {search.toggleRef && <Button variant="ghost" disabled={busy} loading={act === "toggle"} onClick={onToggle}>{search.ascending ? "昇順 ↑" : "降順 ↓"}</Button>}
+            {search.toggleRef && <Button variant="secondary" label={search.ascending ? "昇順(押すと降順)" : "降順(押すと昇順)"} disabled={busy} loading={act === "toggle"} onClick={onToggle}>{search.ascending ? "昇順 ↑" : "降順 ↓"}</Button>}
           </div>
         </Field>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="flex-1" />
-        <Button variant="ghost" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
+        <Button variant="secondary" disabled={busy} loading={act === "clear"} onClick={onClear}>クリア</Button>
         <Button disabled={busy} loading={act === "search"} onClick={submit}>検索</Button>
       </div>
     </Card>
@@ -72,7 +68,7 @@ export function TeacherScheduleScreen({ client, doc, initial }: { client: Muscat
           )}
           <BusyOverlay busy={busy}>
             <div className="flex flex-col gap-3">
-              {page.list && <TeacherList list={page.list} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])} />}
+              {page.list && <TeacherList list={page.list} note={page.search?.name.value ? `氏名「${page.search.name.value}」` : ""} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])} />}
               <TeacherCalendarView page={page} busy={busy} act={act} onClick={click} />
             </div>
           </BusyOverlay>
