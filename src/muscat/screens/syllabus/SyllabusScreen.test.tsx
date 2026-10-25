@@ -78,7 +78,7 @@ test("詳細が無ければ引き出しは出ない", () => {
 test("通信中: 結果は薄く(inert)・丸いアイコン、条件は押せない", () => {
   const html = render(ready({ result: { pager: pager(), rows: [row()], empty: false } }, true));
   expect(html).toContain('aria-busy="true"');
-  expect(html).toContain("opacity-45");
+  expect(html).toContain('aria-busy="true"');
   expect(html).toMatch(/disabled=""[^>]*>検索</);
 });
 

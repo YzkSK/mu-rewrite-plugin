@@ -7,14 +7,14 @@ import { BusyOverlay } from "./BusyOverlay";
 import { Button } from "./Button";
 import { PageLoading, PageTitleContext } from "./PageLoading";
 
-test("BusyOverlay: busy で薄くなり aria-busy、そうでなければ素通し", () => {
+test("BusyOverlay: busy で薄い灰色を重ねて真ん中にアイコン、そうでなければ素通し", () => {
   const on = renderToString(<BusyOverlay busy>本文</BusyOverlay>);
   expect(on).toContain('aria-busy="true"');
-  expect(on).toContain("opacity-45");
+  expect(on).toMatch(/absolute inset-0 grid place-items-center[^"]*opacity-100/);
   expect(on).toContain("本文");
   const off = renderToString(<BusyOverlay busy={false}>本文</BusyOverlay>);
   expect(off).toContain('aria-busy="false"');
-  expect(off).not.toContain("opacity-45");
+  expect(off).toMatch(/place-items-center[^"]*opacity-0/);
 });
 
 test("PageLoading: 題名ありは「○○を読み込んでいます」、題名なしは「を」から", () => {

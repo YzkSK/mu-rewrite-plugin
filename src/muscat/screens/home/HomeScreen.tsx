@@ -7,6 +7,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { CourseDrawer } from "../course/CourseDrawer";
 import { NewsDetailView } from "../news/NewsDetailView";
 import { rememberUnread } from "../news/unreadCount";
+import { HomeCalendar } from "./HomeCalendar";
 import { NoticePanel } from "./NoticePanel";
 import { daysFrom } from "./dayRows";
 import { TodayPanel } from "./TodayPanel";
@@ -16,6 +17,7 @@ import { useHome, type HomeState } from "./useHome";
 export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient; doc: Document; initial?: HomeState; now?: Date }) {
   const { status, page, error, busy = false, run, read } = useHome(client, doc, initial);
   const [course, setCourse] = useState<string | null>(null);
+  const [month, setMonth] = useState(false); // 月のカレンダーを出しているか
   const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
   if (page?.unreadKeiji != null) rememberUnread(page.unreadKeiji); // 掲示板の未読ボタンも同じ数にする
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
@@ -23,12 +25,13 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <ErrorNotice title="ホームを読み込めませんでした" message={error ?? ""} />}
       {status === "loading" && !page && <PageLoading />}
-      {page && (
+      {page && month && <HomeCalendar client={client} today={now} onBack={() => setMonth(false)} />}
+      {page && !month && (
         <BusyOverlay busy={busy}>
           <div className="flex flex-col gap-3">
             {page.detail && <NewsDetailView detail={page.detail} busy={busy} onClick={click} />}
             <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
-              <TodayPanel day={page.day} timetableRef={page.timetableChangeRef} busy={busy} now={now ?? new Date()} onClick={click} onOpenCourse={setCourse} />
+              <TodayPanel day={page.day} timetableRef={page.timetableChangeRef} busy={busy} now={now ?? new Date()} onClick={click} onOpenCourse={setCourse} onCalendar={() => setMonth(true)} />
               <div className="flex flex-col gap-3">
                 <NoticePanel title="重要なお知らせ" items={items("重要")} busy={busy} onOpen={click} badge={page.unreadKeiji} badgeDisabled={!page.keijiRef} onBadge={() => click(page.keijiRef)} />
                 <NoticePanel title="期限あり" items={items("期限あり")} busy={busy} onOpen={click} />

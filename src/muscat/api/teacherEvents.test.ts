@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { MuscatDownError, ParseError } from "./errors";
-import { fetchTeacherEvents } from "./teacherEvents";
+import { fetchHomeEvents, fetchTeacherEvents } from "./teacherEvents";
 
 const ID = "funcForm:j_id_3x";
 const html = `<form id="funcForm" action="/t" method="post"><input name="jakarta.faces.ViewState" value="vs1"><input name="rx-token" value="t"><div id="${ID}" class="kyoinSchedule">元</div></form>`;
@@ -43,4 +43,23 @@ test("入れ物が無い・予定の update が無い・JSON が壊れている�
   await expect(fetchTeacherEvents(makeDoc(), reply("<partial-response></partial-response>").f, ...range)).rejects.toThrow(ParseError);
   await expect(fetchTeacherEvents(makeDoc(), reply(xml.replace(events, "{oops")).f, ...range)).rejects.toThrow(ParseError);
   await expect(fetchTeacherEvents(makeDoc(), reply("x", 500).f, ...range)).rejects.toThrow(MuscatDownError);
+});
+
+test("ホームの予定: 入れ物は .portalSchedule、種類を classNames で分け、掲示は始まりの日だけ", async () => {
+  const H = "funcForm:j_id_8h:content";
+  const doc = new DOMParser().parseFromString(`<form id="funcForm" action="/t" method="post"><input name="jakarta.faces.ViewState" value="vs1"><div id="${H}" class="portalSchedule"></div></form>`, "text/html");
+  const ev = (classNames: string, title: string, start: string, end: string) => ({ allDay: true, start, end, classNames, title });
+  const json = JSON.stringify({
+    events: [
+      ev("eventEventAd skjKbn skjKbn1", "スポーツの日", "2026-10-12T00:00:00+09:00", "2026-10-12T23:59:59+09:00"),
+      ev("eventEventAd skjKbn skjKbn3", "摩耶祭", "2026-10-10T00:00:00+09:00", "2026-10-12T23:59:59+09:00"),
+      ev("eventKeijiAd", "韓国語研修", "2026-10-16T16:09:00+09:00", "2026-10-28T23:59:59+09:00"),
+      { ...ev("eventJugyo eventDuring", "卒業論文創成課題 ", "2026-10-02T13:10:00+09:00", "2026-10-02T23:59:59+09:00"), allDay: false },
+    ],
+  });
+  const { f, calls } = reply(`<partial-response><changes><update id="${H}"><![CDATA[${json}]]></update></changes></partial-response>`);
+  const r = await fetchHomeEvents(doc, f, ...range);
+  expect(r.map((e) => [e.kind, e.title])).toEqual([["holiday", "スポーツの日"], ["event", "摩耶祭"], ["notice", "韓国語研修"], ["class", "卒業論文創成課題"]]);
+  expect(r[2]!.end).toBe(r[2]!.start); // 掲示は始まりの日だけ
+  expect(calls[0]!.body.get("jakarta.faces.source")).toBe(H);
 });

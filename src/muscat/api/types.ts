@@ -244,6 +244,8 @@ export type RoomPage = {
 export type TeacherRow = { name: string; kana: string; english: string; dept: string; openRef: string };
 /** 教員の予定の 1 件。start / end は応答の文字のまま(例 "2026-11-02T18:40:00+09:00")。kind は授業かそれ以外 */
 export type TeacherEvent = { start: string; end: string; allDay: boolean; title: string; kind: "class" | "other" };
+/** ホームの月表示の予定。holiday = 祝日、event = 大学の行事、notice = 掲示、class = 授業 */
+export type HomeEvent = { start: string; end: string; allDay: boolean; title: string; kind: "holiday" | "event" | "notice" | "class" | "other" };
 export type TeacherSearch = { name: TextField; sort: SelectField; ascending: boolean; toggleRef: string; clearRef: string; searchRef: string };
 /** 検索欄(search)・一覧(list)・選んだ教員の予定の入れ物の id(scheduleId、無ければ "")のうち、いま画面にあるもの */
 export type TeacherSchedulePage = {

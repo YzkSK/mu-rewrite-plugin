@@ -14,8 +14,8 @@ import { parseRoom } from "./parse/room";
 import { parseSettings } from "./parse/settings";
 import { parseSyllabus } from "./parse/syllabus";
 import { parseTeacherSchedule } from "./parse/teacherSchedule";
-import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
-import { fetchTeacherEvents } from "./teacherEvents";
+import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomeEvent, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
+import { fetchHomeEvents, fetchTeacherEvents } from "./teacherEvents";
 import { ParseError } from "./errors";
 import { roomBooking, roomInfo, roomMore, roomNext, roomSubmit } from "./roomFetch";
 
@@ -39,6 +39,8 @@ export type MuscatClient = {
   readTeacherSchedule(): Promise<TeacherSchedulePage>;
   /** 教員スケジュールの予定を、元のページの部品と同じ通信で直接取る(start 以上 end 未満) */
   teacherEvents(start: Date, end: Date): Promise<TeacherEvent[]>;
+  /** ホームの月表示の予定(祝日・大学の行事・掲示・授業)を、元のページの部品と同じ通信で直接取る(start 以上 end 未満) */
+  homeEvents(start: Date, end: Date): Promise<HomeEvent[]>;
   /** 生きたページの教室予約(参照のみ)(条件の欄と、検索後のタイムライン)を読む */
   readRoom(): Promise<RoomPage>;
   /** 生きたページの個人設定(いま開いているタブの中身)を読む */
@@ -77,6 +79,7 @@ export function createMuscatClient(deps: {
     readSyllabus: () => core.runLive(async (live) => parseSyllabus(live.doc)),
     readTeacherSchedule: () => core.runLive(async (live) => parseTeacherSchedule(live.doc)),
     teacherEvents: (start, end) => core.runLive((live) => fetchTeacherEvents(live.doc, deps.fetch, start, end)),
+    homeEvents: (start, end) => core.runLive((live) => fetchHomeEvents(live.doc, deps.fetch, start, end)),
     readRoom: () => core.runLive(async (live) => parseRoom(live.doc)),
     readSettings: () => core.runLive(async (live) => parseSettings(live.doc)),
     roomSubmit: () =>

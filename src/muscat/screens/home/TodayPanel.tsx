@@ -3,7 +3,7 @@ import { Button } from "@/ui/Button";
 import { EmptyState } from "@/ui/EmptyState";
 import { dateTitle, dayRows, isSameDay, minutes, type DayRow } from "./dayRows";
 
-type Props = { day: HomeDay | null; timetableRef: string; busy: boolean; now: Date; onClick: (ref: string) => void; onOpenCourse: (title: string) => void };
+type Props = { day: HomeDay | null; timetableRef: string; busy: boolean; now: Date; onClick: (ref: string) => void; onOpenCourse: (title: string) => void; /** 月のカレンダーを開く */ onCalendar?: () => void };
 type State = "now" | "past" | "later";
 
 const label = (ps: number[]) => `${ps.join("・")}限`;
@@ -41,7 +41,7 @@ function Row({ row, state, line, onOpen }: { row: DayRow; state: State; line: bo
 }
 
 /** 今日(または選んだ日)の 1〜7 限。「今」と終わった時限の見分けは、画面の日付が now と同じ日のときだけ */
-export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse }: Props) {
+export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse, onCalendar }: Props) {
   const nav = day?.nav;
   const navBtn = (name: string, ref: string | undefined) => (
     <Button variant="ghost"disabled={busy || !ref} onClick={() => onClick(ref!)}>{name}</Button>
@@ -66,6 +66,7 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
           {navBtn("前の日", nav?.prevDay)}
           {navBtn("次の日", nav?.nextDay)}
           {navBtn("今日", nav?.today)}
+          {onCalendar && <Button variant="ghost" disabled={busy} onClick={onCalendar}>カレンダー</Button>}
         </div>
       </div>
       <div className="flex flex-col gap-3 p-4">

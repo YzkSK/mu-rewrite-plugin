@@ -50,7 +50,7 @@ test("カレンダー: 予定の入れ物が無ければ出さない", () => {
 
 test("通信中: 結果は薄く、検索は押せない", () => {
   const html = render(ready({ list: { pager: pager(), rows: [row], empty: false } }, true));
-  expect(html).toContain("opacity-45");
+  expect(html).toContain('aria-busy="true"');
   expect(html).toMatch(/disabled=""[^>]*>検索</);
 });
 

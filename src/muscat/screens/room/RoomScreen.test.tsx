@@ -70,7 +70,7 @@ test("0 教室", () => {
 test("通信中: 結果は薄く(inert)、検索は押せない", () => {
   const html = render(ready({ result: result([{ date: "", name: "R", capacity: "", infoRef: "", bars: [bar()] }]) }, true));
   expect(html).toContain('aria-busy="true"');
-  expect(html).toContain("opacity-45");
+  expect(html).toContain('aria-busy="true"');
   expect(html).toMatch(/disabled=""[^>]*>検索</);
 });
 
