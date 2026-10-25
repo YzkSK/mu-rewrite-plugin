@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
 import { AttendanceScreen } from "@/muscat/screens/attendance/AttendanceScreen";
 import { fakeClient } from "@/muscat/screens/fakeClient";
-import { GenericScreen } from "@/muscat/screens/generic/GenericScreen";
 import { GradesScreen } from "@/muscat/screens/grades/GradesScreen";
 import { HealthInfoScreen } from "@/muscat/screens/health/HealthInfoScreen";
 import { HomeScreen } from "@/muscat/screens/home/HomeScreen";
 import { NewsScreen } from "@/muscat/screens/news/NewsScreen";
 import { RoomScreen } from "@/muscat/screens/room/RoomScreen";
+import { SettingsScreen } from "@/muscat/screens/settings/SettingsScreen";
 import { StudentInfoScreen } from "@/muscat/screens/student/StudentInfoScreen";
 import { SyllabusScreen } from "@/muscat/screens/syllabus/SyllabusScreen";
 import { TeacherScheduleScreen } from "@/muscat/screens/teacherSchedule/TeacherScheduleScreen";
@@ -23,7 +23,7 @@ const EXPECTED = {
   Kmg006: ["成績照会", GradesScreen],
   Bsb004: ["学籍情報照会", StudentInfoScreen],
   Bsb007: ["健康診断情報照会", HealthInfoScreen],
-  Bsa004: ["個人設定", GenericScreen],
+  Bsa004: ["個人設定", SettingsScreen],
   Bsd007: ["掲示板", NewsScreen],
   Kmh006: ["シラバス", SyllabusScreen],
   Bsa011: ["教員スケジュール", TeacherScheduleScreen],

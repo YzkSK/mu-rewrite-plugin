@@ -15,11 +15,12 @@ const group = (table: Element | undefined) => {
 };
 
 /** 表示のラジオ(PrimeFaces の selectoneradio)。操作は見えている枠 */
-const radios = (form: Element): CheckOption[] =>
+export const radios = (form: Element): CheckOption[] =>
   [...form.querySelectorAll<HTMLInputElement>('input[type="radio"]')].map((input) => {
-    const box = input.closest(".ui-radiobutton")?.querySelector(".ui-radiobutton-box") ?? input;
-    const label = [...form.querySelectorAll("label")].find((l) => l.htmlFor === input.id);
-    return { label: squash(label?.textContent), ref: assignRef(box), checked: input.checked || box.classList.contains("ui-state-active") };
+    // ボタンを並べて 1 つ選ぶ部品(SelectOneButton)もある(個人設定の開始曜日。実機で確認)。押す先はボタン、文字は aria-label
+    const box = input.closest(".ui-radiobutton")?.querySelector(".ui-radiobutton-box") ?? input.closest(".ui-button") ?? input;
+    const label = [...form.querySelectorAll("label")].find((l) => l.htmlFor === input.id)?.textContent ?? input.getAttribute("aria-label");
+    return { label: squash(label), ref: assignRef(box), checked: input.checked || box.classList.contains("ui-state-active") };
   });
 
 /**

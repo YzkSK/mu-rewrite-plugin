@@ -11,9 +11,10 @@ import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
 import { parseHome } from "./parse/home";
 import { parseRoom } from "./parse/room";
+import { parseSettings } from "./parse/settings";
 import { parseSyllabus } from "./parse/syllabus";
 import { parseTeacherSchedule } from "./parse/teacherSchedule";
-import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow,SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
+import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
 import { fetchTeacherEvents } from "./teacherEvents";
 import { ParseError } from "./errors";
 import { roomBooking, roomInfo, roomMore, roomNext, roomSubmit } from "./roomFetch";
@@ -40,6 +41,8 @@ export type MuscatClient = {
   teacherEvents(start: Date, end: Date): Promise<TeacherEvent[]>;
   /** 生きたページの教室予約(参照のみ)(条件の欄と、検索後のタイムライン)を読む */
   readRoom(): Promise<RoomPage>;
+  /** 生きたページの個人設定(いま開いているタブの中身)を読む */
+  readSettings(): Promise<SettingsPage>;
   /** 教室予約の検索を、元のボタンを押さず同じ通信で直接送る */
   roomSubmit(): Promise<void>;
   /** 検索のあとの続きの教室(1 回 40 行)を直接取る。[] で終わり */
@@ -76,6 +79,7 @@ export function createMuscatClient(deps: {
     readTeacherSchedule: () => core.runLive(async (live) => parseTeacherSchedule(live.doc)),
     teacherEvents: (start, end) => core.runLive((live) => fetchTeacherEvents(live.doc, deps.fetch, start, end)),
     readRoom: () => core.runLive(async (live) => parseRoom(live.doc)),
+    readSettings: () => core.runLive(async (live) => parseSettings(live.doc)),
     roomSubmit: () =>
       core.runLive(async (live) => {
         if (!live.doc.getElementById("funcForm:search")) throw new ParseError("教室予約の検索ボタンがありません");

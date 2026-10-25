@@ -273,6 +273,27 @@ export type CourseDetail = {
   notices: CourseListItem["notices"];
   memo: string | null;
 };
+
+/** loaded: 中身を読み込み済み(押しても通信しない) */
+export type SettingsTab = { label: string; ref: string; active: boolean; loaded: boolean };
+/** 表の 1 行。select は先頭の選択の枠(無ければ ref が空)、cells は残りの列(枠が入っている列は ref がある) */
+export type SettingsRow = { select: CheckOption; cells: CheckOption[] };
+export type SettingsTable = { headers: string[]; rows: SettingsRow[] };
+/** 小さな節。saveRef は節の「保存」(押すと確認の小窓が開く) */
+export type SettingsSection = { title: string; notes: string[]; saveRef: string };
+/** 個人設定。いま開いているタブの中身だけが入る(テーマ設定のタブは除く) */
+export type SettingsPage = {
+  tabs: SettingsTab[];
+  /** 保存の確認の小窓の OK */
+  confirmRef: string;
+  mail: {
+    address: SettingsSection & { input: TextField; kinds: CheckOption[]; addRef: string; deleteRef: string; table: SettingsTable };
+    times: SettingsSection & { options: CheckOption[] };
+    stop: SettingsSection & { table: SettingsTable };
+  } | null;
+  favorite: (SettingsSection & { menu: SelectField; addRef: string; resetRef: string; table: SettingsTable }) | null;
+  portal: (SettingsSection & { description: string; options: CheckOption[] }) | null;
+};
 export type GradeFilter = { fail: boolean; inProgress: boolean; noCredit: boolean; transfer: boolean };
 export type Grades = {
   entries: GradeEntry[];
