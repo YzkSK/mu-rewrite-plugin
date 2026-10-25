@@ -95,7 +95,7 @@ export function PortalSidebar({ tree, slug, onPick, onAccount, onSignOut }: { tr
       <SidebarFooter className="gap-0 border-t border-sidebar-border p-0 py-1">
         <SidebarMenu className="gap-0">
           <SidebarMenuItem>
-            <SidebarMenuButton size="sm" href="https://unipa.m-muscat.musashino-u.ac.jp/uprx/" target="_blank" rel="noopener noreferrer" className={FOOT}>
+            <SidebarMenuButton size="sm" href="https://unipa.m-muscat.musashino-u.ac.jp/uprx/ShibbolethAuthServlet" target="_blank" rel="noopener noreferrer" className={FOOT}>
               MUSCAT
               <span className="ml-auto text-[11px] text-muted-foreground">外部</span>
             </SidebarMenuButton>
