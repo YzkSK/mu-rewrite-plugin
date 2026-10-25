@@ -31,14 +31,16 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
         if (steps.length) await client.driveLive(steps);
         await after?.(); // 元の部品を押さず直接送る通信(steps のあと、読み直しの前)
       } catch (e) {
-        setState((s) => ({ ...s, status: "error", error: errorMessage(e), busy: false }));
+        // 失敗の応答でも元の画面は描き直されていることがある(検索 1000 件超など)。読み直さないと次の操作が古い要素を指す
+        const page = await read(client).catch(() => undefined);
+        setState((s) => ({ ...s, page: page ?? s.page, status: "error", error: errorMessage(e), busy: false }));
         return false;
       }
       await load();
       setState((s) => ({ ...s, busy: false }));
       return true;
     },
-    [client, load],
+    [client, read, load],
   );
   return { ...state, run };
 }
