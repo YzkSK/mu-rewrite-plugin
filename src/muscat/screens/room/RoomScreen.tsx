@@ -60,7 +60,8 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
       generation.current++;
       setExtra([]);
       setBase(null);
-      setFetching(false);
+      // 検索を押したときから取り切るまで読み込み中にする(前の結果や最初の 40 教室だけの表を出さない)
+      setFetching(submit);
       setMoreError("");
     }
     setAct(key);
@@ -68,7 +69,7 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
     // 失敗の表示は画面で持つ(useLiveScreen のエラーは、元のページの読み直しで消える)
     const ok = await run(steps, submit ? () => client.roomSubmit().catch((e: unknown) => { setSubmitError(errorMessage(e)); throw e; }) : undefined);
     setAct(null);
-    if (!submit || !ok) return; // 送るのに失敗したら続きは取らない
+    if (!submit || !ok) return setFetching(false); // 送るのに失敗したら続きは取らない
     started.current = true; // 開いた時の続き取りと二重にしない
     setTicket((t) => t + 1);
   };
@@ -76,7 +77,7 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
     if (!ticket) return;
     const g = generation.current;
     const first = pageRef.current?.result;
-    if (!first?.rooms.length) return; // 教室が無ければ続きは無い
+    if (!first?.rooms.length) return setFetching(false); // 教室が無ければ続きは無い
     const current = () => generation.current === g;
     setFetching(true);
     setBase(first); // 次のページへ進むと元のページの表は替わるので、最初のページはここで持っておく
@@ -117,16 +118,17 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
           <RoomForm key={gen} page={page} busy={busy || fetching || side > 0} act={act} onSearch={(steps) => void go("search", steps, true)} onClear={() => void go("clear", [{ kind: "click", ref: page.clearRef }]).then(() => setGen((g) => g + 1))} />
           {submitError && <Card className="p-4 text-[13px] text-error">{submitError}</Card>}
           {/* 検索に失敗したら、元のページに残った前の結果は出さない(新しい条件の結果に見える) */}
-          {r && shown && !submitError && (
+          {!submitError && fetching ? (
+            // 検索の送信中は前の結果が残っているので数は出さない
+            <div className="rounded-[4px] border border-border bg-card">
+              <PageLoading title={act === "search" || !shown ? "教室の予約" : `教室の予約(${shown.rooms.length} 教室)`} />
+            </div>
+          ) : r && shown && !submitError && (
             <BusyOverlay busy={busy}>
               <div className="flex flex-col gap-3">
-                <Legend result={r} dates={fetching ? [] : dates} onJump={(date) => setJump((j) => ({ date, n: j.n + 1 }))} />
+                <Legend result={r} dates={dates} onJump={(date) => setJump((j) => ({ date, n: j.n + 1 }))} />
                 {moreError && <Card className="p-3 text-[13px] text-error">{moreError}</Card>}
-                {fetching ? (
-                  <div className="rounded-[4px] border border-border bg-card">
-                    <PageLoading title={`教室の予約(${shown.rooms.length} 教室)`} />
-                  </div>
-                ) : shown.rooms.length === 0 ? (
+                {shown.rooms.length === 0 ? (
                   <Card className="grid gap-1 px-2 py-7 text-center text-muted-foreground">
                     <b className="text-[15px] text-foreground">該当する教室はありません</b>
                   </Card>
