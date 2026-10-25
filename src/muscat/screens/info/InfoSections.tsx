@@ -83,6 +83,12 @@ export function InfoSections({ page, toc = false, link }: Props) {
             </div>
           </section>
         ))}
+        {/* 狭い画面は目次を隠すので、別画面への移動は本文の下に出す */}
+        {link && (
+          <button type="button" onClick={link.onSelect} className="h-11 cursor-pointer rounded-[4px] border border-border bg-card px-3.5 text-left text-[13.5px] font-semibold text-primary hover:bg-muted sm:hidden">
+            {link.label}
+          </button>
+        )}
         <div ref={endRef} aria-hidden="true" className="h-px" />
       </div>
     </div>
