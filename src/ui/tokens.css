@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/forms";
+/* Starwind の checkbox の印。部品の中で import するとページ側に入り、Shadow DOM の中に届かない */
+@import "../components/starwind/checkbox/styles.css";
 
 @theme inline {
   --color-background: var(--background);

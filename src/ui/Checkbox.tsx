@@ -1,11 +1,10 @@
+import { useId } from "react";
+import { Checkbox as StarwindCheckbox } from "@/components/starwind/checkbox";
+
 type Props = { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean };
 
-/** 素の checkbox にラベルを付けただけの薄い部品 */
+/** Starwind の Checkbox(主の色・小さめ)。ラベルを押しても切り替わるよう id を付ける */
 export function Checkbox({ label, checked, onChange, disabled }: Props) {
-  return (
-    <label className="flex items-center gap-1 text-sm">
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-      {label}
-    </label>
-  );
+  const id = useId();
+  return <StarwindCheckbox id={id} label={label} size="sm" variant="primary" checked={checked} disabled={disabled} onCheckedChange={(c) => onChange(c)} />;
 }
