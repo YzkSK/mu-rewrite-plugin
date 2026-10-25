@@ -11,7 +11,8 @@ import { createSession, type MenuIds, type MenuLabel } from "./session";
 import { buildAbRequest, parseAb } from "./virtual/ab";
 import { pageRequest, setBase, type Req } from "./virtual/req";
 import { copyStateFields } from "./virtual/sync";
-import { vdrive } from "./virtual/vdrive";
+import { applyResponse } from "./virtual/apply";
+import { findActionIn, vdrive } from "./virtual/vdrive";
 import { behaviorOf, scanWidgets } from "./virtual/widgets";
 
 
@@ -26,6 +27,8 @@ export type Ctx = {
     source: string,
     opts?: { render?: string; extra?: Record<string, string | null> },
   ): Promise<boolean>;
+  /** そのボタンを押したときの ab(onclick / data-pfconfirmcommand / behaviors.click / 次の兄弟)と同じ通信を送って取り込む。ab が無い・状態喪失なら false */
+  click(id: string): Promise<boolean>;
   /** session の Document がホーム(#portalCont)ならそのまま。違えば取り直して取り込む。ホームでなければ false */
   openHome(): Promise<boolean>;
 };
@@ -138,6 +141,24 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
       applyPartialResponse(session.doc, text);
       return true;
     },
+    async click(id) {
+      const doc = session.doc;
+      let el = doc.getElementById(id);
+      for (let hop = 0; el && hop < 3; hop++) {
+        const act = findActionIn(doc, el, scanWidgets(doc));
+        if (!act) return false;
+        if ("next" in act) {
+          el = act.next as HTMLElement | null;
+          continue;
+        }
+        if (!("ab" in act)) return false;
+        const text = await post("partial", buildAbRequest(doc, act.ab, act.src));
+        if (text === null) return false;
+        applyResponse(doc, text, act.ab.onco);
+        return true;
+      }
+      return false;
+    },
     async openHome() {
       if (session.doc.getElementById("portalCont")) return true;
       session.adopt(await fetchHome(deps.fetch));
@@ -217,7 +238,14 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
             if (n !== newest) return; // もっと新しい移動が積まれた
             const request = () =>
               label === HOME_LABEL ? session.headerRequest("headerForm:logo") : label === SETTING_LABEL ? session.headerRequest("headerForm:setting") : session.menuRequest(label as MenuLabel);
-            const doc = await recovering(() => loadPage(request()));
+            // 別の画面を読むだけの操作(aside)のあと、見せている画面の ViewState は古いことがある。喪失なら、制限のある recover ではなく
+            // ホームを取り直して(回数の制限なし)、そこからもう一度送る
+            let doc = await loadPage(request());
+            if (!doc) {
+              session.adopt(await fetchHome(deps.fetch));
+              doc = await loadPage(request());
+              if (!doc) throw new MuscatDownError("MUSCAT が応答しません");
+            }
             if (n !== newest) return; // 待つ間に新しい移動が来たら、この結果は見せない(session には取り込み済み)
             settle(); // 新しい画面が最初に積む操作は捨てない
             publish(doc);

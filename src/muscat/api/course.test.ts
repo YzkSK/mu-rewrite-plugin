@@ -12,7 +12,7 @@ const homeDoc = (token: string, memo = "持ち物") =>
   `<div id="portalCont"></div><form id="funcForm" action="/f" method="post"><input type="hidden" name="jakarta.faces.ViewState" value="${token}">
   <div id="portalLessonList"><ul><li class="ui-dataview-row"><p class="lessonTitle">合成演習</p><span class="x"></span>
   <div class="lessonHead"><span>火 2</span></div><div class="lessonDetail"><a class="ui-commandlink">教員A</a><div>101</div></div>
-  <input class="ui-inputtext" name="funcForm:memo" value="${memo}"><button id="funcForm:save">登録</button></li></ul></div></form>`;
+  <input class="ui-inputtext" name="funcForm:memo" value="${memo}"><button id="funcForm:save" type="button" onclick="PrimeFaces.ab({s:&quot;funcForm:save&quot;,f:&quot;funcForm&quot;,p:&quot;funcForm:save funcForm:memo&quot;,rv:true});return false;">登録</button></li></ul></div></form>`;
 const relay = `<form id="loginForm" action="/login"></form>`;
 const toDoc = (html: string) => new DOMParser().parseFromString(html, "text/html");
 const ids = { 出席確認: "A|1" };
@@ -61,6 +61,9 @@ test("saveMemo: 登録ボタンの部分更新でメモを送り、複製のメ�
   const body = new URLSearchParams(calls[0]!.body);
   expect(body.get("jakarta.faces.source")).toBe("funcForm:save");
   expect(body.get("funcForm:memo")).toBe("新しいメモ");
+  // 登録ボタンを押したときと同じ ab(記録した形式: resetvalues → execute → `<s>=<s>` → フォームの項目)
+  expect([...body.keys()].slice(0, 5)).toEqual(["jakarta.faces.partial.ajax", "jakarta.faces.source", "primefaces.resetvalues", "jakarta.faces.partial.execute", "funcForm:save"]);
+  expect(body.get("jakarta.faces.partial.execute")).toBe("funcForm:save funcForm:memo");
   expect(await c.readLive((d) => d.querySelector<HTMLInputElement>('[name="funcForm:memo"]')!.value)).toBe("新しいメモ");
   expect(live.querySelector<HTMLInputElement>('[name="funcForm:memo"]')!.value).toBe("持ち物");
 });

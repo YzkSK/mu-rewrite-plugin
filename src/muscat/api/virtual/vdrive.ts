@@ -136,6 +136,24 @@ function devClick(el: Element, what: string): void {
   } catch { /* 出せなくても動く */ }
 }
 
+/** 要素と 3 つ上までの祖先で、最初に見つかった「押したときの通信」 */
+export function findActionIn(doc: Document, el: HTMLElement, widgets: Map<string, Widget>): Action | null {
+  for (let e: HTMLElement | null = el, n = 0; e && n < 4; e = e.parentElement, n++) {
+    const oc = e.getAttribute("onclick") ?? "";
+    // 確認付きのボタン: 本物の通信は data-pfconfirmcommand にある(確認は拡張側の画面で済んでいる)。サイトの JS だけのものは画面ごとの移動
+    const pc = e.getAttribute("data-pfconfirmcommand") ?? "";
+    const ab = (pc && parseAb(pc)) || parseAb(oc) || behaviorOf(widgets, e.id, "click");
+    if (ab) return { ab, src: e };
+    if (/\$\(this\)\.click\(\)/.test(pc)) return { nav: e };
+    const submit = submitOf(doc, pc, e) ?? submitOf(doc, oc, e);
+    if (submit) return { submit };
+    if (NEXT.test(oc)) return { next: nextElement(e) };
+    const id = BY_ID.exec(oc)?.[2];
+    if (id) return { next: doc.getElementById(id) };
+  }
+  return null;
+}
+
 /**
  * 拡張機能が持つ Document(元の画面の script は動かない)の上で、値を入れ、元の PrimeFaces が送る通信を自分で送る。
  * 送ったら "done"、何も送らなければ "none"。ref が無ければ何もせずに Error
@@ -161,23 +179,7 @@ export async function vdrive(doc: Document, steps: DriveStep[], io: { post: Post
     });
   }
 
-  /** 要素と 3 つ上までの祖先で、最初に見つかった「押したときの通信」 */
-  function findAction(el: HTMLElement, widgets: Map<string, Widget>): Action | null {
-    for (let e: HTMLElement | null = el, n = 0; e && n < 4; e = e.parentElement, n++) {
-      const oc = e.getAttribute("onclick") ?? "";
-      // 確認付きのボタン: 本物の通信は data-pfconfirmcommand にある(確認は拡張側の画面で済んでいる)。サイトの JS だけのものは画面ごとの移動
-      const pc = e.getAttribute("data-pfconfirmcommand") ?? "";
-      const ab = (pc && parseAb(pc)) || parseAb(oc) || behaviorOf(widgets, e.id, "click");
-      if (ab) return { ab, src: e };
-      if (/\$\(this\)\.click\(\)/.test(pc)) return { nav: e };
-      const submit = submitOf(doc, pc, e) ?? submitOf(doc, oc, e);
-      if (submit) return { submit };
-      if (NEXT.test(oc)) return { next: nextElement(e) };
-      const id = BY_ID.exec(oc)?.[2];
-      if (id) return { next: doc.getElementById(id) };
-    }
-    return null;
-  }
+  const findAction = (el: HTMLElement, widgets: Map<string, Widget>) => findActionIn(doc, el, widgets);
 
   /** 変更したときの通信: 要素の onchange、無ければ部品(要素と祖先)の change / dateSelect の behavior */
   function changeAb(el: Element): { cfg: AbConfig; src: Element } | null {

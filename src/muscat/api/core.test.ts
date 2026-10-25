@@ -124,6 +124,16 @@ test("navigate: 応答がログイン画面などで状態喪失なら、復帰�
   expect(core.shown().doc.body.textContent).toContain("attendance");
 });
 
+test("navigate: 古い ViewState で喪失になっても、ホームを取り直して送り直す(30 秒の復帰制限は受けない。続けて 2 回でも通る)", async () => {
+  const { f, calls } = scripted(["<p>lost</p>", relay, shell(""), shell("<p>one</p>"), "<p>lost</p>", relay, shell(""), shell("<p>two</p>")]);
+  const core = make2(f);
+  await core.navigate("出席確認");
+  expect(core.shown().doc.body.textContent).toContain("one");
+  await core.navigate("出席確認");
+  expect(core.shown().doc.body.textContent).toContain("two");
+  expect(calls).toHaveLength(8);
+});
+
 test("新しい移動が来たら: 待っていた古い移動と、移動より前に積まれて動き出していない操作は捨てる。動いている操作は終わるまで待つ", async () => {
   let release!: () => void;
   const gate = new Promise<void>((r) => (release = r));

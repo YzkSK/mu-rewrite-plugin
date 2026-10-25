@@ -34,10 +34,15 @@ export function saveMemo(core: Core, title: string, text: string): Promise<void>
     if (!(await ctx.openHome())) return null;
     const memo = parseCourseList(ctx.doc()).find((c) => c.title === title)?.memo;
     if (!memo?.saveId) throw new ParseError("メモ欄がありません");
-    if (!(await ctx.partial("funcForm", memo.saveId, { extra: { [memo.inputName]: text } }))) return null;
-    // 応答はメモ欄を描き直さないので、複製のメモ欄を直す(次に読むとき最新になる)
+    // 先にメモ欄の値を入れ(送る本文はフォームの項目から作る)、登録ボタンを押したときと同じ ab を送る。
+    // 応答はメモ欄を描き直さないので、入れた値がそのまま次に読むときの値になる
     const input = [...ctx.doc().querySelectorAll<HTMLInputElement>("input.ui-inputtext")].find((i) => i.name === memo.inputName);
-    if (input) input.value = text;
-    return true;
+    const before = input?.value ?? "";
+    const put = (v: string) => { if (input) { input.value = v; input.setAttribute("value", v); } };
+    put(text);
+    // 保存できなかったら元の値に戻す(保存していないメモを次に読むときに保存済みとして出さない)
+    let ok = false;
+    try { ok = await ctx.click(memo.saveId); } finally { if (!ok) put(before); }
+    return ok ? true : null;
   }).then(() => undefined);
 }
