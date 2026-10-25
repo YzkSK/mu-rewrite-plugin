@@ -69,7 +69,8 @@ test("登録デバイス: サインアウトは確認を挟み、DELETE に CSRF
   await flush();
   expect(calls.length).toBe(1);
   expect(calls[0]!.u).toBe("/api/device/delete/1");
-  expect((calls[0]!.init!.headers as Record<string, string>)["X-CSRF-Token"]).toBe("abcdEFGH1234abcdEFGH1234abcdEFGH");
+  // 乱数で混ぜた値(64 バイトを base64url にした 86 文字)
+  expect((calls[0]!.init!.headers as Record<string, string>)["X-CSRF-Token"]).toMatch(/^[A-Za-z0-9_-]{86}$/);
   btn("すべての端末をサインアウト")[0]!.click();
   await flush();
   expect(calls.length).toBe(1);

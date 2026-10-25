@@ -19,9 +19,21 @@ const mount = (fetcher: (u: string, init?: RequestInit) => Promise<Response>) =>
 };
 const btn = (t: string) => [...host.querySelectorAll("button")].find((b) => b.textContent === t)!;
 
-test("csrfHeaders: _csrf と XSRF-TOKEN をデコードして返す", () => {
-  const c = "x=1; _csrf=" + encodeURIComponent('a:2:{i:0;s:5:"_csrf";i:1;s:32:"abcdEFGH1234abcdEFGH1234abcdEFGH";}') + "; XSRF-TOKEN=" + encodeURIComponent("t o/k");
-  expect(csrfHeaders(c)).toEqual({ "X-CSRF-Token": "abcdEFGH1234abcdEFGH1234abcdEFGH", "X-XSRF-TOKEN": "t o/k" });
+/** 元のポータルの検証と同じ手順で戻す(前半が乱数、後半が token と XOR) */
+const unmask = (v: string): string => {
+  const bin = atob(v.replace(/-/g, "+").replace(/_/g, "/"));
+  const b = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
+  const n = b.length / 2;
+  return new TextDecoder().decode(b.slice(n).map((x, i) => x ^ b[i]!));
+};
+
+test("csrfHeaders: _csrf の token を乱数で XOR して base64url にする(毎回違う値、戻すと token)", () => {
+  const c = "x=1; _csrf=" + encodeURIComponent('a:2:{i:0;s:5:"_csrf";i:1;s:32:"abcdEFGH1234abcdEFGH1234abcdEFGH";}');
+  const fixed = csrfHeaders(c, (n) => new Uint8Array(n).fill(0));
+  expect(unmask(fixed["X-CSRF-Token"]!)).toBe("abcdEFGH1234abcdEFGH1234abcdEFGH");
+  const a = csrfHeaders(c)["X-CSRF-Token"]!;
+  expect(unmask(a)).toBe("abcdEFGH1234abcdEFGH1234abcdEFGH");
+  expect(a).not.toMatch(/[+/=]/);
   expect(csrfHeaders("a=b")).toEqual({});
   expect(csrfHeaders("_csrf=%E0%A4%A")).toEqual({}); // 壊れた値は無視
 });

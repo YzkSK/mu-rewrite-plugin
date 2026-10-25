@@ -51,19 +51,22 @@ export async function fetchCategories(): Promise<FlatCategory[]> {
   return flattenCategories((await fetchJson("/api/information-category/tree")).result?.items);
 }
 
-/** 元のサイトと同じ CSRF ヘッダ。_csrf クッキー(PHP のシリアライズ文字列)から token を取り出す */
-export function csrfHeaders(cookie: string): Record<string, string> {
-  const get = (name: string): string | null => {
-    const c = cookie.split(/;\s*/).find((p) => p.startsWith(name + "="));
-    if (!c) return null;
-    try { return decodeURIComponent(c.slice(name.length + 1)); } catch { return null; }
-  };
-  const h: Record<string, string> = {};
-  const token = get("_csrf")?.match(/i:1;s:\d+:"([^"]+)"/)?.[1];
-  if (token) h["X-CSRF-Token"] = token;
-  const xsrf = get("XSRF-TOKEN");
-  if (xsrf) h["X-XSRF-TOKEN"] = xsrf;
-  return h;
+/**
+ * 元のサイトと同じ CSRF ヘッダ。_csrf クッキー(PHP のシリアライズ文字列)の token を、毎回の乱数と XOR して
+ * 「乱数 + 結果」を base64url にしたもの(元のポータルの GE())。token をそのまま送ると「データ送信を検証できませんでした」(実機で確認)
+ */
+export function csrfHeaders(cookie: string, random: (n: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n))): Record<string, string> {
+  const c = cookie.split(/;\s*/).find((p) => p.startsWith("_csrf="));
+  let token: string | undefined;
+  try { token = c ? decodeURIComponent(c.slice(6)).match(/i:1;s:\d+:"([^"]+)"/)?.[1] : undefined; } catch { token = undefined; }
+  if (!token) return {};
+  const bytes = new TextEncoder().encode(token);
+  const mask = random(bytes.length);
+  const out = new Uint8Array(bytes.length * 2);
+  out.set(mask, 0);
+  out.set(bytes.map((b, i) => b ^ mask[i]!), bytes.length);
+  const b64 = btoa(String.fromCharCode(...out)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return { "X-CSRF-Token": b64 };
 }
 
 /** 書き込み系(PUT/POST/DELETE)。body が undefined なら本文なし */
@@ -79,7 +82,8 @@ export async function sendJson(method: string, url: string, body?: unknown): Pro
   return j;
 }
 
-export const setRead = (uuid: string, read: boolean): Promise<Json> => sendJson("PUT", `/api/information/set-${read ? "read" : "unread"}-selected/`, [uuid]);
+// 本文は元と同じ {uuid:[…]}。配列だけを送ると成功が返るのに何も変わらなかった(実機で確認)
+export const setRead = (uuid: string, read: boolean): Promise<Json> => sendJson("PUT", `/api/information/set-${read ? "read" : "unread"}-selected/`, { uuid: [uuid] });
 
 /** 月の前後1週間を含めて取る。add_outlook_calendar は "false" だと "No token." が返るので 0/1 */
 export async function fetchCalendar(sources: string[], addOutLook: boolean, y: number, m: number): Promise<CalEvent[]> {
