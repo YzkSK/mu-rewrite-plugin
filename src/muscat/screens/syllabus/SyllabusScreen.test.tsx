@@ -42,7 +42,7 @@ const detail: SyllabusDetail = {
 
 test("検索欄: 4 つの欄・placeholder・曜日と時限のボタン・詳細条件・クリアと検索", () => {
   const html = render(ready());
-  for (const s of ["開講年度学期", "授業科目", "担当教員", "キーワード", "名称かコード", "氏名の一部", "シラバスの本文から", "曜日", "時限", "水", "2限", "詳細条件(学科・科目分類・学年・キャンパス・開講区分 など)▾", "条件をクリア", "検索", "ふせんを貼った授業一覧"]) expect(html).toContain(s);
+  for (const s of ["開講年度学期", "授業科目", "担当教員", "キーワード", "名称かコード", "氏名の一部", "シラバスの本文から", "曜日", "時限", "水", "2限", "詳細条件 ▾", "条件をクリア", "検索", "ふせんを貼った授業一覧"]) expect(html).toContain(s);
   expect(html).toContain('aria-pressed="true"'); // 選択中の月
   expect(html).not.toContain("該当する授業はありません");
   expect(html).not.toContain("1 ページ");

@@ -106,7 +106,7 @@ export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onCl
       )}
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
         <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] font-bold text-primary">
-          {`詳細条件(学科・科目分類・学年・キャンパス・開講区分 など)${more ? "▴" : "▾"}`}
+          {`詳細条件 ${more ? "▴" : "▾"}`}
         </button>
         {showNote && <Button variant="secondary" disabled={busy} loading={act === "note"} onClick={onNote}>ふせんを貼った授業一覧</Button>}
         <span className="flex-1" />
