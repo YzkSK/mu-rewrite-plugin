@@ -5,8 +5,9 @@ import { PageLoading } from "@/ui/PageLoading";
 import { fetchCalendar } from "./api";
 import { loadTop, TOP, type PortalData, type TopData } from "./data";
 import { PortalSidebar } from "./PortalSidebar";
-import { NAV_EVENT, NOTICES, routeOf } from "./route";
+import { NAV_EVENT, NOTICES, routeOf, slugOf } from "./route";
 import { NoticesScreen } from "./screens/NoticesScreen";
+import { PageScreen, usePage } from "./screens/PageScreen";
 import { TopPage } from "./screens/TopPage";
 
 const subscribe = (cb: () => void) => {
@@ -32,20 +33,24 @@ function Top({ initial }: { initial: TopData | null }) {
   return <TopPage data={top} loadMonth={(y, m) => fetchCalendar(cal?.sources ?? [], !!cal?.addOutLook, y, m)} />;
 }
 
-/** 枠(上の段 + サイドバー)にトップページかお知らせ一覧を入れる。他のページは後続の PR で足す */
+/** 枠(上の段 + サイドバー)にトップページ・お知らせ一覧・通常のページを入れる */
 export function PortalApp({ data }: { data: PortalData }) {
   const url = useSyncExternalStore(subscribe, here, () => "");
   const u = new URL(url, location.origin);
   const route = routeOf(u);
-  const notices = route === "notices";
+  const slug = route === "page" ? slugOf(u.pathname) : route === "notices" ? NOTICES : TOP;
+  const page = usePage(route === "page" ? slug : null);
+  const title = "page" in page ? page.page.title : slug;
   return (
     <App
-      title={notices ? NOTICES : TOP}
+      title={title}
       brand="MU Portal"
       headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
-      sidebar={<PortalSidebar tree={data.shell.tree} slug={notices ? NOTICES : TOP} />}
+      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} />}
     >
-      {notices ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} /> : <Top initial={data.top} />}
+      {route === "notices" ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} />
+        : route === "page" ? <PageScreen key={slug} slug={slug} state={page} />
+        : <Top initial={data.top} />}
     </App>
   );
 }

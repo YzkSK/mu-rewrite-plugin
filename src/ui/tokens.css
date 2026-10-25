@@ -14,6 +14,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-accent: var(--primary-accent);
+  --color-primary-dark: var(--mu-primary-dark);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary-accent: var(--secondary-accent);
@@ -53,6 +54,7 @@
 :root,
 :host {
   --mu-primary: #541b86;
+  --mu-primary-dark: #3b1260;
   --mu-primary-soft: #eee8f4;
   --mu-alert: #b3261e;
   --mu-font: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;

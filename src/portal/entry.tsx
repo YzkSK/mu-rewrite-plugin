@@ -11,7 +11,7 @@ try {
     window.addEventListener("message", (e) => { if (e.source === window && e.data === "mu-dev-reload") (globalThis as { chrome?: { runtime?: { sendMessage(m: unknown): void } } }).chrome?.runtime?.sendMessage({ type: "mu-dev-reload" }); });
 } catch { /* 読めなければ何もしない */ }
 
-// document_start で動く。トップページとお知らせ一覧以外は元のポータルに任せる(他のページは後続の PR)
+// document_start で動く。/dashboard 以下の全ページを描く(描けないページは「元の画面で開く」で外れる)
 if (window === window.top && isTargetPath(location.pathname)) {
   type State = "off" | "loading" | "on" | "failed";
   let state: State = "off";

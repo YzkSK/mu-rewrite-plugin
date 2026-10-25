@@ -9,8 +9,8 @@ import type { NavModel } from "./drawerItems";
 import { useBusy } from "./useBusy";
 import { getZoom, onZoomChange } from "./zoom";
 
-// sidebar を渡すと AppSidebar の代わりに描く(ポータル用)。brand / headerRight は Header へそのまま渡す
-type Props = { title: string; model?: NavModel; user?: string; lastLogin?: string; brand?: string; headerRight?: ReactNode; sidebar?: ReactNode; children: ReactNode };
+// sidebar を渡すと AppSidebar の代わりに描く(ポータル用)。関数なら、狭い画面で項目を選んだとき閉じる onPick を受け取る。brand / headerRight は Header へそのまま渡す
+type Props = { title: string; model?: NavModel; user?: string; lastLogin?: string; brand?: string; headerRight?: ReactNode; sidebar?: ReactNode | ((onPick?: () => void) => ReactNode); children: ReactNode };
 
 const PENDING_MS = 8000;
 
@@ -33,7 +33,8 @@ export function App({ title, model, user, lastLogin, brand, headerRight, sidebar
     const id = requestAnimationFrame(() => setMounting(false));
     return () => cancelAnimationFrame(id);
   }, []);
-  const body = sidebar ?? (model ? <AppSidebar model={model} onPending={setPending} onPick={narrow ? () => change(false) : undefined} /> : null);
+  const close = narrow ? () => change(false) : undefined;
+  const body = (typeof sidebar === "function" ? sidebar(close) : sidebar) ?? (model ? <AppSidebar model={model} onPending={setPending} onPick={close} /> : null);
   // 個人設定の「表示の大きさ」。zoom で全体を変え、高さは拡大したぶん割って画面に収める
   const zoom = useSyncExternalStore(onZoomChange, getZoom, () => 100) / 100;
   return (

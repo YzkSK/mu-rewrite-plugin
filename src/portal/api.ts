@@ -29,6 +29,17 @@ export async function fetchInfo(query: string): Promise<InfoList> {
   return { items: r.items ?? [], count: r.item_count ?? null };
 }
 
+export type SharedItem = { uuid: string; name: string; is_file: boolean; has_read_permission?: boolean; size?: number; updated_at?: number };
+
+/** フォルダの中身を全件取る(1 ページ 20 件。2 ページ目以降はいっぺんに取る) */
+export async function fetchSharedItems(folder: string): Promise<SharedItem[]> {
+  const url = (n: number) => `/api/shared-item/${n}/${encodeURIComponent(folder)}`;
+  const first = (await fetchJson(url(1))).result ?? {};
+  const total = Math.max(1, Number(first.page_total) || 1);
+  const rest = await Promise.all(Array.from({ length: total - 1 }, (_, i) => fetchJson(url(i + 2))));
+  return [first, ...rest.map((r) => r.result ?? {})].flatMap((r) => r.items ?? []);
+}
+
 export type NoticePage = { items: InfoItem[]; pageTotal: number; count: number | null };
 
 export async function fetchNotices(o: NotifyOpts): Promise<NoticePage> {

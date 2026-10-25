@@ -27,11 +27,23 @@ export const NOTICES_URL = PAGE + encodeURIComponent(NOTICES) + "?view=all";
 export const isNoticesPath = (p: string, search = ""): boolean =>
   isTargetPath(p) && slugOf(p) === NOTICES && new URLSearchParams(search).get("view") === "all";
 
-/** 拡張が描く画面(トップページ or お知らせ一覧)か。他のページは元のポータルに任せる */
-export const isAppPath = (l: { pathname: string; search: string }): boolean => isTopPath(l.pathname) || isNoticesPath(l.pathname, l.search);
+const SKIP = "mu-portal-skip:";
+const skipped = (slug: string): boolean => {
+  try { return sessionStorage.getItem(SKIP + slug) === "1"; } catch { return false; }
+};
 
-export type Route = "top" | "notices";
-export const routeOf = (l: { pathname: string; search: string }): Route => (isNoticesPath(l.pathname, l.search) ? "notices" : "top");
+/** このページは元の画面で開く(セッションの間だけ)。印を付けて読み込み直す */
+export function openOriginal(slug: string): void {
+  try { sessionStorage.setItem(SKIP + slug, "1"); } catch { /* 付けられなければ読み直しても同じ画面になるだけ */ }
+  location.reload();
+}
+
+/** 拡張が描く画面か(/dashboard 以下のページ全部。元の画面で開くと決めたページは除く) */
+export const isAppPath = (l: { pathname: string; search: string }): boolean => isTargetPath(l.pathname) && !skipped(slugOf(l.pathname));
+
+export type Route = "top" | "notices" | "page";
+export const routeOf = (l: { pathname: string; search: string }): Route =>
+  isNoticesPath(l.pathname, l.search) ? "notices" : isTopPath(l.pathname) ? "top" : "page";
 
 export const NAV_EVENT = "mu-navigate";
 

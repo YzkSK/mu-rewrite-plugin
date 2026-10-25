@@ -8,11 +8,23 @@ test("お知らせ一覧のパス: ?view=all のときだけ", () => {
   expect(isNoticesPath(p, "")).toBe(false);
   expect(isNoticesPath("/dashboard", "?view=all")).toBe(false);
   expect(isAppPath({ pathname: p, search: "?view=all" })).toBe(true);
-  expect(isAppPath({ pathname: p, search: "" })).toBe(false);
+  expect(isAppPath({ pathname: p, search: "" })).toBe(true); // 一覧でなければ通常のページとして描く
   expect(isAppPath({ pathname: "/dashboard", search: "" })).toBe(true);
+  expect(isAppPath({ pathname: "/elsewhere", search: "" })).toBe(false);
   const [path, search] = NOTICES_URL.split("?");
   expect(routeOf({ pathname: path!, search: "?" + search })).toBe("notices");
   expect(routeOf({ pathname: "/dashboard", search: "" })).toBe("top");
+  expect(routeOf({ pathname: p, search: "" })).toBe("page");
+  expect(routeOf({ pathname: "/dashboard/page/" + encodeURIComponent("奨学金"), search: "" })).toBe("page");
+});
+
+test("元の画面で開くと決めたページは対象から外れる", () => {
+  const l = { pathname: "/dashboard/page/" + encodeURIComponent("奨学金"), search: "" };
+  expect(isAppPath(l)).toBe(true);
+  sessionStorage.setItem("mu-portal-skip:奨学金", "1");
+  expect(isAppPath(l)).toBe(false);
+  expect(isAppPath({ pathname: "/dashboard/page/" + encodeURIComponent("証明書"), search: "" })).toBe(true);
+  sessionStorage.removeItem("mu-portal-skip:奨学金");
 });
 
 test("対象のパス", () => {

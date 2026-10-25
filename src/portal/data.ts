@@ -77,6 +77,24 @@ export const loadTop = once(async (): Promise<TopData> => {
   };
 });
 
+export type PageData = { title: string; blocks: Block[] };
+const pages = new Map<string, Promise<PageData>>();
+
+/** 通常ページ 1 枚。slug ごとに覚える(失敗は覚えない) */
+export function loadPage(slug: string): Promise<PageData> {
+  let p = pages.get(slug);
+  if (!p) {
+    p = fetchPageView(slug).then((r) => {
+      const blocks = pickBlocks(r, "ja");
+      if (!blocks) throw new Error("page has no blocks");
+      return { title: String(r?.title || slug), blocks };
+    });
+    pages.set(slug, p);
+    p.catch(() => pages.delete(slug));
+  }
+  return p;
+}
+
 /** ブロックだけから決まる部分(通信なし) */
 export function fromBlocks(blocks: Block[]): Pick<TopData, "muscatUrl" | "lmsUrl" | "links" | "callout"> {
   const urls = findBlocks(blocks, "image").map((b) => b.data?.link).filter((l): l is string => typeof l === "string" && isHttp(l));
