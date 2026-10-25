@@ -1,4 +1,5 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { AccountDialog } from "./AccountDialog";
 import { App } from "@/muscat/shell/App";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
@@ -35,6 +36,8 @@ function Top({ initial }: { initial: TopData | null }) {
 
 /** 枠(上の段 + サイドバー)にトップページ・お知らせ一覧・通常のページを入れる */
 export function PortalApp({ data }: { data: PortalData }) {
+  const [account, setAccount] = useState(false);
+  const closeAccount = useCallback(() => setAccount(false), []);
   const url = useSyncExternalStore(subscribe, here, () => "");
   const u = new URL(url, location.origin);
   const route = routeOf(u);
@@ -42,15 +45,21 @@ export function PortalApp({ data }: { data: PortalData }) {
   const page = usePage(route === "page" ? slug : null);
   const title = "page" in page ? page.page.title : slug;
   return (
+    <>
+    {/* 小窓を開いている間は後ろを操作させない(Tab で後ろに抜けない) */}
+    <div inert={account} className="contents">
     <App
       title={title}
       brand="MU Portal"
       headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
-      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} />}
+      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} onAccount={() => setAccount(true)} />}
     >
       {route === "notices" ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} />
         : route === "page" ? <PageScreen key={slug} slug={slug} state={page} />
         : <Top initial={data.top} />}
     </App>
+    </div>
+    {account ? <AccountDialog userName={data.shell.userName ?? ""} onClose={closeAccount} /> : null}
+    </>
   );
 }

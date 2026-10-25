@@ -1,4 +1,4 @@
-import { fetchCalendar, fetchInfo, fetchPageView, fetchTree, readUserName, type InfoList, type PageNode } from "./api";
+import { fetchCalendar, fetchInfo, fetchPageView, fetchMe, fetchTree, type InfoList, type PageNode } from "./api";
 import { findBlocks, infoQuery, linkLabel, pickBlocks, type Block, type CalEvent } from "./lib/lib";
 import { fetchLmsDue, type LmsResult } from "./lib/lms";
 import { isHttp } from "./lib/sanitize";
@@ -48,8 +48,8 @@ const once = <T,>(f: () => Promise<T>): (() => Promise<T>) => {
 
 /** 枠(サイドバー・ユーザー名)に要るデータ。ツリーが取れなくても枠は出す */
 export const loadShell = once(async (): Promise<Shell> => {
-  const [tree, userName] = await Promise.all([safe(fetchTree()), readUserName()]);
-  return { tree: tree ?? [], userName };
+  const [tree, me] = await Promise.all([safe(fetchTree()), safe(fetchMe())]);
+  return { tree: tree ?? [], userName: me?.name ?? "" };
 });
 
 /** トップページに要るデータを全部いっぺんに取る。ページ本体が取れなければ throw */

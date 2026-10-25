@@ -70,18 +70,36 @@ export async function fetchCalendar(sources: string[], addOutLook: boolean, y: n
   return rs.flatMap((r) => r.result?.items ?? []);
 }
 
-/** 元のポータルの上のユーザー名。描画されるまで最大 ms 待つ */
-export function readUserName(ms = 3000): Promise<string> {
-  return new Promise((resolve) => {
-    const t0 = Date.now();
-    (function poll() {
-      const n = document.querySelector('#menu [class*="_name_"]');
-      // 元の表示は「佐藤　康樹 さん」。敬称はこちらで付けるので外す
-      if (n) resolve((n.textContent ?? "").trim().replace(/\s*さん$/, ""));
-      else if (Date.now() - t0 > ms) resolve("");
-      else setTimeout(poll, 100);
-    })();
-  });
+export type DeviceItem = { id: string | number; device_type?: string; created_at?: number };
+export type LogItem = { uuid: string; action?: string; type?: string; platform?: string; description?: string; remote_address?: string; created_at?: number };
+export type Paged<T> = { items: T[]; pageTotal: number };
+
+// 端末の token 類は触らない: 必要な項目だけ取り出す
+export async function fetchDevices(page: number): Promise<Paged<DeviceItem>> {
+  const r = (await fetchJson("/api/device/" + page)).result ?? {};
+  const items = (r.items ?? []).map((d: Json) => ({ id: d.id, device_type: d.device_type, created_at: d.created_at }));
+  return { items, pageTotal: r.page_total || 1 };
+}
+
+export async function fetchActionLog(page: number): Promise<Paged<LogItem>> {
+  const r = (await fetchJson("/api/action-log/user-view/" + page)).result ?? {};
+  const items = (r.items ?? []).map((l: Json) => ({
+    uuid: l.uuid, action: l.action, type: l.type, platform: l.platform, description: l.description, remote_address: l.remote_address, created_at: l.created_at,
+  }));
+  return { items, pageTotal: r.page_total || 1 };
+}
+
+/** 画面に出す項目だけ型にする(ほかは触らない) */
+export type PortalUser = {
+  user_id?: string; personal_id?: string; name?: string; name_kana?: string | null; name_alphabet?: string | null; email?: string | null;
+  display_group_names?: string[] | null;
+} & { [K in `option_${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10}`]?: string | null };
+
+/** ログイン中のユーザー(氏名・ID・所属など) */
+export async function fetchMe(): Promise<PortalUser> {
+  const u = (await fetchJson("/api/auth/check-logged-in")).user;
+  if (!u) throw new Error("check-logged-in: no user");
+  return u;
 }
 
 /** 元のユーザーメニューを操作して項目を実行する。項目名は言語で変わるので、危険色のクラスと言語メニューの除外で選ぶ */
