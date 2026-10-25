@@ -65,7 +65,6 @@ export function RoomScreen({ client, doc, initial }: { client: MuscatClient; doc
                 {r.rooms.length === 0 ? (
                   <Card className="grid gap-1 px-2 py-7 text-center text-muted-foreground">
                     <b className="text-[15px] text-foreground">該当する教室はありません</b>
-                    <span>条件をゆるめると見つかるかもしれません。</span>
                   </Card>
                 ) : (
                   <RoomTimeline

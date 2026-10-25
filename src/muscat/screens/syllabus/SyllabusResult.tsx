@@ -28,7 +28,6 @@ export function SyllabusResult({ page, busy, act, onClick, onSize, onNote }: Pro
       {r.empty ? (
         <div className="grid gap-1 px-2 py-7 text-center text-muted-foreground">
           <b className="text-[15px] text-foreground">該当する授業はありません</b>
-          <span>条件をゆるめると見つかるかもしれません。</span>
         </div>
       ) : (
         <>
