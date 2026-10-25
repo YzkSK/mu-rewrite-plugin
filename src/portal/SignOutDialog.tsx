@@ -13,7 +13,8 @@ export function SignOutDialog({ onClose }: { onClose: () => void }) {
   const go = () => {
     setBusy(true);
     setFailed(false);
-    logout().then(() => location.assign("/"), (e) => { console.error("[mu-portal]", e); setBusy(false); setFailed(true); });
+    // 元と同じくサインインの画面へ。"/" へ戻すと SSO で自動的にサインインし直された(実機で確認)
+    logout().then(() => location.assign("/login"), (e) => { console.error("[mu-portal]", e); setBusy(false); setFailed(true); });
   };
   const btn = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted disabled:cursor-default disabled:opacity-60";
   return (

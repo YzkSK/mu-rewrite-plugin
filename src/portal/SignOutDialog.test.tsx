@@ -41,7 +41,7 @@ test("サインアウト: 確認の前は通信せず、押すと GET /api/auth/
     await flush();
     expect(calls.map((c) => c.u)).toEqual(["/api/auth/logout"]);
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(assigned).toEqual(["/"]);
+    expect(assigned).toEqual(["/login"]);
   } finally { loc.assign = orig; }
 });
 
