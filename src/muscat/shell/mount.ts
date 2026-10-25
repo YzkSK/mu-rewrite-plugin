@@ -32,7 +32,9 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
     // 教員の予定は Schedule の描画に頼らず通信で直接取るので、元の画面はいつも display:none。
     // 画面の外に置くと、大きな表を描き足すたびに配置の計算が走って重い(教室予約で取得 23 秒 → 3 秒。実機で測定)。
     // 元の body の下余白でスクロールしないよう、ホストは画面に固定する
-    hide.textContent = `body > *:not(#${HOST_ID}) { display: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }`;
+    // data-mu-show の付いた元の小窓(ポータルの「アカウントとセキュリティ」)だけは隠さず、上に重ねる。閉じた後も枠は残るので、押せるのは中身だけ
+    hide.textContent = `body > *:not(#${HOST_ID}):not([data-mu-show]) { display: none !important } #${HOST_ID} { position: fixed; inset: 0; z-index: 2147483000 }
+body > [data-mu-show] { position: fixed; inset: 0; z-index: 2147483001; pointer-events: none } body > [data-mu-show] .ant-modal-root { pointer-events: auto }`;
     doc.head.appendChild(hide);
   }
   const props = css.match(/@property[^{]+\{[^}]*\}/g);

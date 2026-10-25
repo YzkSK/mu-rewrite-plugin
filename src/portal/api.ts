@@ -92,6 +92,13 @@ export function proxyUserMenu(kind: "account" | "signout"): void {
     const items = [...document.querySelectorAll<HTMLElement>('.ant-dropdown [role="menuitem"]')];
     const danger = (n: Element) => n.classList.contains("ant-dropdown-menu-item-danger");
     const it = items.find((n) => (kind === "signout" ? danger(n) : !danger(n) && !/language/i.test(n.className)));
-    if (it) it.click(); else console.warn("[mu-portal] user menu item not found", kind);
+    if (it) it.click(); else return console.warn("[mu-portal] user menu item not found", kind);
+    // 「アカウントとセキュリティ」は元の画面の小窓(.ant-modal)で開く。元の画面ごと隠しているので、小窓の入れ物だけ見せる
+    if (kind === "account") setTimeout(() => {
+      const modal = document.querySelector(".ant-modal-root");
+      let box = modal;
+      while (box && box.parentElement !== document.body) box = box.parentElement;
+      box?.setAttribute("data-mu-show", "");
+    }, 300);
   }, 300);
 }
