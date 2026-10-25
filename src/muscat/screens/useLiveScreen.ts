@@ -28,7 +28,7 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
   }, [load]);
   const run = useCallback(
     /** 成功したかを返す(失敗したら続きの処理をしない) */
-    async (steps: DriveStep[], after?: () => Promise<void>): Promise<boolean> => {
+    async (steps: DriveStep[], after?: () => Promise<void>, fail = "操作できませんでした"): Promise<boolean> => {
       setState((s) => ({ ...s, busy: true }));
       try {
         if (steps.length) await client.driveLive(steps);
@@ -38,7 +38,7 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
         const page = await read(client).catch(() => undefined);
         // 画面が出ていれば中身は残してトーストで知らせる。何も出ていないときだけ画面にエラーを出す
         const p = page ?? latest.current.page;
-        if (p) errorToast("操作できませんでした", errorMessage(e));
+        if (p) errorToast(fail, errorMessage(e));
         setState((s) => (p ? { ...s, page: p, status: "ready", busy: false } : { ...s, status: "error", error: errorMessage(e), busy: false }));
         return false;
       }
@@ -48,5 +48,5 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
     },
     [client, read, load],
   );
-  return { ...state, run };
+  return { ...state, run, load };
 }

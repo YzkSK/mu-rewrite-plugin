@@ -49,12 +49,17 @@ function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search
 export function TeacherScheduleScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<TeacherSchedulePage> }) {
   const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
   const [act, setAct] = useState<string | null>(null);
-  const go = async (key: string, steps: DriveStep[]) => {
+  // key は押したボタンの印、fail は失敗トーストの題
+  const FAIL: Record<string, string> = { search: "検索できませんでした", clear: "条件をクリアできませんでした", toggle: "並び順を変えられませんでした", size: "表示件数を変えられませんでした" };
+  const go = async (key: string, steps: DriveStep[], fail = FAIL[key]) => {
     setAct(key);
-    await run(steps);
+    await run(steps, undefined, fail);
     setAct(null);
   };
-  const click = (ref: string) => void go(ref, [{ kind: "click", ref }]);
+  const click = (ref: string) => {
+    const open = page?.list?.rows.some((r) => r.openRef === ref);
+    void go(ref, [{ kind: "click", ref }], open ? "予定を開けませんでした" : ref === page?.backRef ? "一覧に戻れませんでした" : "ページを移れませんでした");
+  };
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
   const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));

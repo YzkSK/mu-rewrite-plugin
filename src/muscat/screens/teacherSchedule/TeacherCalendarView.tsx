@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { TeacherEvent, TeacherSchedulePage } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { ErrorNotice } from "@/ui/ErrorNotice";
+import { errorToast } from "@/ui/Toast";
 import { eventColor, eventLabel, groupEvents, gridRange, monthGrid, type DayEvent } from "./monthGrid";
 
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
@@ -50,6 +51,7 @@ export function TeacherCalendarView({ page, client, busy, onBack }: Props) {
   const [events, setEvents] = useState<TeacherEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedOnce = useRef(false);
   const [shown, setShown] = useState<string | null>(null);
   const hasSchedule = !!page.scheduleId;
   useEffect(() => {
@@ -60,11 +62,14 @@ export function TeacherCalendarView({ page, client, busy, onBack }: Props) {
     const [from, to] = gridRange(month);
     client
       .teacherEvents(from, to)
-      .then((e) => live && setEvents(e))
+      .then((e) => live && (setEvents(e), (loadedOnce.current = true)))
       .catch((e: unknown) => {
         if (!live) return;
         setEvents([]); // 前の月の予定を残さない
-        setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        // 一度でも読めていれば月を移った失敗なのでトースト。まだ何も読めていなければ画面にエラーを出す
+        if (loadedOnce.current) errorToast("予定を読み込めませんでした", message);
+        else setError(message);
       })
       .finally(() => live && setLoading(false));
     return () => {

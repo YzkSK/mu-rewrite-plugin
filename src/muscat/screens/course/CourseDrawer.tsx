@@ -5,7 +5,7 @@ import { Button } from "@/ui/Button";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { Panel } from "@/ui/Panel";
-import { useToast } from "@/ui/Toast";
+import { errorToast, useToast } from "@/ui/Toast";
 import { errorMessage } from "../errorMessage";
 import { useCourse, type CourseKey, type CourseState } from "./useCourse";
 
@@ -59,15 +59,13 @@ function Attendance({ course }: { course: CourseDetail }) {
 function Memo({ client, course, toast }: { client: MuscatClient; course: CourseDetail; toast: (m: string) => void }) {
   const [text, setText] = useState(course.memo ?? "");
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const save = async () => {
     setSaving(true);
-    setError(null);
     try {
       await client.saveMemo(course.title, text);
       toast("メモを保存しました");
     } catch (e) {
-      setError(errorMessage(e));
+      errorToast("メモを保存できませんでした", errorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -81,7 +79,6 @@ function Memo({ client, course, toast }: { client: MuscatClient; course: CourseD
         rows={3}
         className="w-full rounded-[4px] border border-input bg-card p-2 text-sm"
       />
-      {error && <ErrorNotice title="メモを保存できませんでした" message={error} />}
       <div>
         <Button disabled={saving} onClick={() => void save()}>{saving ? "保存中" : "メモを保存"}</Button>
       </div>

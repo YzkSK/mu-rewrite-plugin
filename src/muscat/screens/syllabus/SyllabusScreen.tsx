@@ -22,14 +22,17 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
   const [searched, setSearched] = useState(false);
   // 元の✕は、拡張が元のダイアログを隠しているため効かないことがある。閉じた科目はこちらで出さない(掲示板と同じ)
   const [dismissed, setDismissed] = useState("");
-  const go = async (key: string, steps: DriveStep[]) => {
+  // key は押したボタンの印、fail は失敗トーストの題
+  const FAIL: Record<string, string> = { search: "検索できませんでした", clear: "条件をクリアできませんでした", size: "表示件数を変えられませんでした", note: "ふせんを開けませんでした", back: "検索に戻れませんでした" };
+  const go = async (key: string, steps: DriveStep[], fail = FAIL[key]) => {
     setAct(key);
-    await run(steps);
+    await run(steps, undefined, fail);
     setAct(null);
   };
   const click = (ref: string) => {
     setDismissed("");
-    void go(ref, [{ kind: "click", ref }]);
+    const open = page?.result?.rows.some((r) => r.openRef === ref);
+    void go(ref, [{ kind: "click", ref }], open ? "シラバスを開けませんでした" : "ページを移れませんでした");
   };
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
@@ -74,11 +77,11 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
             <SyllabusDetailView
               detail={detail}
               busy={busy}
-              onNote={() => void run([{ kind: "click", ref: detail.noteRef, ajax: true }])}
-              onPrint={() => void run([{ kind: "click", ref: detail.printRef, ajax: false }])}
+              onNote={() => void run([{ kind: "click", ref: detail.noteRef, ajax: true }], undefined, "ふせんを操作できませんでした")}
+              onPrint={() => void run([{ kind: "click", ref: detail.printRef, ajax: false }], undefined, "印刷できませんでした")}
               onClose={() => {
                 setDismissed(detail.title);
-                void run([{ kind: "click", ref: detail.closeRef, ajax: false }]);
+                void run([{ kind: "click", ref: detail.closeRef, ajax: false }], undefined, "詳細を閉じられませんでした");
               }}
             />
           )}

@@ -17,7 +17,11 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
   const { status, page, error, busy = false, run, read } = useHome(client, initial);
   const [course, setCourse] = useState<string | null>(null);
   const [month, setMonth] = useState(false); // 月のカレンダーを出しているか
-  const click = (ref: string, ajax = true) => void run([{ kind: "click", ref, ajax }]);
+  const click = (ref: string, ajax = true) => {
+    const nav = page?.day?.nav;
+    const fail = nav && Object.values(nav).includes(ref) ? "日付を移れませんでした" : ref === page?.timetableChangeRef ? "時間割を開けませんでした" : ref === page?.keijiRef ? "掲示板を開けませんでした" : "お知らせを開けませんでした";
+    void run([{ kind: "click", ref, ajax }], undefined, fail);
+  };
   if (page?.unreadKeiji != null) rememberUnread(page.unreadKeiji); // 掲示板の未読ボタンも同じ数にする
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
@@ -52,7 +56,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
             if (!day?.nav.today) return void read();
             const diff = daysFrom(day.date, now ?? new Date());
             const step = diff > 0 ? day.nav.nextDay : day.nav.prevDay;
-            void run([{ kind: "click", ref: day.nav.today, ajax: true }, ...Array.from({ length: Math.abs(diff) }, () => ({ kind: "click" as const, ref: step, ajax: true }))]);
+            void run([{ kind: "click", ref: day.nav.today, ajax: true }, ...Array.from({ length: Math.abs(diff) }, () => ({ kind: "click" as const, ref: step, ajax: true }))], undefined, "日付を移れませんでした");
           }}
           onNav={(label) => {
             setCourse(null);
