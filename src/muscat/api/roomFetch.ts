@@ -31,7 +31,7 @@ export async function roomSubmit(doc: Document, fetch: Fetch, source: string, ex
   pages.set(doc, page);
   remember(page, [...doc.querySelectorAll("#funcForm\\:yoyakuArea tbody.ui-datatable-data > tr")]);
   // 結果が多すぎると元のページは警告を出して検索をやめ、前の結果を残す(全教室だと 1 日約 170 件で、6 日分で超えた。実機で確認)
-  const over = /検索結果が\d+件を超えたため[^<\]]*/.exec(xml)?.[0];
+  const over = /検索結果が\d+件を超えたため[^<\]"']*/.exec(xml)?.[0]; // 文はスクリプトの文字列の中に来るので引用符で止める(実機で確認)
   if (over) throw new NoticeError(over);
 }
 

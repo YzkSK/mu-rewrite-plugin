@@ -151,6 +151,7 @@ test("roomSubmit: dataList を反映し、<eval> は動かさない", async () =
 
 test("roomSubmit: 999 件を超えて中断されたら、その警告文で失敗する", async () => {
   const msg = "検索結果が999件を超えたため、処理を中断しました。検索条件を変更して再検索するか、制限値の変更をシステム管理者に依頼して下さい。";
-  const { f } = reply(`<partial-response><changes><update id="frameGrowl"><![CDATA[<span>${msg}</span>]]></update>${vs}</changes></partial-response>`);
-  await expect(roomSubmit(makeDoc(), f, "funcForm:search", "funcForm:search")).rejects.toThrow(msg);
+  const { f } = reply(`<partial-response><changes><update id="frameGrowl"><![CDATA[<script>$(function(){PrimeFaces.warn("${msg}");}});;</script>]]></update>${vs}</changes></partial-response>`);
+  const e = await roomSubmit(makeDoc(), f, "funcForm:search", "funcForm:search").catch((x: Error) => x);
+  expect((e as Error).message).toBe(msg); // スクリプトの閉じかっこまで拾わない
 });
