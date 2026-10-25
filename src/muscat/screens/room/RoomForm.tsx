@@ -106,9 +106,10 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
       </div>
       <Collapsible open={more} onOpenChange={setMore} className="border-t border-border pt-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <CollapsibleTrigger className="inline-flex cursor-pointer items-center gap-2 py-1 font-bold text-primary">
+          {/* 文字だけだと押せるとわかりにくいので枠を付ける。数は 0 のとき出さない(場所だけ取って矢印が離れて見えた) */}
+          <CollapsibleTrigger className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[4px] border border-border bg-card px-2.5 text-[13px] font-bold text-primary hover:bg-muted">
             絞り込み
-            <span className={`inline-grid min-w-5 place-content-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground ${n ? "" : "invisible"}`}>{n}</span>
+            {n > 0 && <span className="inline-grid min-w-5 place-content-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">{n}</span>}
             <IconChevronDown className={`size-4 transition-transform duration-200 ${more ? "rotate-180" : ""}`} />
           </CollapsibleTrigger>
           <span className="flex-1" />

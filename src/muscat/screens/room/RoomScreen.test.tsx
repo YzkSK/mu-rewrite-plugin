@@ -41,12 +41,11 @@ test("初期: 見出し・期間・表示のチップ・絞り込み・クリア
   expect(html).not.toContain("教室 · ");
 });
 
-test("絞り込み: 選んだ条件の数がバッジに出る(無いときは幅だけ残して隠す)", () => {
-  expect(render(ready())).toMatch(/invisible[^>]*>0</);
+test("絞り込み: 選んだ条件の数がバッジに出る(無いときは出さない)", () => {
+  expect(render(ready())).not.toMatch(/rounded-full bg-primary[^>]*>\d</);
   const p = base();
   const html = render(ready({ days: checks(["月"], [0]), free: { ...p.free!, on: true }, floor: sel(["すべて対象", "1階"], "1階") }));
-  expect(html).toMatch(/bg-primary[^>]*>3</);
-  expect(html).not.toMatch(/invisible[^>]*>3</);
+  expect(html).toMatch(/rounded-full bg-primary[^>]*>3</);
 });
 
 test("結果あり: 凡例・日付移動・教室名・予約・下の件数", () => {
