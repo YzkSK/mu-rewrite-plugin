@@ -59,7 +59,8 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
               <PageLoading title="検索結果" />
             </div>
           )}
-          <BusyOverlay busy={busy}>
+          {/* 結果がまだ無いときは上の「検索結果を読み込んでいます」だけにする(空の欄に重ねると輪が 2 つ出た) */}
+          <BusyOverlay busy={busy && !!page.result}>
             <SyllabusResult
               page={page}
               busy={busy}
