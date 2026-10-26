@@ -1,27 +1,13 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fmtDue } from "@/portal/lib/lib";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { groupDue, loadHome, remain, type Due, type HomeData, type News, type Recent } from "./home";
+import { Box, Note, Row } from "./parts";
 
 const LINK = "text-[12.5px] text-primary hover:underline";
 const KIND: Record<string, string> = { assign: "課題", quiz: "小テスト", forum: "フォーラム" };
 
-/** 白地に 1px の枠。上に見出しの帯(題名と、右に操作) */
-function Box({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-        <h2 className="m-0 text-sm font-semibold">{title}</h2>
-        <div className="flex items-center gap-2">{actions}</div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-const Note = ({ children }: { children: ReactNode }) => <p className="m-0 px-4 py-4 text-[13px] text-muted-foreground">{children}</p>;
-const Row = ({ children }: { children: ReactNode }) => <li className="flex gap-3 border-b border-border px-4 py-2.5 last:border-b-0">{children}</li>;
 
 function DueRow({ e, now }: { e: Due; now: number }) {
   const state = e.overdue ? (e.canSubmit ? "まだ出せる" : "締切") : remain(e.due, now);

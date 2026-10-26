@@ -12,13 +12,13 @@ const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
 const ROW = `${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm`;
 
 /** 左の一覧。ホーム以外は今は元の画面への普通のリンク(全画面の遷移)。開閉・幅・押し出しは App(Sidebar)の仕事。 */
-export function LmsSidebar({ onPick, onLogout }: { onPick?: () => void; onLogout: () => void }) {
+export function LmsSidebar({ home, onPick, onLogout }: { home: boolean; onPick?: () => void; onLogout: () => void }) {
   return (
     <>
       <SidebarContent className="gap-0 p-0">
         <SidebarMenu className="gap-0">
           <SidebarMenuItem>
-            <SidebarMenuButton size="md" href="/" isActive aria-current="page" className={`${ROW} font-semibold`}>ホーム</SidebarMenuButton>
+            <SidebarMenuButton size="md" href="/" isActive={home} aria-current={home ? "page" : undefined} className={`${ROW} font-semibold`}>ホーム</SidebarMenuButton>
           </SidebarMenuItem>
           {ITEMS.map((i) => (
             <SidebarMenuItem key={i.href}>

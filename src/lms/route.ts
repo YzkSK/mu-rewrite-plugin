@@ -1,7 +1,11 @@
-/** 今回描くのはホーム("/" と /index.php)だけ。search(?redirect=0 など)は見ない */
+export type Route = "home" | "course";
+
+/** 描くのはホーム("/" と /index.php)とコース。search(?redirect=0 など)は見ない */
 export function isTargetPath(p: string): boolean {
-  return p === "/" || p === "/index.php";
+  return p === "/" || p === "/index.php" || p === "/course/view.php";
 }
+
+export const routeOf = (p: string): Route => (p === "/course/view.php" ? "course" : "home");
 
 const SKIP = "mu-lms-skip";
 const skipped = (): boolean => {

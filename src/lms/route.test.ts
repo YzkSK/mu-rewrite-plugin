@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
-import { isAppPath, isTargetPath } from "./route";
+import { isAppPath, isTargetPath, routeOf } from "./route";
 
 test("対象のパス", () => {
-  expect(["/", "/index.php", "/my/", "/login/index.php", "/course/view.php"].map(isTargetPath)).toEqual([true, true, false, false, false]);
+  expect(["/", "/index.php", "/my/", "/login/index.php", "/course/view.php", "/course/edit.php"].map(isTargetPath)).toEqual([true, true, false, false, true, false]);
+  expect(["/", "/course/view.php"].map(routeOf)).toEqual(["home", "course"]);
 });
 
 test("元の画面で開くと決めたら対象から外れる(search は見ない)", () => {

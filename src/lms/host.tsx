@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import type { ReactNode } from "react";
 import css from "@/ui/tokens.css?inline";
 import { mountShadowRoot, unmountShadowRoot } from "@/muscat/shell/mount";
+import type { CoursePage } from "./course";
 import { LmsApp } from "./LmsApp";
 import { LmsError } from "./LmsError";
 import { LmsGate, type GateKind } from "./LmsGate";
@@ -20,7 +21,8 @@ function mount(node: ReactNode, full: boolean): void {
   flushSync(() => r.render(node));
 }
 
-export const mountLms = (userName: string | null, userId: number | null): void => mount(<LmsApp userName={userName} userId={userId} />, false);
+/** course はコース画面のとき、entry が今のページから読んだもの(ホームでは null) */
+export const mountLms = (userName: string | null, userId: number | null, course: CoursePage | null): void => mount(<LmsApp userName={userName} userId={userId} course={course} />, false);
 /** 読み込み失敗の画面を Shadow DOM に出す */
 export const mountLmsError = (): void => mount(<LmsError />, true);
 /** ログアウト直後・ログイン失敗の案内を出す */

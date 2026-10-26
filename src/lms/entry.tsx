@@ -3,7 +3,9 @@ import { blockNativeScripts } from "@/ui/block";
 import { fetchUserName, setSesskey } from "./api";
 import { mountLms, mountLmsError, mountLmsGate, unmountLms } from "./host";
 import { clearLoggedOut, clearTried, decide, isLoggedIn, LOGIN_URL, markTried, peekLoggedOut, peekTried, readSesskey, readUserId, watchLogout } from "./login";
-import { isAppPath } from "./route";
+import { courseName } from "@/portal/lib/lms";
+import { readCoursePage } from "./course";
+import { isAppPath, routeOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 
@@ -67,8 +69,10 @@ if (window === window.top) {
         const id = readUserId(document);
         const name = id === null ? null : await fetchUserName(id).catch((e) => { console.error("[mu-lms]", e); return null; });
         if (state !== "loading") return;
-        mountLms(name || null, id);
-        document.title = "ホーム | MU-LMS";
+        // ページを読むのはここだけ(画面には渡す)。mount より前に読む
+        const course = routeOf(location.pathname) === "course" ? readCoursePage(document, location.search) : null;
+        mountLms(name || null, id, course);
+        document.title = course ? `${courseName(course.name) || "コース"} | MU-LMS` : "ホーム | MU-LMS";
         state = "on";
         release();
       } catch (e) {

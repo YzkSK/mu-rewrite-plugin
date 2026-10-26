@@ -1,0 +1,122 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { courseName } from "@/portal/lib/lms";
+import { ErrorNotice } from "@/ui/ErrorNotice";
+import { PageLoading } from "@/ui/PageLoading";
+import { LoginRequiredError } from "./api";
+import { isLate, loadCourse, shortStatus, termLabel, type CoursePage, type Item, type Section } from "./course";
+import { Box, Note, Row } from "./parts";
+import { openOriginal } from "./route";
+
+const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ" };
+const PURPLE = new Set(["assign", "quiz"]);
+// ラベルの本文は外部由来の HTML(sanitize 済み)。見た目だけ最低限そろえる
+const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5";
+
+function ItemRow({ it, now }: { it: Item; now: number }) {
+  const late = isLate(it.status, now);
+  return (
+    <Row>
+      <span className={`h-fit w-[4.5rem] flex-none rounded-[3px] px-1 text-center text-[11px] leading-[18px] ${PURPLE.has(it.mod) ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}>{TAG[it.mod] ?? it.mod}</span>
+      <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">
+        {it.url ? <a className="text-foreground hover:underline" href={it.url}>{it.name}</a> : it.name}
+        {it.type ? <small className="ml-1.5 text-[11px] text-muted-foreground">{it.type}</small> : null}
+      </span>
+      {it.status ? <span className={`h-fit max-w-[45%] flex-none text-right text-[12px] ${late ? "font-bold text-error" : "text-muted-foreground"}`}>{shortStatus(it.status)}</span> : null}
+    </Row>
+  );
+}
+
+function SectionCard({ s, now, refFn }: { s: Section; now: number; refFn: (el: HTMLElement | null) => void }) {
+  return (
+    <div ref={refFn} className="scroll-mt-4">
+      <Box title={s.title} actions={<span className="text-[12px] text-muted-foreground">{s.items.length} 件</span>}>
+        {s.summary ? <div className={`${PROSE} border-b border-border`} dangerouslySetInnerHTML={{ __html: s.summary }} /> : null}
+        <ul className="m-0 list-none p-0">
+          {s.items.map((it) => it.html !== null
+            ? (
+              <li key={it.id} className={`${PROSE} border-b border-border last:border-b-0`}>
+                <div dangerouslySetInnerHTML={{ __html: it.html }} />
+                {it.videos.map((v) => <video key={v} controls preload="metadata" src={v} className="mt-2 max-w-full" />)}
+              </li>
+            )
+            : <ItemRow key={it.id} it={it} now={now} />)}
+        </ul>
+      </Box>
+    </div>
+  );
+}
+
+type Props = { page: CoursePage; initial?: Section[]; now?: Date };
+
+/** コースの画面。左に目次、中央に全部の節、右に先生(狭い幅では目次を出さず、中央→先生の順に縦積み) */
+export function CourseScreen({ page, initial, now = new Date() }: Props) {
+  const [sections, setSections] = useState<Section[] | null>(initial ?? null);
+  const [failed, setFailed] = useState(page.id === null);
+  const load = useCallback(() => {
+    if (page.id === null) return;
+    setSections(null);
+    setFailed(false);
+    loadCourse(page.id).then(setSections, (e) => { if (e instanceof LoginRequiredError) location.reload(); else { console.error("[mu-lms]", e); setFailed(true); } });
+  }, [page.id]);
+  useEffect(() => { if (!initial) load(); }, [initial, load]);
+  const refs = useRef<Record<number, HTMLElement | null>>({});
+
+  const term = termLabel(page.name);
+  const sub = [term, page.shortname].filter(Boolean).join("、");
+  const ms = now.getTime();
+
+  const head = (
+    <div className="flex w-full items-start justify-between gap-3">
+      <div className="min-w-0">
+        {sub ? <p className="m-0 text-[12px] text-muted-foreground">{sub}</p> : null}
+        <h1 className="m-0 text-lg font-semibold [overflow-wrap:anywhere]">{courseName(page.name)}</h1>
+      </div>
+      <button type="button" className="flex-none whitespace-nowrap text-[12.5px] text-primary hover:underline" onClick={openOriginal}>元の LMS で開く</button>
+    </div>
+  );
+
+  if (failed) return <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="コースの内容を取得できませんでした。" onRetry={page.id === null ? undefined : load} /></div>;
+  if (!sections) return <PageLoading title={courseName(page.name) || "コース"} />;
+
+  const filled = sections.filter((s) => s.items.length || s.summary);
+  const empty = sections.filter((s) => !(s.items.length || s.summary));
+  const go = (id: number) => refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  return (
+    <div className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-4 p-4">
+      {head}
+      <nav aria-label="目次" className="sticky top-4 hidden w-[180px] flex-none min-[1000px]:block">
+        <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+          {filled.map((s) => (
+            <li key={s.id}>
+              <button type="button" onClick={() => go(s.id)} className="flex w-full items-baseline justify-between gap-2 rounded-[3px] px-2 py-1 text-left text-[12.5px] hover:bg-muted">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{s.title}</span>
+                <span className="flex-none text-muted-foreground">{s.items.length}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        {empty.length ? <p className="m-0 px-2 pt-2 text-[12px] text-muted-foreground">{`空: ${empty.map((s) => s.title).join("・")}`}</p> : null}
+      </nav>
+      <div className="flex w-full min-w-0 flex-col gap-4 min-[1000px]:w-auto min-[1000px]:flex-1">
+        {filled.length ? filled.map((s) => <SectionCard key={s.id} s={s} now={ms} refFn={(el) => { refs.current[s.id] = el; }} />) : <Box title="内容"><Note>このコースにはまだ内容がありません</Note></Box>}
+      </div>
+      <div className="w-full flex-none min-[1000px]:w-[240px]">
+        <Box title="先生">
+          {page.teachers.length
+            ? (
+              <ul className="m-0 list-none p-0">
+                {page.teachers.map((t) => (
+                  <Row key={t.id}>
+                    <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">{t.name}</span>
+                    <a className="flex-none text-[12.5px] text-primary hover:underline" href={`/message/index.php?id=${t.id}`}>メッセージ</a>
+                  </Row>
+                ))}
+              </ul>
+            )
+            : <Note>先生の情報がありません</Note>}
+        </Box>
+      </div>
+    </div>
+  );
+}
