@@ -30,6 +30,16 @@ test("前の画面から来たとき: メニュー POST 1 回", async () => {
   expect(a.termKey).toBe("2026|03");
 });
 
+test("exports: PDF だけ・両方・無し", async () => {
+  const btn = (t: string) => `<button type="button">${t}</button>`;
+  const withButtons = (...ts: string[]) => func("2026|03").replace("</form>", `${ts.map(btn).join("")}</form>`);
+  const { f } = fake(() => "");
+  const get = (inner: string) => getAttendance(createCore({ fetch: f, doc: pageDoc(inner), ids, now }));
+  expect((await get(withButtons("PDF"))).exports).toEqual(["PDF"]);
+  expect((await get(withButtons("PDF", "Excel"))).exports).toEqual(["PDF", "Excel"]);
+  expect((await get(withButtons())).exports).toEqual([]);
+});
+
 test("同じ学期なら通信 0 回", async () => {
   const { f, bodies } = fake(() => "");
   const core = createCore({ fetch: f, doc: pageDoc(func("2026|03")), ids, now });

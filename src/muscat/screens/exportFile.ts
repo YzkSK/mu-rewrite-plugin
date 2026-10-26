@@ -2,8 +2,6 @@ import type { MuscatClient } from "@/muscat/api/client";
 import type { ExportKind, ExportRequest } from "@/muscat/api/exportForm";
 import type { MenuLabel } from "@/muscat/api/session";
 
-export { findExportButton } from "@/muscat/api/exportForm";
-
 /** 元のボタンが送る POST を、新しいタブへふつうのフォーム送信で送る(ダウンロードの応答はそのタブが受ける。元の画面の script は使わない) */
 export function postToNewTab(req: ExportRequest, doc: Document = document): void {
   const form = doc.createElement("form");

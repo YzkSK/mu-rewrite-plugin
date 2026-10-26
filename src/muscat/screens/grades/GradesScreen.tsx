@@ -6,14 +6,13 @@ import { Button } from "@/ui/Button";
 import { Checkbox } from "@/ui/Checkbox";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
-import { exportFile, findExportButton } from "../exportFile";
+import { exportFile } from "../exportFile";
 import { GradeList, type GradeCols, type GradeView } from "./GradeList";
 import { GradeFolds, GradeStats } from "./GpaSummary";
 import { useGrades, type GradesState } from "./useGrades";
 
 type Props = {
   client: MuscatClient;
-  doc: Document;
   initial?: GradesState;
   /** 以下はテスト用の初期値 */
   initialView?: GradeView;
@@ -54,7 +53,7 @@ function Settings({ filter, busy, cols, onCols, onApply }: { filter: GradeFilter
   );
 }
 
-export function GradesScreen({ client, doc, initial, initialView = "category", initialOpen = false, initialCols = { gpa: true, gpaYear: true } }: Props) {
+export function GradesScreen({ client, initial, initialView = "category", initialOpen = false, initialCols = { gpa: true, gpaYear: true } }: Props) {
   const { status, grades, error, setFilter } = useGrades(client, initial);
   const [view, setView] = useState<GradeView>(initialView);
   const [open, setOpen] = useState(initialOpen);
@@ -85,7 +84,7 @@ export function GradesScreen({ client, doc, initial, initialView = "category", i
                 <span className="min-[768px]:hidden">設定</span>
                 {open ? " ▴" : " ▾"}
               </Button>
-              <Button variant="secondary" disabled={loading || !findExportButton(doc, "PDF")} onClick={() => void exportFile(client, "成績照会", "PDF")}>PDF で出力</Button>
+              <Button variant="secondary" disabled={loading || !grades.exports.includes("PDF")} onClick={() => void exportFile(client, "成績照会", "PDF")}>PDF で出力</Button>
             </div>
           </div>
           {open && <Settings key={JSON.stringify(grades.filter)} filter={grades.filter} busy={loading} cols={cols} onCols={setCols} onApply={setFilter} />}

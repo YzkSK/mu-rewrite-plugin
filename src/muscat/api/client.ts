@@ -10,6 +10,7 @@ import { getTimetable } from "./timetable";
 import { markAllReadNews, readNews, searchNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
+import { nothingToAnswer } from "./parse/safety";
 import { readHome, showDayHome } from "./home";
 import { addAddress, addFavorite, deleteAddresses, readSettings, resetFavorite, saveSettings, type SettingsSave } from "./settings";
 import { fillRoom, readRoom, type RoomValues } from "./room";
@@ -42,6 +43,10 @@ export type MuscatClient = {
     search(q: { keyword: string; course: string }): Promise<void>;
     /** 分類の「更新」→ 確認の OK。グループが無い・未読が無い・押せないときは ParseError */
     markAllRead(groupTitle: string): Promise<void>;
+  };
+  safety: {
+    /** 生きたページの安否確認を汎用の形で読み、回答が必要なものが無いか(「対象のデータが存在しません」だけ)も返す */
+    read(): Promise<{ nothingToAnswer: boolean; page: GenericPage }>;
   };
   home: {
     /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
@@ -137,6 +142,7 @@ export function createMuscatClient(deps: {
         await live.drive([{ kind: "set", ref, value }]);
       }),
     news: { read: () => readNews(core), search: (q) => searchNews(core, q), markAllRead: (t) => markAllReadNews(core, t) },
+    safety: { read: () => core.runLive(async (live) => ({ nothingToAnswer: nothingToAnswer(live.doc), page: parseGenericPage(live.doc) })) },
     home: { read: () => readHome(core), showDay: (date, now) => showDayHome(core, date, now) },
     syllabus: {
       read: () => readSyllabus(core),

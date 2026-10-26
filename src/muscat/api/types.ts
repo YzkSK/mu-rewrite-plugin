@@ -1,3 +1,5 @@
+import type { ExportKind } from "./exportForm";
+
 export type Day = "月" | "火" | "水" | "木" | "金" | "土";
 
 export type TimetableEntry = {
@@ -31,7 +33,7 @@ export type AttendanceCourse = {
   sessions: AttendanceMark[];
 };
 export type TermOption = { key: string; label: string };
-export type Attendance = { termKey: string; baseDate: string; terms: TermOption[]; courses: AttendanceCourse[] };
+export type Attendance = { termKey: string; baseDate: string; terms: TermOption[]; courses: AttendanceCourse[]; /** 出力ボタンがある種類 */ exports: ExportKind[] };
 
 /** mark は印のセルの生の文字。online は `*`、inProgress は `※` を含むとき */
 export type GradeCourse = {
@@ -305,4 +307,6 @@ export type Grades = {
   credits: CreditRow[];
   totals: { inProgress: number | null; online: number | null };
   filter: GradeFilter;
+  /** 出力ボタンがある種類 */
+  exports: ExportKind[];
 };

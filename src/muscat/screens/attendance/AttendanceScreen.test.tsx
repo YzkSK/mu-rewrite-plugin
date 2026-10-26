@@ -7,7 +7,7 @@ import { AttendanceScreen, termOptions } from "./AttendanceScreen";
 const client = fakeClient();
 
 const terms = [2019, 2020, 2025, 2026, 2027, 2028].map((y) => ({ key: `${y}|03`, label: `${y}年度 3学期` }));
-const base: Attendance = { termKey: "2026|03", baseDate: "2026/10/25", terms, courses: [] };
+const base: Attendance = { termKey: "2026|03", baseDate: "2026/10/25", terms, courses: [], exports: [] };
 const present: AttendanceMark = { kind: "present", label: "出", date: "10/06" };
 const absent: AttendanceMark = { kind: "absent", label: "欠", date: "10/13" };
 const course = (subject: string, sessions: AttendanceMark[], rate: number | null = 85.7): AttendanceCourse => ({
@@ -20,7 +20,7 @@ const course = (subject: string, sessions: AttendanceMark[], rate: number | null
 });
 const withCourses = (courses: AttendanceCourse[]): Attendance => ({ ...base, courses });
 const render = (initial: Parameters<typeof AttendanceScreen>[0]["initial"]) =>
-  renderToString(<AttendanceScreen client={client} doc={document} initial={initial} />);
+  renderToString(<AttendanceScreen client={client} initial={initial} />);
 const ready = (courses: AttendanceCourse[]) => render({ status: "ready", attendance: withCourses(courses) });
 // 凡例の「欠」の印は bg-error / text-error-foreground を持つので、赤い文字の確認では外す
 const errorText = (html: string) => html.replaceAll("text-error-foreground", "");
@@ -70,7 +70,10 @@ test("PDF / Excel ボタン(生きたページに無ければ押せない)", () 
   const html = ready([]);
   expect(html).toContain("PDF で出力");
   expect(html).toContain("Excel で出力");
-  expect(html).toContain("disabled");
+  const count = (h: string) => h.match(/disabled=""/g)?.length ?? 0;
+  const pdfOnly = render({ status: "ready", attendance: { ...base, exports: ["PDF"] } });
+  const both = render({ status: "ready", attendance: { ...base, exports: ["PDF", "Excel"] } });
+  expect([count(html) - count(both), count(pdfOnly) - count(both)]).toEqual([4, 2]); // 無効なボタン 1 つにつき disabled="" が 2 回出る
 });
 
 test("授業 0 件", () => {

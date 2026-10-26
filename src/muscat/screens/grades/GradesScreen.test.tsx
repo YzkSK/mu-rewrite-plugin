@@ -5,7 +5,6 @@ import { fakeClient } from "../fakeClient";
 import { GradesScreen } from "./GradesScreen";
 
 const client = fakeClient();
-const doc = new DOMParser().parseFromString(`<form id="funcForm"><button id="funcForm:create" type="button">PDF</button></form>`, "text/html");
 
 const course = (o: Partial<GradeCourse>): GradeCourse => ({
   mark: "", online: false, inProgress: false, name: "科目", credits: 2, grade: "B", gpaTarget: true, gpaTargetYear: true,
@@ -29,9 +28,10 @@ const grades: Grades = {
   credits: [{ depth: 0, name: "総合計", required: 10, earned: 8, inProgress: 4, total: 12 }, { depth: 0, name: "教養分類", required: 4, earned: 2, inProgress: 1, total: 3 }],
   totals: { inProgress: 24, online: 51 },
   filter: { fail: true, inProgress: true, noCredit: true, transfer: true },
+  exports: ["PDF"],
 };
 const render = (initial: Parameters<typeof GradesScreen>[0]["initial"], extra: Partial<Parameters<typeof GradesScreen>[0]> = {}) =>
-  renderToString(<GradesScreen client={client} doc={doc} initial={initial} {...extra} />);
+  renderToString(<GradesScreen client={client} initial={initial} {...extra} />);
 const ready = { status: "ready", grades } as const;
 
 test("数字の帯: 総合GPA(最新)・通算GPA・修得済単位・履修中単位", () => {
@@ -72,6 +72,8 @@ test("GPA対象の列を隠すと見出しから消える", () => {
 
 test("PDF で出力のボタン", () => {
   expect(render(ready)).toContain("PDF で出力");
+  const count = (h: string) => h.match(/disabled=""/g)?.length ?? 0;
+  expect(count(render({ status: "ready", grades: { ...grades, exports: [] } }))).toBe(count(render(ready)) + 2); // 無効なボタン 1 つにつき disabled="" が 2 回出る
 });
 
 test("下の折りたたみ 3 つの見出し", () => {

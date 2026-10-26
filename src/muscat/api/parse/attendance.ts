@@ -30,7 +30,7 @@ function parseCourse(tr: Element): AttendanceCourse | null {
   };
 }
 
-export function parseAttendance(root: ParentNode): Attendance {
+export function parseAttendance(root: ParentNode): Omit<Attendance, "exports"> {
   const form = root.querySelector("#funcForm");
   if (!form) throw new ParseError("funcForm がありません");
   const select = form.querySelector<HTMLSelectElement>('select[name="funcForm:kaikoNendoGakki_input"]');

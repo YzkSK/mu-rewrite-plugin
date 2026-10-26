@@ -9,7 +9,7 @@ const isCourseTable = (t: Element) => {
   return h[1] === "科目" && h[2] === "単位数";
 };
 
-export function parseGrades(root: ParentNode): Grades {
+export function parseGrades(root: ParentNode): Omit<Grades, "exports"> {
   const form = root.querySelector("#funcForm");
   if (!form) throw new ParseError("funcForm がありません");
   const table = [...form.querySelectorAll("table")].find(isCourseTable);

@@ -1,6 +1,9 @@
 import type { Core } from "./core";
+import { findExportButton, type ExportKind } from "./exportForm";
 import { parseAttendance } from "./parse/attendance";
 import type { Attendance } from "./types";
+
+const EXPORTS: ExportKind[] = ["PDF", "Excel"];
 
 const SELECT = "funcForm:kaikoNendoGakki_input";
 const DATE = "funcForm:baseDate1:baseDate1_input";
@@ -23,6 +26,7 @@ export function getAttendance(core: Core, termKey?: string, baseDate?: string): 
       });
       if (!ok) return null;
     }
-    return parseAttendance(ctx.doc());
+    const doc = ctx.doc();
+    return { ...parseAttendance(doc), exports: EXPORTS.filter((t) => !!findExportButton(doc, t)) };
   });
 }

@@ -38,6 +38,16 @@ test("filter 省略で成績照会の画面なら通信 0 回", async () => {
   expect(bodies.length).toBe(0);
 });
 
+test("exports: PDF だけ・両方・無し", async () => {
+  const btn = (t: string) => `<button type="button">${t}</button>`;
+  const withButtons = (...ts: string[]) => func().replace("</form>", `${ts.map(btn).join("")}</form>`);
+  const { f } = fake(() => "");
+  const get = (inner: string) => getGrades(createCore({ fetch: f, doc: pageDoc(inner), ids, now }));
+  expect((await get(withButtons("PDF"))).exports).toEqual(["PDF"]);
+  expect((await get(withButtons("PDF", "Excel"))).exports).toEqual(["PDF", "Excel"]);
+  expect((await get(withButtons())).exports).toEqual([]);
+});
+
 test("filter 付きで成績照会の画面でなければ、何も送らずにエラー(黙って無視しない)", async () => {
   const { f, bodies } = fake(() => menu + func());
   const core = createCore({ fetch: f, doc: pageDoc("<p>x</p>"), ids, now });

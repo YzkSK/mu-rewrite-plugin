@@ -10,12 +10,12 @@ import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
-import { exportFile, findExportButton } from "../exportFile";
+import { exportFile } from "../exportFile";
 import { useBackClose } from "../useBackClose";
 import { Legend, Mark } from "./SessionMarks";
 import { useAttendance, type AttendanceState } from "./useAttendance";
 
-type Props = { client: MuscatClient; doc: Document; initial?: AttendanceState };
+type Props = { client: MuscatClient; initial?: AttendanceState };
 
 const yearOf = (key: string) => Number(key.split("|")[0]);
 
@@ -142,7 +142,7 @@ function Content({ attendance, onOpen }: { attendance: Attendance; onOpen: (c: A
   );
 }
 
-export function AttendanceScreen({ client, doc, initial }: Props) {
+export function AttendanceScreen({ client, initial }: Props) {
   const { status, attendance, error, setTermKey, setBaseDate } = useAttendance(client, initial);
   const [course, setCourse] = useState<CourseKey | null>(null);
   const loading = status === "loading";
@@ -164,7 +164,7 @@ export function AttendanceScreen({ client, doc, initial }: Props) {
           </div>
           <div className="ml-auto flex flex-wrap gap-2">
             {(["PDF", "Excel"] as const).map((t) => (
-              <Button key={t} variant="secondary" disabled={loading || !findExportButton(doc, t)} onClick={() => void exportFile(client, "出席確認", t)}>
+              <Button key={t} variant="secondary" disabled={loading || !attendance.exports.includes(t)} onClick={() => void exportFile(client, "出席確認", t)}>
                 {`${t} で出力`}
               </Button>
             ))}

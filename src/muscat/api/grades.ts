@@ -2,6 +2,7 @@ import type { Core } from "./core";
 import { ParseError } from "./errors";
 import type { DriveStep } from "./driver/drive";
 import { assignRef } from "./driver/locator";
+import { findExportButton, type ExportKind } from "./exportForm";
 import { parseGrades } from "./parse/grades";
 import type { GradeFilter, Grades } from "./types";
 
@@ -38,6 +39,8 @@ export async function getGrades(core: Core, filter?: GradeFilter): Promise<Grade
   }
   return core.aside(async (ctx) => {
     if (!(await ctx.open("成績照会", isReady))) return null;
-    return parseGrades(ctx.doc());
+    const doc = ctx.doc();
+    const exports: ExportKind[] = (["PDF", "Excel"] as const).filter((t) => !!findExportButton(doc, t));
+    return { ...parseGrades(doc), exports };
   });
 }

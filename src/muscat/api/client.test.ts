@@ -107,6 +107,15 @@ test("同時に 2 回呼んでも直列で両方解決する", async () => {
   expect(r.max()).toBe(1);
 });
 
+test("safety.read: 「対象のデータが存在しません」だけなら nothingToAnswer が真、あれば偽", async () => {
+  const read = (form: string) =>
+    createMuscatClient({ fetch: router([() => ""]).f, doc: pageDoc(`<form id="funcForm">${form}</form>`), ids, now }).safety.read();
+  const empty = await read("<span>対象のデータが存在しません。</span>");
+  expect(empty.nothingToAnswer).toBe(true);
+  expect(empty.page.blocks.length).toBeGreaterThan(0);
+  expect((await read("<table><tr><td>地震</td></tr></table>")).nothingToAnswer).toBe(false);
+});
+
 test("readLivePage / driveLive: 複製を読んで操作し、生きた doc には触らない。onchange の ab は自分で送る", async () => {
   const r = router([() => `<partial-response><changes><update id="jakarta.faces.ViewState"><![CDATA[vs2]]></update></changes></partial-response>`]);
   const doc = pageDoc(
