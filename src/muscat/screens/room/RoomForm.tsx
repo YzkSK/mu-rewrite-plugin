@@ -1,7 +1,7 @@
 import { IconChevronDown } from "@tabler/icons-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/starwind/collapsible";
-import type { DriveStep } from "@/muscat/api/driver/drive";
+import { checksOf, fieldsOf, type RoomValues } from "@/muscat/api/room";
 import type { CheckOption, RoomPage, RoomRange, SelectField } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -12,32 +12,11 @@ import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 import { Field } from "../Field";
 
-/** 値を持つ欄(入力・select)。画面の値は ref をキーに持つ */
-const fieldsOf = (p: RoomPage): { ref: string; value: string }[] => {
-  const range = (r: RoomRange) => [r.from, r.to];
-  const { regular, exam, entrance } = p.capacity;
-  return [
-    ...range(p.period), ...(p.free ? [...range(p.free.time), p.free.hour, p.free.minute] : []),
-    ...range(regular), ...range(exam), ...range(entrance),
-    p.campus, p.building, p.floor, p.capacityKind,
-  ].filter((f) => f.ref);
-};
-const checksOf = (p: RoomPage): CheckOption[] => [...p.targets, ...p.days, ...p.showCapacity, ...(p.free ? [{ label: "", ref: p.free.boxRef, checked: p.free.on }] : [])].filter((c) => c.ref);
-
-type Values = { text: Record<string, string>; on: Record<string, boolean> };
+type Values = RoomValues;
 const initial = (p: RoomPage): Values => ({
   text: Object.fromEntries(fieldsOf(p).map((f) => [f.ref, f.value])),
   on: Object.fromEntries(checksOf(p).map((c) => [c.ref, c.checked])),
 });
-
-/** 画面の値を元の画面の部品に入れる手順(検索ボタンは押さず、呼び出し側が通信を直接送る)。チェックは違うものだけ押す(空き教室のスイッチは時刻の欄より先) */
-function searchSteps(p: RoomPage, v: Values): DriveStep[] {
-  const radio = new Set(p.showCapacity.map((c) => c.ref));
-  return [
-    ...checksOf(p).filter((c) => (radio.has(c.ref) ? v.on[c.ref] && !c.checked : v.on[c.ref] !== c.checked)).map((c): DriveStep => ({ kind: "click", ref: c.ref, ajax: false })),
-    ...fieldsOf(p).map((f): DriveStep => ({ kind: "set", ref: f.ref, value: v.text[f.ref] ?? f.value })),
-  ];
-}
 
 /** 選んである絞り込み条件の数(バッジ) */
 function filterCount(p: RoomPage, v: Values): number {
@@ -62,7 +41,7 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
   </>
 );
 
-export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPage; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onClear: () => void }) {
+export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPage; busy: boolean; act: string | null; onSearch: (v: RoomValues) => void; onClear: () => void }) {
   const [v, setV] = useState(() => initial(page));
   const [more, setMore] = useState(false);
   const text = (f: { ref: string; value: string }) => v.text[f.ref] ?? f.value;
@@ -72,7 +51,7 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
   // 終了日が開始日より前だと、元の画面は何も出さず理由も言わない(実機で確認)ので、送る前に止める
   const [from, to] = [text(page.period.from), text(page.period.to)];
   const backwards = !!from && !!to && from > to; // どちらも「2026/10/25」の形なので文字の大小で比べられる
-  const search = () => !backwards && onSearch(searchSteps(page, v));
+  const search = () => !backwards && onSearch(v);
   const n = filterCount(page, v);
   const free = page.free;
   const sel = (label: string, f: SelectField) => <Select label={label} value={text(f)} options={f.options} disabled={busy} onChange={(x) => setText(f.ref, x)} />;

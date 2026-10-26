@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { DriveStep } from "@/muscat/api/driver/drive";
 import type { TeacherSchedulePage, TeacherSearch } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
@@ -15,17 +14,13 @@ import { useLiveScreen, type LiveState } from "../useLiveScreen";
 import { TeacherCalendarView } from "./TeacherCalendarView";
 import { TeacherList } from "./TeacherList";
 
-const read = (c: MuscatClient) => c.readTeacherSchedule();
+const read = (c: MuscatClient) => c.teacherSchedule.read();
+type Op = (c: MuscatClient) => Promise<unknown>;
 
-function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search: TeacherSearch; busy: boolean; act: string | null; onSearch: (steps: DriveStep[]) => void; onToggle: () => void; onClear: () => void }) {
+function SearchForm({ search, busy, act, onSearch, onToggle, onClear }: { search: TeacherSearch; busy: boolean; act: string | null; onSearch: (q: { name: string; sort: string }) => void; onToggle: () => void; onClear: () => void }) {
   const [name, setName] = useState(search.name.value);
   const [sort, setSort] = useState(search.sort.value);
-  const submit = () =>
-    onSearch([
-      ...(search.name.ref ? [{ kind: "set", ref: search.name.ref, value: name } as const] : []),
-      ...(search.sort.ref ? [{ kind: "set", ref: search.sort.ref, value: sort } as const] : []),
-      { kind: "click", ref: search.searchRef, ajax: true },
-    ]);
+  const submit = () => onSearch({ name, sort });
   return (
     <Card className="gap-3 p-4">
       <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !busy && submit()}>
@@ -52,20 +47,20 @@ export function TeacherScheduleScreen({ client, initial }: { client: MuscatClien
   const [act, setAct] = useState<string | null>(null);
   // key は押したボタンの印、fail は失敗トーストの題
   const FAIL: Record<string, string> = { search: "検索できませんでした", clear: "条件をクリアできませんでした", toggle: "並び順を変えられませんでした", size: "表示件数を変えられませんでした" };
-  const go = async (key: string, steps: DriveStep[], fail = FAIL[key]) => {
+  const go = async (key: string, op: Op, fail = FAIL[key]) => {
     setAct(key);
-    await run(steps, undefined, fail);
+    await run(op, undefined, fail);
     setAct(null);
   };
   const click = (ref: string) => {
     const open = page?.list?.rows.some((r) => r.openRef === ref);
-    void go(ref, [{ kind: "click", ref }], open ? "予定を開けませんでした" : ref === page?.backRef ? "一覧に戻れませんでした" : "ページを移れませんでした");
+    void go(ref, (c) => c.press(ref), open ? "予定を開けませんでした" : ref === page?.backRef ? "一覧に戻れませんでした" : "ページを移れませんでした");
   };
   // カレンダーを開いている間は、ブラウザの戻るで「検索に戻る」と同じにする
   useBackClose(!!page?.scheduleId && !!page.backRef, () => click(page!.backRef));
   // 元の画面の「クリア」を押し、読み直した値でフォームを作り直す(本当の初期値は元の画面だけが知っている)
   const [gen, setGen] = useState(0);
-  const clear = (ref: string) => void go("clear", [{ kind: "click", ref }]).then(() => setGen((g) => g + 1));
+  const clear = (ref: string) => void go("clear", (c) => c.press(ref)).then(() => setGen((g) => g + 1));
   return (
     <div className="flex flex-col gap-3 p-4">
       {status === "error" && <ErrorCard>{error}</ErrorCard>}
@@ -73,11 +68,11 @@ export function TeacherScheduleScreen({ client, initial }: { client: MuscatClien
       {page && (
         <>
           {page.search && (
-            <SearchForm key={gen} onClear={() => clear(page.search!.clearRef)} search={page.search} busy={busy} act={act} onSearch={(steps) => void go("search", steps)} onToggle={() => void go("toggle", [{ kind: "click", ref: page.search!.toggleRef }])} />
+            <SearchForm key={gen} onClear={() => clear(page.search!.clearRef)} search={page.search} busy={busy} act={act} onSearch={(q) => void go("search", (c) => c.teacherSchedule.search(q))} onToggle={() => void go("toggle", (c) => c.press(page.search!.toggleRef))} />
           )}
           <BusyOverlay busy={busy}>
             <div className="flex flex-col gap-3">
-              {page.list && <TeacherList list={page.list} note={page.search?.name.value ? `氏名「${page.search.name.value}」` : ""} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", [{ kind: "set", ref, value, ajax: true }])} />}
+              {page.list && <TeacherList list={page.list} note={page.search?.name.value ? `氏名「${page.search.name.value}」` : ""} busy={busy} act={act} onClick={click} onSize={(ref, value) => void go("size", (c) => c.fill(ref, value))} />}
               <TeacherCalendarView key={page.teacher} page={page} client={client} busy={busy} onBack={click} />
             </div>
           </BusyOverlay>

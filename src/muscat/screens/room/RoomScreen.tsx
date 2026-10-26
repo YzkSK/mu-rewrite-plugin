@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { DriveStep } from "@/muscat/api/driver/drive";
 import type { RoomBar, RoomPage, RoomResult, RoomRow } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Card } from "@/ui/Card";
@@ -15,7 +14,7 @@ import { RoomForm } from "./RoomForm";
 import { RoomTimeline } from "./RoomTimeline";
 import { kindColor } from "./roomKinds";
 
-const read = (c: MuscatClient) => c.readRoom();
+const read = (c: MuscatClient) => c.room.read();
 
 /** 凡例と、その日の位置へ飛ぶ選択(期間の全日が表に入っているので通信はしない) */
 function Legend({ result, dates, onJump }: { result: RoomResult; dates: string[]; onJump: (date: string) => void }) {
@@ -56,7 +55,7 @@ export function RoomScreen({ client, initial }: { client: MuscatClient; doc?: Do
   const started = useRef(false);
   const pageRef = useRef(page);
   pageRef.current = page;
-  const go = async (key: string, steps: DriveStep[], submit = false) => {
+  const go = async (key: string, op: (c: MuscatClient) => Promise<unknown>, submit = false) => {
     const restart = submit || key === "clear";
     if (restart) {
       generation.current++;
@@ -70,7 +69,7 @@ export function RoomScreen({ client, initial }: { client: MuscatClient; doc?: Do
     }
     setAct(key);
     setSubmitFailed(false);
-    const ok = await run(steps, submit ? () => client.roomSubmit().catch((e: unknown) => { setSubmitFailed(true); throw e; }) : undefined, key === "clear" ? "条件をクリアできませんでした" : "検索できませんでした");
+    const ok = await run(op, submit ? () => client.roomSubmit().catch((e: unknown) => { setSubmitFailed(true); throw e; }) : undefined, key === "clear" ? "条件をクリアできませんでした" : "検索できませんでした");
     setAct(null);
     if (!submit || !ok) return setFetching(false); // 送るのに失敗したら続きは取らない
     started.current = true; // 開いた時の続き取りと二重にしない
@@ -118,7 +117,7 @@ export function RoomScreen({ client, initial }: { client: MuscatClient; doc?: Do
       {page && (
         <>
           {/* 続きを取っている間は押させない(古い続きの応答が ViewState を上書きして、新しい検索が壊れる) */}
-          <RoomForm key={gen} page={page} busy={busy || fetching || side > 0} act={act} onSearch={(steps) => void go("search", steps, true)} onClear={() => void go("clear", [{ kind: "click", ref: page.clearRef }]).then(() => setGen((g) => g + 1))} />
+          <RoomForm key={gen} page={page} busy={busy || fetching || side > 0} act={act} onSearch={(v) => void go("search", (c) => c.room.fill(v), true)} onClear={() => void go("clear", (c) => c.press(page.clearRef)).then(() => setGen((g) => g + 1))} />
           {/* 検索に失敗したら、元のページに残った前の結果は出さない(新しい条件の結果に見える) */}
           {!submitFailed && fetching ? (
             // 検索の送信中は前の結果が残っているので数は出さない

@@ -11,10 +11,10 @@ import { markAllReadNews, readNews, searchNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
 import { parseHome } from "./parse/home";
-import { parseRoom } from "./parse/room";
 import { parseSettings } from "./parse/settings";
-import { parseSyllabus } from "./parse/syllabus";
-import { parseTeacherSchedule } from "./parse/teacherSchedule";
+import { fillRoom, readRoom, type RoomValues } from "./room";
+import { readSyllabus, searchSyllabus, type SyllabusQuery } from "./syllabus";
+import { readTeacherSchedule, searchTeacher } from "./teacherSchedule";
 import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomeEvent, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
 import { fetchHomeEvents, fetchTeacherEvents } from "./teacherEvents";
 import { ParseError } from "./errors";
@@ -34,6 +34,8 @@ export type MuscatClient = {
   readLive<T>(fn: (doc: Document) => T): Promise<T>;
   /** 読んだ結果の札(ref)の部品を 1 回押す */
   press(ref: string): Promise<void>;
+  /** 読んだ結果の札(ref)の入力欄・選択欄に値を入れる(元の部品の change の通信もそのまま) */
+  fill(ref: string, value: string): Promise<void>;
   news: {
     /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
     read(): Promise<NewsPage>;
@@ -43,16 +45,27 @@ export type MuscatClient = {
   };
   /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
   readHome(): Promise<HomePage>;
-  /** 生きたページのシラバス検索(条件の欄と、検索後の一覧)を読む */
-  readSyllabus(): Promise<SyllabusPage>;
-  /** 生きたページの教員スケジュール(検索欄・一覧・カレンダーのうち出ているもの)を読む */
-  readTeacherSchedule(): Promise<TeacherSchedulePage>;
+  syllabus: {
+    /** 生きたページのシラバス検索(条件の欄と、検索後の一覧)を読む */
+    read(): Promise<SyllabusPage>;
+    /** 条件を入れて検索を押す。省略した欄・グループは触らない */
+    search(q: SyllabusQuery): Promise<void>;
+  };
+  teacherSchedule: {
+    /** 生きたページの教員スケジュール(検索欄・一覧・カレンダーのうち出ているもの)を読む */
+    read(): Promise<TeacherSchedulePage>;
+    search(q: { name: string; sort: string }): Promise<void>;
+  };
   /** 教員スケジュールの予定を、元のページの部品と同じ通信で直接取る(start 以上 end 未満) */
   teacherEvents(start: Date, end: Date): Promise<TeacherEvent[]>;
   /** ホームの月表示の予定(祝日・大学の行事・掲示・授業)を、元のページの部品と同じ通信で直接取る(start 以上 end 未満) */
   homeEvents(start: Date, end: Date): Promise<HomeEvent[]>;
-  /** 生きたページの教室予約(参照のみ)(条件の欄と、検索後のタイムライン)を読む */
-  readRoom(): Promise<RoomPage>;
+  room: {
+    /** 生きたページの教室予約(参照のみ)(条件の欄と、検索後のタイムライン)を読む */
+    read(): Promise<RoomPage>;
+    /** 値を元の画面の部品に入れる(検索の通信は含まない。roomSubmit で送る) */
+    fill(v: RoomValues): Promise<void>;
+  };
   /** 生きたページの個人設定(いま開いているタブの中身)を読む */
   readSettings(): Promise<SettingsPage>;
   /** 教室予約の検索を、元のボタンを押さず同じ通信で直接送る */
@@ -97,13 +110,17 @@ export function createMuscatClient(deps: {
       core.runLive(async (live) => {
         await live.drive([{ kind: "click", ref }]);
       }),
+    fill: (ref, value) =>
+      core.runLive(async (live) => {
+        await live.drive([{ kind: "set", ref, value }]);
+      }),
     news: { read: () => readNews(core), search: (q) => searchNews(core, q), markAllRead: (t) => markAllReadNews(core, t) },
     readHome: () => core.runLive(async (live) => parseHome(live.doc)),
-    readSyllabus: () => core.runLive(async (live) => parseSyllabus(live.doc)),
-    readTeacherSchedule: () => core.runLive(async (live) => parseTeacherSchedule(live.doc)),
+    syllabus: { read: () => readSyllabus(core), search: (q) => searchSyllabus(core, q) },
+    teacherSchedule: { read: () => readTeacherSchedule(core), search: (q) => searchTeacher(core, q) },
     teacherEvents: (start, end) => core.runLive((live) => fetchTeacherEvents(live.doc, deps.fetch, start, end)),
     homeEvents: (start, end) => core.runLive((live) => fetchHomeEvents(live.doc, deps.fetch, start, end)),
-    readRoom: () => core.runLive(async (live) => parseRoom(live.doc)),
+    room: { read: () => readRoom(core), fill: (v) => fillRoom(core, v) },
     readSettings: () => core.runLive(async (live) => parseSettings(live.doc)),
     roomSubmit: () =>
       core.runLive(async (live) => {

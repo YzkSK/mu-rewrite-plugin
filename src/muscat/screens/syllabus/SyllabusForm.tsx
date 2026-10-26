@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { DriveStep } from "@/muscat/api/driver/drive";
+import type { SyllabusQuery } from "@/muscat/api/syllabus";
 import type { CheckOption, SelectField, SyllabusPage } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -18,29 +18,18 @@ const initial = (p: SyllabusPage): Values => ({
   picked: Object.fromEntries(GROUPS.map((g) => [g, p[g].filter((c) => c.checked).map((c) => c.label)])) as Values["picked"],
 });
 
-/** 画面の値を元の画面の部品に入れる手順(見つからない部品は飛ばす)。チェックは違うものだけ押す */
-function searchSteps(p: SyllabusPage, v: Values): DriveStep[] {
-  const set = (f: { ref: string }, value: string): DriveStep[] => (f.ref ? [{ kind: "set", ref: f.ref, value }] : []);
-  return [
-    ...set(p.year, v.year), ...set(p.term, v.term), ...set(p.subject, v.subject), ...set(p.teacher, v.teacher), ...set(p.keyword, v.keyword),
-    ...set(p.dept, v.dept), ...set(p.category, v.category), ...set(p.campus, v.campus),
-    ...GROUPS.flatMap((g) => p[g].filter((o) => o.ref && v.picked[g].includes(o.label) !== o.checked).map((o): DriveStep => ({ kind: "click", ref: o.ref, ajax: false }))),
-    { kind: "click", ref: p.searchRef, ajax: true },
-  ];
-}
-
 const TWO = "grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2";
 
 /** 小さな見出しの文字(12px の薄い色) */
 const Label = ({ children }: { children: ReactNode }) => <span className="text-xs text-muted-foreground">{children}</span>;
 
 /** 条件の欄。値はここで持ち、「検索」を押したときに初めて元の画面へ入れて検索する。showNote は結果の帯が無いときだけ、ふせん一覧をここに置く */
-export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onClear }: { page: SyllabusPage; busy: boolean; act: string | null; showNote: boolean; onSearch: (steps: DriveStep[]) => void; onNote: () => void; onClear: () => void }) {
+export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onClear }: { page: SyllabusPage; busy: boolean; act: string | null; showNote: boolean; onSearch: (q: SyllabusQuery) => void; onNote: () => void; onClear: () => void }) {
   const [v, setV] = useState(() => initial(page));
   const [more, setMore] = useState(false);
   const up = <K extends keyof Values>(k: K, value: Values[K]) => setV((x) => ({ ...x, [k]: value }));
   const toggle = (g: Group, label: string) => up("picked", { ...v.picked, [g]: v.picked[g].includes(label) ? v.picked[g].filter((l) => l !== label) : [...v.picked[g], label] });
-  const search = () => onSearch(searchSteps(page, v));
+  const search = () => onSearch(v);
   const sel = (label: string, f: SelectField, k: "dept" | "category" | "campus") =>
     f.options.length > 0 && <Field label={label}><Select label={label} value={v[k]} options={f.options} disabled={busy} onChange={(x) => up(k, x)} /></Field>;
   const boxes = (label: string, g: "grades" | "kinds") => {
