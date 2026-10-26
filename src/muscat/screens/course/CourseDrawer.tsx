@@ -8,7 +8,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { Panel } from "@/ui/Panel";
 import { errorToast, useToast } from "@/ui/Toast";
 import { errorMessage } from "../errorMessage";
-import { SyllabusDetailBody } from "../syllabus/SyllabusDetailView";
+import { SyllabusDetailBody, SyllabusMeta } from "../syllabus/SyllabusDetailView";
 import { useCourse, type CourseKey, type CourseState } from "./useCourse";
 
 type Props = {
@@ -94,10 +94,12 @@ type SyllabusState = { status: "loading" } | { status: "ready"; detail: Syllabus
 export function SyllabusPane({ state, onBack, onRetry }: { state: SyllabusState; onBack: () => void; onRetry: () => void }) {
   return (
     <>
-      <button type="button" className="cursor-pointer self-start border-0 bg-transparent px-2 py-1 text-sm text-primary" onClick={onBack}>‹ 授業に戻る</button>
+      {/* 題名(親が出す)→ meta → 戻る → 本文 の順 */}
+      {state.status === "ready" && <div className="-mt-3"><SyllabusMeta detail={state.detail} code={false} /></div>}
+      <button type="button" className="cursor-pointer self-start border-0 bg-transparent p-0 text-[13px] text-primary" onClick={onBack}>‹ 授業に戻る</button>
       {state.status === "loading" && <PageLoading title="シラバス" />}
       {state.status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={state.error} onRetry={onRetry} />}
-      {state.status === "ready" && <SyllabusDetailBody detail={state.detail} toc={false} />}
+      {state.status === "ready" && <SyllabusDetailBody detail={state.detail} toc={false} order="drawer" />}
     </>
   );
 }
