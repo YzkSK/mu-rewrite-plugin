@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { getGrades } from "./grades";
+import { filterSteps, getGrades } from "./grades";
 import { createCore } from "./core";
 import type { Fetch } from "./recover";
 import { now } from "./testClock";
@@ -31,26 +31,31 @@ test("前の画面から来たとき: メニュー POST 1 回", async () => {
   expect(g.filter).toEqual(all);
 });
 
-test("filter 省略・同じなら通信 0 回", async () => {
+test("filter 省略で成績照会の画面なら通信 0 回", async () => {
   const { f, bodies } = fake(() => "");
   const core = createCore({ fetch: f, doc: pageDoc(func()), ids, now });
   await getGrades(core);
-  await getGrades(core, all);
   expect(bodies.length).toBe(0);
 });
 
-test("filter を変えると部分更新 1 回。外したチェックは送らず、入れたチェックは on", async () => {
-  const xml = `<partial-response><changes><update id="funcForm"><![CDATA[${func(["fail", "furikae"])}]]></update></changes></partial-response>`;
-  const { f, bodies } = fake(() => xml);
-  const core = createCore({ fetch: f, doc: pageDoc(func(["rishu", "furikae"])), ids, now });
-  const g = await getGrades(core, { fail: true, inProgress: false, noCredit: false, transfer: true });
-  expect(bodies.length).toBe(1);
-  const b = new URLSearchParams(bodies[0]);
-  expect(b.get("jakarta.faces.source")).toBe("funcForm:search");
-  expect(b.get("jakarta.faces.partial.render")).toBe("funcForm");
-  expect(b.get("funcForm:failDispFlg_input")).toBe("on");
-  expect(b.get("funcForm:furikaeDispFlg_input")).toBe("on");
-  expect(b.has("funcForm:rishuDispFlg_input")).toBe(false);
-  expect(b.has("funcForm:muhaitoDispFlg_input")).toBe(false);
-  expect(g.filter).toEqual({ fail: true, inProgress: false, noCredit: false, transfer: true });
+test("filter 付きで成績照会の画面でなければ、何も送らずにエラー(黙って無視しない)", async () => {
+  const { f, bodies } = fake(() => menu + func());
+  const core = createCore({ fetch: f, doc: pageDoc("<p>x</p>"), ids, now });
+  await expect(getGrades(core, all)).rejects.toThrow("成績照会の画面ではない");
+  expect(bodies.length).toBe(0);
+});
+
+const chk = (n: string, on: boolean) =>
+  `<div class="ui-chkbox"><input type="checkbox" name="funcForm:${n}DispFlg_input"${on ? " checked" : ""}><div class="ui-chkbox-box"></div></div>`;
+const filterPage = (on: boolean) =>
+  new DOMParser().parseFromString(`<form id="funcForm">${["fail", "rishu", "muhaito", "furikae"].map((n) => chk(n, on)).join("")}<button id="funcForm:search">表示</button></form>`, "text/html");
+
+test("変わるチェックだけ押してから「表示」(ajax)。同じなら「表示」だけ", () => {
+  const steps = filterSteps(filterPage(true), { ...all, fail: false })!;
+  expect(steps.map((s) => s.kind === "click" && s.ajax)).toEqual([false, true]);
+  expect(filterSteps(filterPage(true), all)).toHaveLength(1);
+});
+
+test("部品が無ければ null", () => {
+  expect(filterSteps(new DOMParser().parseFromString("<p>x</p>", "text/html"), all)).toBeNull();
 });

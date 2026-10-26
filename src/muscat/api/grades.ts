@@ -1,30 +1,43 @@
 import type { Core } from "./core";
-import { parseFilter } from "./parse/gradeSummary";
+import { ParseError } from "./errors";
+import type { DriveStep } from "./driver/drive";
+import { assignRef } from "./driver/locator";
 import { parseGrades } from "./parse/grades";
 import type { GradeFilter, Grades } from "./types";
 
-const CHECKS = {
-  fail: "funcForm:failDispFlg_input",
-  inProgress: "funcForm:rishuDispFlg_input",
-  noCredit: "funcForm:muhaitoDispFlg_input",
-  transfer: "funcForm:furikaeDispFlg_input",
-} as const;
+const FLAGS: Record<keyof GradeFilter, string> = { fail: "fail", inProgress: "rishu", noCredit: "muhaito", transfer: "furikae" };
 
-const isReady = (d: Document) => !!d.querySelector(`#funcForm [name="${CHECKS.fail}"]`);
+/**
+ * 表示する科目の条件を、複製のチェックを押してから「表示」を押して変える手順。
+ * 元の画面と同じく、チェックは通信なしで切り替え、「表示」の ab だけを送る(本文は 2026-10-26 の実機の記録と一致)。
+ * ctx.partial で値だけ入れて送る方法では条件が伝わらなかった。部品が無ければ null
+ */
+export function filterSteps(doc: Document, filter: GradeFilter): DriveStep[] | null {
+  const search = doc.getElementById("funcForm:search");
+  if (!search) return null;
+  const steps: DriveStep[] = [];
+  for (const [k, n] of Object.entries(FLAGS) as [keyof GradeFilter, string][]) {
+    const input = doc.querySelector<HTMLInputElement>(`input[name="funcForm:${n}DispFlg_input"]`);
+    const box = input?.closest(".ui-chkbox")?.querySelector(".ui-chkbox-box");
+    if (!input || !box) return null;
+    if (input.checked !== filter[k]) steps.push({ kind: "click", ref: assignRef(box), ajax: false });
+  }
+  return [...steps, { kind: "click", ref: assignRef(search), ajax: true }];
+}
 
-export function getGrades(core: Core, filter?: GradeFilter): Promise<Grades> {
+const isReady = (d: Document) => !!d.querySelector(`#funcForm [name="funcForm:failDispFlg_input"]`);
+
+export async function getGrades(core: Core, filter?: GradeFilter): Promise<Grades> {
+  if (filter) {
+    await core.runLive(async (live) => {
+      const steps = filterSteps(live.doc, filter);
+      // 条件は見せている成績照会の画面の状態なので、別の画面では黙って無視せずに知らせる
+      if (!steps) throw new ParseError("成績照会の画面ではないため、表示する科目を変えられません");
+      await live.drive(steps);
+    });
+  }
   return core.aside(async (ctx) => {
     if (!(await ctx.open("成績照会", isReady))) return null;
-    const form = ctx.doc().getElementById("funcForm");
-    if (filter && form) {
-      const now = parseFilter(form);
-      const keys = Object.keys(CHECKS) as (keyof GradeFilter)[];
-      if (keys.some((k) => filter[k] !== now[k])) {
-        // チェックありは name=on、なしはその name を送らない(null)
-        const extra = Object.fromEntries(keys.map((k) => [CHECKS[k], filter[k] ? "on" : null]));
-        if (!(await ctx.partial("funcForm", "funcForm:search", { extra }))) return null;
-      }
-    }
     return parseGrades(ctx.doc());
   });
 }
