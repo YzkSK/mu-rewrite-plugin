@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { DriveStep } from "@/muscat/api/driver/drive";
 import type { NewsGroup, NewsItem } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
@@ -9,7 +8,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { useToast } from "@/ui/Toast";
 import { NewsDetailView } from "./NewsDetailView";
 import { NewsList } from "./NewsList";
-import { markAllReadSteps, toggleSteps } from "./newsSteps";
+import { canMarkAllRead } from "./newsSteps";
 import { NewsToolbar } from "./NewsToolbar";
 import { addUnread } from "./unreadCount";
 import { useNews, type NewsState } from "./useNews";
@@ -21,7 +20,7 @@ const MORE = "__more__";
 export function NewsScreen({ client, initial, initialOpened = "", initialReading = false }: { client: MuscatClient; doc?: Document; initial?: NewsState; initialOpened?: string; initialReading?: boolean }) {
   const { status, page, error, busy = false, run } = useNews(client, initial);
   const { toast, node } = useToast();
-  const click = (ref: string, ajax = true, fail = "掲示を開けませんでした") => void run([{ kind: "click", ref, ajax }], undefined, fail);
+  const click = (ref: string, fail = "掲示を開けませんでした") => void run((c) => c.press(ref), undefined, fail);
   // 元のページに未読の総数は無いので、覚えた数を操作に合わせて減らす。開いても一覧はすぐ既読にならないので、同じ掲示は 1 回だけ数える
   // 数えた掲示は、元の一覧が書き換わる前でも一覧では既読として見せる
   const counted = useRef(new Set<string>());
@@ -46,22 +45,21 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
     if (shown && hit.length === 1 && hit[0]!.unread) readOnce(hit);
   }, [shown]); // 詳細が替わった時だけ数える
   const markAllRead = (g: NewsGroup) => {
-    const steps = page && markAllReadSteps(page, g);
-    if (!steps) return;
-    void run(steps, undefined, "すべて既読にできませんでした").then((ok) => {
+    if (!page || !g.items.some((i) => i.unread) || !canMarkAllRead(page, g)) return;
+    void run((c) => c.news.markAllRead(g.title), undefined, "すべて既読にできませんでした").then((ok) => {
       if (!ok) return;
       readOnce(g.items.filter((i) => i.unread));
       toast(`${g.title}をすべて既読にしました`);
     });
   };
-  const flag = (it: NewsItem) => void run(toggleSteps(it.flagRef), undefined, "フラグを変えられませんでした");
+  const flag = (it: NewsItem) => void run((c) => c.press(it.flagRef), undefined, "フラグを変えられませんでした");
   const [opened, setOpened] = useState(initialOpened); // initialOpened はテスト用
   // 元の✕は、拡張が元のダイアログを隠しているため効かないことがある(行から開き直した後など。実機で確認)。閉じた掲示はこちらで出さない
   const [dismissed, setDismissed] = useState("");
   const closeDetail = () => {
     if (!page?.detail) return;
     setDismissed(page.detail.title);
-    click(page.detail.closeRef, false, "掲示を閉じられませんでした");
+    click(page.detail.closeRef, "掲示を閉じられませんでした");
   };
   const open = (ref: string) => {
     setDismissed("");
@@ -75,10 +73,10 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
     const key = keyOf(it);
     const nativeUnread = page?.items.find((i) => keyOf(i) === key)?.unread ?? it.unread;
     const fail = "既読・未読を変えられませんでした";
-    let ok = await run(toggleSteps(it.readRef), undefined, fail);
+    let ok = await run((c) => c.press(it.readRef), undefined, fail);
     if (ok && !it.unread && nativeUnread) {
-      const again = (await client.readNews().catch(() => null))?.items.find((i) => keyOf(i) === key);
-      ok = !!again?.readRef && (await run(toggleSteps(again.readRef), undefined, fail));
+      const again = (await client.news.read().catch(() => null))?.items.find((i) => keyOf(i) === key);
+      ok = !!again?.readRef && (await run((c) => c.press(again.readRef), undefined, fail));
     }
     if (!ok) return;
     if (it.unread) counted.current.add(key);
@@ -113,14 +111,14 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
   const detail = page?.detail && reading ? { ...page.detail, prevRef: prevUnread?.openRef ?? "", nextRef: firstUnread?.openRef ?? "" } : page?.detail && list ? { ...page.detail, prevRef: pos === 0 ? before : page.detail.prevRef, nextRef: pos === list.length - 1 ? lastNext : page.detail.nextRef } : page?.detail;
   const showDetail = !!page?.detail && page.detail.title !== dismissed;
   useBackClose(showDetail, closeDetail); // ブラウザの戻るでも詳細を閉じる
-  const detailClick =(ref: string, ajax: boolean) => {
+  const detailClick = (ref: string) => {
     if (ref === page?.detail?.closeRef) return closeDetail();
     setDismissed("");
-    if (ref !== MORE) return click(ref, ajax);
+    if (ref !== MORE) return click(ref);
     const title = page!.detail!.title;
     const group = page!.groups![li]!.title;
     // 広げるのに失敗したら、古い一覧で次を探さない
-    void run([{ kind: "click", ref: more, ajax: true }], undefined, "続きを表示できませんでした").then((ok) => {
+    void run((c) => c.press(more), undefined, "続きを表示できませんでした").then((ok) => {
       if (!ok) return;
       setExpanded(group);
       setPendingNext(title);
@@ -136,12 +134,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
   }, [pendingNext, busy, page]); // 広げ終えて読み直した後に 1 回だけ
   const search = (q: { keyword: string; course: string }) => {
     if (!page) return;
-    const steps: DriveStep[] = [
-      { kind: "set", ref: page.keywordRef, value: q.keyword },
-      { kind: "set", ref: page.courseRef, value: q.course },
-      { kind: "click", ref: page.searchRef, ajax: true },
-    ];
-    void run(steps, undefined, "検索できませんでした");
+    void run((c) => c.news.search(q), undefined, "検索できませんでした");
   };
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -154,7 +147,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
             busy={busy}
             onTab={(name) => {
               const tab = page.tabs.find((t) => t.name === name);
-              if (tab) click(tab.ref, false, "タブを切り替えられませんでした");
+              if (tab) click(tab.ref, "タブを切り替えられませんでした");
             }}
             onSearch={search}
             canReadUnread={!!firstUnread}
@@ -170,7 +163,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
                 <NewsList page={listPage!} busy={busy} onOpen={(ref) => {
                   setReading(false);
                   open(ref);
-                }} onFlag={flag} onRead={(it) => void toggleRead(it)} onMarkAllRead={markAllRead} onMore={(ref) => click(ref, true, "続きを表示できませんでした")} />
+                }} onFlag={flag} onRead={(it) => void toggleRead(it)} onMarkAllRead={markAllRead} onMore={(ref) => click(ref, "続きを表示できませんでした")} />
               </div>
               {showDetail && (
                 // 767px 以下は詳細を全画面に重ねる

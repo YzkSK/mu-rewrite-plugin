@@ -7,7 +7,7 @@ import type { MenuIds, MenuLabel } from "./session";
 import { getGrades } from "./grades";
 import { getInfoPage } from "./info";
 import { getTimetable } from "./timetable";
-import { readNews } from "./news";
+import { markAllReadNews, readNews, searchNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
 import { parseHome } from "./parse/home";
@@ -32,8 +32,15 @@ export type MuscatClient = {
   driveLive(steps: DriveStep[]): Promise<"done" | "none" | "timeout">;
   /** 複製の document を直列キューの中で読む(ref を付ける手順の組み立てなど) */
   readLive<T>(fn: (doc: Document) => T): Promise<T>;
-  /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
-  readNews(): Promise<NewsPage>;
+  /** 読んだ結果の札(ref)の部品を 1 回押す */
+  press(ref: string): Promise<void>;
+  news: {
+    /** 生きたページの掲示板を読む(選択中のタブのパネル + 開いている詳細) */
+    read(): Promise<NewsPage>;
+    search(q: { keyword: string; course: string }): Promise<void>;
+    /** 分類の「更新」→ 確認の OK。グループが無い・未読が無い・押せないときは ParseError */
+    markAllRead(groupTitle: string): Promise<void>;
+  };
   /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
   readHome(): Promise<HomePage>;
   /** 生きたページのシラバス検索(条件の欄と、検索後の一覧)を読む */
@@ -86,7 +93,11 @@ export function createMuscatClient(deps: {
     getHealthInfo: () => getInfoPage(core, "健康診断情報照会", "Bsb007"),
     readLivePage: () => core.runLive(async (live) => parseGenericPage(live.doc)),
     driveLive: (steps) => core.runLive((live) => live.drive(steps)),
-    readNews: () => readNews(core),
+    press: (ref) =>
+      core.runLive(async (live) => {
+        await live.drive([{ kind: "click", ref }]);
+      }),
+    news: { read: () => readNews(core), search: (q) => searchNews(core, q), markAllRead: (t) => markAllReadNews(core, t) },
     readHome: () => core.runLive(async (live) => parseHome(live.doc)),
     readSyllabus: () => core.runLive(async (live) => parseSyllabus(live.doc)),
     readTeacherSchedule: () => core.runLive(async (live) => parseTeacherSchedule(live.doc)),

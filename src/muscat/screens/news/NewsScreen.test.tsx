@@ -3,7 +3,6 @@ import { renderToString } from "react-dom/server";
 import type { NewsDetail, NewsGroup, NewsItem, NewsPage } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
 import { NewsScreen } from "./NewsScreen";
-import { markAllReadSteps, toggleSteps } from "./newsSteps";
 import type { NewsState } from "./useNews";
 
 const client = fakeClient();
@@ -55,22 +54,6 @@ test("操作中・元のボタンが無いときは、フラグが無効。す�
   expect(render(ready({ groups: [group({ items: unread, updateRef: "" })] }))).toMatch(dis);
   expect(render(ready({ groups: [group({ items: unread })], confirmYesRef: "" }))).toMatch(dis);
   expect(render(ready({ groups: [group({ items: [item()] })] }))).toMatch(dis);
-});
-
-// 「更新」はグループ全部を既読にする(利用者が実ページで確認)。行の切り替えでは押さない
-test("操作の steps: 行の切り替えはその行のボタンだけで、更新は押さない", () => {
-  expect(toggleSteps("c2")).toEqual([{ kind: "click", ref: "c2", ajax: true }]);
-});
-
-test("操作の steps: すべて既読にするは グループの更新 → OK。未読が無い・押せないときは null", () => {
-  const g = group({ items: [item({ unread: true, readRef: "r1" }), item({ unread: false, readRef: "r2" })] });
-  expect(markAllReadSteps(base, g)).toEqual([
-    { kind: "click", ref: "gu", ajax: false },
-    { kind: "click", ref: "y", ajax: true },
-  ]);
-  expect(markAllReadSteps(base, group({ items: [item()] }))).toBeNull();
-  expect(markAllReadSteps({ ...base, confirmYesRef: "" }, g)).toBeNull();
-  expect(markAllReadSteps(base, { ...g, updateRef: "" })).toBeNull();
 });
 
 test("未読を新しい順に読む: 未読が無ければ無効", () => {
