@@ -10,8 +10,8 @@ import { getTimetable } from "./timetable";
 import { markAllReadNews, readNews, searchNews } from "./news";
 import type { DriveStep } from "./driver/drive";
 import { parseGenericPage } from "./parse/generic";
-import { parseHome } from "./parse/home";
-import { parseSettings } from "./parse/settings";
+import { readHome, showDayHome } from "./home";
+import { addAddress, addFavorite, deleteAddresses, readSettings, resetFavorite, saveSettings, type SettingsSave } from "./settings";
 import { fillRoom, readRoom, type RoomValues } from "./room";
 import { readSyllabus, searchSyllabus, type SyllabusQuery } from "./syllabus";
 import { readTeacherSchedule, searchTeacher } from "./teacherSchedule";
@@ -43,8 +43,12 @@ export type MuscatClient = {
     /** 分類の「更新」→ 確認の OK。グループが無い・未読が無い・押せないときは ParseError */
     markAllRead(groupTitle: string): Promise<void>;
   };
-  /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
-  readHome(): Promise<HomePage>;
+  home: {
+    /** 生きたページのホーム(お知らせの全タブ・未読数・履修授業・開いている詳細)を読む */
+    read(): Promise<HomePage>;
+    /** 日表示を date の日に揃える(「今日」→ 日数分の前日/翌日)。「今日」が無いときは ParseError */
+    showDay(date: string, now?: Date): Promise<void>;
+  };
   syllabus: {
     /** 生きたページのシラバス検索(条件の欄と、検索後の一覧)を読む */
     read(): Promise<SyllabusPage>;
@@ -66,8 +70,17 @@ export type MuscatClient = {
     /** 値を元の画面の部品に入れる(検索の通信は含まない。roomSubmit で送る) */
     fill(v: RoomValues): Promise<void>;
   };
-  /** 生きたページの個人設定(いま開いているタブの中身)を読む */
-  readSettings(): Promise<SettingsPage>;
+  settings: {
+    /** 生きたページの個人設定(いま開いているタブの中身)を読む */
+    read(): Promise<SettingsPage>;
+    /** 節の保存: 画面の値と違うチェックだけ押す → 節の保存 → 確認の OK。部品が無いときは ParseError */
+    save(s: SettingsSave): Promise<void>;
+    /** 選んだ行(select の ref → 入れた状態)を削除 */
+    deleteAddresses(selected: Record<string, boolean>): Promise<void>;
+    addAddress(value: string, kindRef: string): Promise<void>;
+    addFavorite(menuValue: string): Promise<void>;
+    resetFavorite(): Promise<void>;
+  };
   /** 教室予約の検索を、元のボタンを押さず同じ通信で直接送る */
   roomSubmit(): Promise<void>;
   /** 検索のあとの続きの教室(1 回 40 行)を直接取る。[] で終わり */
@@ -115,13 +128,20 @@ export function createMuscatClient(deps: {
         await live.drive([{ kind: "set", ref, value }]);
       }),
     news: { read: () => readNews(core), search: (q) => searchNews(core, q), markAllRead: (t) => markAllReadNews(core, t) },
-    readHome: () => core.runLive(async (live) => parseHome(live.doc)),
+    home: { read: () => readHome(core), showDay: (date, now) => showDayHome(core, date, now) },
     syllabus: { read: () => readSyllabus(core), search: (q) => searchSyllabus(core, q) },
     teacherSchedule: { read: () => readTeacherSchedule(core), search: (q) => searchTeacher(core, q) },
     teacherEvents: (start, end) => core.runLive((live) => fetchTeacherEvents(live.doc, deps.fetch, start, end)),
     homeEvents: (start, end) => core.runLive((live) => fetchHomeEvents(live.doc, deps.fetch, start, end)),
     room: { read: () => readRoom(core), fill: (v) => fillRoom(core, v) },
-    readSettings: () => core.runLive(async (live) => parseSettings(live.doc)),
+    settings: {
+      read: () => readSettings(core),
+      save: (s) => saveSettings(core, s),
+      deleteAddresses: (sel) => deleteAddresses(core, sel),
+      addAddress: (v, k) => addAddress(core, v, k),
+      addFavorite: (m) => addFavorite(core, m),
+      resetFavorite: () => resetFavorite(core),
+    },
     roomSubmit: () =>
       core.runLive(async (live) => {
         if (!live.doc.getElementById("funcForm:search")) throw new ParseError("教室予約の検索ボタンがありません");

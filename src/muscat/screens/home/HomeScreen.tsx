@@ -9,19 +9,18 @@ import { rememberUnread } from "../news/unreadCount";
 import { useBackClose } from "../useBackClose";
 import { HomeCalendar } from "./HomeCalendar";
 import { NoticePanel } from "./NoticePanel";
-import { daysFrom } from "./dayRows";
 import { TodayPanel } from "./TodayPanel";
 import { useHome, type HomeState } from "./useHome";
 
-/** ホーム。操作は元の画面の部品を click する(通信を起こすものは ajax: true)。now・initial はテスト用 */
+/** ホーム。操作は元の画面の部品を press する。now・initial はテスト用 */
 export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient; doc: Document; initial?: HomeState; now?: Date }) {
   const { status, page, error, busy = false, run, read } = useHome(client, initial);
   const [course, setCourse] = useState<string | null>(null);
   const [month, setMonth] = useState(false); // 月のカレンダーを出しているか
-  const click = (ref: string, ajax = true) => {
+  const click = (ref: string) => {
     const nav = page?.day?.nav;
     const fail = nav && Object.values(nav).includes(ref) ? "日付を移れませんでした" : ref === page?.timetableChangeRef ? "時間割を開けませんでした" : ref === page?.keijiRef ? "掲示板を開けませんでした" : "お知らせを開けませんでした";
-    void run([{ kind: "click", ref, ajax }], undefined, fail);
+    void run((c) => c.press(ref), undefined, fail);
   };
   if (page?.unreadKeiji != null) rememberUnread(page.unreadKeiji); // 掲示板の未読ボタンも同じ数にする
   const closeCourse = () => {
@@ -30,13 +29,11 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
     // 「今日」を押してから、見ていた日まで送り直して揃える(実機で確認)
     const day = page?.day;
     if (!day?.nav.today) return void read();
-    const diff = daysFrom(day.date, now ?? new Date());
-    const step = diff > 0 ? day.nav.nextDay : day.nav.prevDay;
-    void run([{ kind: "click", ref: day.nav.today, ajax: true }, ...Array.from({ length: Math.abs(diff) }, () => ({ kind: "click" as const, ref: step, ajax: true }))], undefined, "日付を移れませんでした");
+    void run((c) => c.home.showDay(day.date, now), undefined, "日付を移れませんでした");
   };
   useBackClose(course !== null, closeCourse); // ブラウザの戻るでも引き出しを閉じる
   const detailClose = page?.detail?.closeRef;
-  useBackClose(!!page?.detail, () => detailClose && click(detailClose, false)); // お知らせの詳細も同じ
+  useBackClose(!!page?.detail, () => detailClose && click(detailClose)); // お知らせの詳細も同じ
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
     <div className="flex flex-col gap-3 p-4">

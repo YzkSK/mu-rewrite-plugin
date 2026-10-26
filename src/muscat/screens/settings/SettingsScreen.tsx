@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { getZoom, onZoomChange, setZoom, ZOOMS } from "@/muscat/shell/zoom";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { DriveStep } from "@/muscat/api/driver/drive";
+import type { SettingsSave } from "@/muscat/api/settings";
 import type { CheckOption, SettingsPage, SettingsTable } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
@@ -13,13 +13,10 @@ import { Select } from "@/ui/Select";
 import { TextInput } from "@/ui/TextInput";
 import { useLiveScreen, type LiveState } from "../useLiveScreen";
 
-const read = (c: MuscatClient) => c.readSettings();
+const read = (c: MuscatClient) => c.settings.read();
 
-const click = (ref: string, ajax: boolean): DriveStep => ({ kind: "click", ref, ajax });
-/** 画面の値と違うチェックだけ、元の画面の枠を押す */
-const flips = (items: CheckOption[], isOn: (c: CheckOption) => boolean): DriveStep[] => items.filter((c) => c.ref && isOn(c) !== c.checked).map((c) => click(c.ref, false));
-/** ラジオは選んだものが今の選択と違うときだけ押す */
-const pick = (items: CheckOption[], ref: string): DriveStep[] => items.filter((c) => c.ref === ref && !c.checked).map((c) => click(c.ref, false));
+/** API の操作名を呼ぶ関数 */
+type Op = (c: MuscatClient) => Promise<unknown>;
 
 const CELL = "border border-[#ECE9EF] px-2.5 py-1.5";
 
@@ -65,7 +62,7 @@ function Table({ t, selectable = false, isOn, setOn }: { t: SettingsTable; selec
   );
 }
 
-type Run = (steps: DriveStep[], confirm?: boolean, fail?: string) => void;
+type Run = (op: Op, confirm?: boolean, fail?: string) => void;
 
 /** 開いているタブの中身。値は画面で持ち、押したときに元の画面へ入れる。page が変わっても編集中の値は残る(操作のあとは作り直す) */
 function Body({ page, run }: { page: SettingsPage; run: Run }) {
@@ -75,9 +72,8 @@ function Body({ page, run }: { page: SettingsPage; run: Run }) {
   const setOn = (ref: string, v: boolean) => setOnMap((x) => ({ ...x, [ref]: v }));
   const set = (k: string, v: string) => setTxt((x) => ({ ...x, [k]: v }));
   // 保存は「確認 → 元の保存ボタン → 元の確認の OK」。確認は呼び出し側(画面)が先に出す
-  const save = (saveRef: string, pre: DriveStep[] = []) => run([...pre, click(saveRef, false), click(page.confirmRef, true)], true);
   const canSave = (ref: string) => !!ref && !!page.confirmRef;
-  const saveButton = (ref: string, pre: DriveStep[] = []) => <Button disabled={!canSave(ref)} onClick={() => save(ref, pre)}>保存</Button>;
+  const saveButton = (ref: string, s: SettingsSave) => <Button disabled={!canSave(ref)} onClick={() => run((c) => c.settings.save(s), true)}>保存</Button>;
 
   const { mail, favorite, portal } = page;
   if (mail) {
@@ -87,25 +83,25 @@ function Body({ page, run }: { page: SettingsPage; run: Run }) {
     const selected = a.table.rows.filter((r) => r.select.ref && isOn(r.select));
     return (
       <>
-        <Section title={a.title} notes={a.notes} footer={saveButton(a.saveRef)}>
+        <Section title={a.title} notes={a.notes} footer={saveButton(a.saveRef, { section: "address" })}>
           <Table t={a.table} selectable isOn={isOn} setOn={setOn} />
           <div>
-            <Button variant="secondary" disabled={!selected.length || !a.deleteRef} onClick={() => run([...flips(a.table.rows.map((r) => r.select), isOn), click(a.deleteRef, true)], false, "削除できませんでした")}>選択した行を削除</Button>
+            <Button variant="secondary" disabled={!selected.length || !a.deleteRef} onClick={() => run((c) => c.settings.deleteAddresses(on), false, "削除できませんでした")}>選択した行を削除</Button>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-72 max-w-full"><TextInput label="追加するメールアドレス" placeholder="追加するメールアドレス" value={input} onChange={(v) => set(a.input.ref, v)} /></div>
             {a.kinds.length > 0 && (
               <RadioGroup label="種類" options={a.kinds.map((k) => ({ value: k.ref, label: k.label.replace(/メールアドレス$/, "") }))} value={kind} onChange={(v) => set("kind", v)} />
             )}
-            <Button variant="secondary" disabled={!input.trim() || !a.addRef} onClick={() => run([{ kind: "set", ref: a.input.ref, value: input }, ...pick(a.kinds, kind), click(a.addRef, true)], false, "追加できませんでした")}>追加</Button>
+            <Button variant="secondary" disabled={!input.trim() || !a.addRef} onClick={() => run((c) => c.settings.addAddress(input, kind), false, "追加できませんでした")}>追加</Button>
           </div>
         </Section>
-        <Section title={times.title} notes={times.notes} footer={saveButton(times.saveRef, flips(times.options, isOn))}>
+        <Section title={times.title} notes={times.notes} footer={saveButton(times.saveRef, { section: "times", checks: on })}>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             {times.options.map((o) => <Checkbox key={o.ref} label={o.label} checked={isOn(o)} onChange={(c) => setOn(o.ref, c)} />)}
           </div>
         </Section>
-        <Section title={stop.title} notes={stop.notes} footer={saveButton(stop.saveRef, flips(stop.table.rows.flatMap((r) => r.cells), isOn))}>
+        <Section title={stop.title} notes={stop.notes} footer={saveButton(stop.saveRef, { section: "stop", checks: on })}>
           <Table t={stop.table} isOn={isOn} setOn={setOn} />
         </Section>
       </>
@@ -119,14 +115,14 @@ function Body({ page, run }: { page: SettingsPage; run: Run }) {
         notes={favorite.notes}
         footer={
           <>
-            <Button variant="secondary" disabled={!favorite.resetRef} onClick={() => run([click(favorite.resetRef, true)], false, "元に戻せませんでした")}>元に戻す</Button>
-            {saveButton(favorite.saveRef)}
+            <Button variant="secondary" disabled={!favorite.resetRef} onClick={() => run((c) => c.settings.resetFavorite(), false, "元に戻せませんでした")}>元に戻す</Button>
+            {saveButton(favorite.saveRef, { section: "favorite" })}
           </>
         }
       >
         <div className="flex flex-wrap items-center gap-3">
           <Select label="追加する機能" value={menu} options={favorite.menu.options} onChange={(v) => set(favorite.menu.ref, v)} />
-          <Button variant="secondary" disabled={!menu || !favorite.addRef} onClick={() => run([{ kind: "set", ref: favorite.menu.ref, value: menu }, click(favorite.addRef, true)], false, "追加できませんでした")}>追加</Button>
+          <Button variant="secondary" disabled={!menu || !favorite.addRef} onClick={() => run((c) => c.settings.addFavorite(menu), false, "追加できませんでした")}>追加</Button>
         </div>
         {/* 行の外し方(選択 + 削除)は実機にデータがなく未確認なので、一覧は読むだけ */}
         <Table t={favorite.table} isOn={isOn} setOn={setOn} />
@@ -136,7 +132,7 @@ function Body({ page, run }: { page: SettingsPage; run: Run }) {
   if (portal) {
     const sel = txt.portal ?? portal.options.find((o) => o.checked)?.ref ?? "";
     return (
-      <Section title={portal.title} notes={portal.notes} footer={saveButton(portal.saveRef, pick(portal.options, sel))}>
+      <Section title={portal.title} notes={portal.notes} footer={saveButton(portal.saveRef, { section: "portal", pick: sel })}>
         {portal.description && <p className="m-0 text-[13px]">{portal.description}</p>}
         <RadioGroup label="カレンダーの開始曜日" options={portal.options.map((o) => ({ value: o.ref, label: o.label }))} value={sel} onChange={(v) => set("portal", v)} />
       </Section>
@@ -182,17 +178,17 @@ function ZoomCard() {
 /** 個人設定。タブは元の画面の TabView を押して切り替え、値は画面で持って、保存などで元の画面に入れて押す */
 export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<SettingsPage> }) {
   const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
-  const [ask, setAsk] = useState<DriveStep[] | null>(null);
+  const [ask, setAsk] = useState<Op | null>(null);
   const [gen, setGen] = useState(0);
   // 操作のあとは元の画面の値で作り直す(追加した欄が空に戻るなど)
   // 失敗したときは作り直さない(入力途中の値が消える)
-  const go = (steps: DriveStep[], fail?: string) => void run(steps, undefined, fail).then((ok) => ok && setGen((g) => g + 1));
+  const go = (op: Op, fail?: string) => void run(op, undefined, fail).then((ok) => ok && setGen((g) => g + 1));
   const active = page?.tabs.find((t) => t.active);
   // 出さないタブ(テーマ設定)が開いた状態で来たら、先頭のタブへ移る
   const first = page?.tabs[0];
   const stray = !!page && !active && !!first;
   useEffect(() => {
-    if (stray && first) go([click(first.ref, !first.loaded)], "タブを切り替えられませんでした");
+    if (stray && first) go((c) => c.press(first.ref), "タブを切り替えられませんでした");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stray]);
   return (
@@ -210,7 +206,7 @@ export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?
                 aria-selected={t.active}
                 disabled={busy}
                 // 読み込み済みのタブは通信しないので、待つと待ち時間切れまで止まった(実機で確認)
-                onClick={() => !t.active && go([click(t.ref, !t.loaded)], "タブを切り替えられませんでした")}
+                onClick={() => !t.active && go((c) => c.press(t.ref), "タブを切り替えられませんでした")}
                 className={`cursor-pointer border-0 bg-transparent px-4 py-2.5 text-sm ${t.active ? "font-semibold text-primary shadow-[inset_0_-2px_0_var(--primary)]" : "text-muted-foreground hover:bg-muted"}`}
               >
                 {t.label}
@@ -219,7 +215,7 @@ export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?
           </div>
           <BusyOverlay busy={busy}>
             <div key={`${active?.label}-${gen}`} className="flex flex-col gap-3.5">
-              <Body page={page} run={(steps, confirm, fail) => (confirm ? setAsk(steps) : go(steps, fail))} />
+              <Body page={page} run={(op, confirm, fail) => (confirm ? setAsk(() => op) : go(op, fail))} />
             </div>
           </BusyOverlay>
           <ZoomCard />

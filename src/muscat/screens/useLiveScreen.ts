@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { DriveStep } from "@/muscat/api/driver/drive";
 import { errorToast } from "@/ui/Toast";
 import { errorMessage } from "./errorMessage";
 
@@ -27,13 +26,12 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
     void load();
   }, [load]);
   const run = useCallback(
-    /** 成功したかを返す(失敗したら続きの処理をしない)。op は手順(DriveStep[])か、API の操作名を呼ぶ関数 */
-    async (op: DriveStep[] | ((c: MuscatClient) => Promise<unknown>), after?: () => Promise<void>, fail = "操作できませんでした"): Promise<boolean> => {
+    /** 成功したかを返す(失敗したら続きの処理をしない)。op は API の操作名を呼ぶ関数 */
+    async (op: (c: MuscatClient) => Promise<unknown>, after?: () => Promise<void>, fail = "操作できませんでした"): Promise<boolean> => {
       setState((s) => ({ ...s, busy: true }));
       try {
-        if (typeof op === "function") await op(client);
-        else if (op.length) await client.driveLive(op);
-        await after?.(); // 元の部品を押さず直接送る通信(steps のあと、読み直しの前)
+        await op(client);
+        await after?.(); // 元の部品を押さず直接送る通信(op のあと、読み直しの前)
       } catch (e) {
         // 失敗の応答でも元の画面は描き直されていることがある(検索 1000 件超など)。読み直さないと次の操作が古い要素を指す
         const page = await read(client).catch(() => undefined);

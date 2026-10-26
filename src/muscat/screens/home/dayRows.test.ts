@@ -1,15 +1,6 @@
 import { expect, test } from "bun:test";
 import type { HomeDayItem } from "@/muscat/api/types";
-import { dateTitle, dayRows, daysFrom, isSameDay, periodOf } from "./dayRows";
-
-test("daysFrom: 画面の日付が今日から何日先か。月をまたいでも数える。読めなければ 0", () => {
-  const now = new Date(2026, 9, 25, 23, 0);
-  expect(daysFrom("2026/10/27(火)", now)).toBe(2);
-  expect(daysFrom("2026/10/25(日)", now)).toBe(0);
-  expect(daysFrom("2026/10/23(金)", now)).toBe(-2);
-  expect(daysFrom("2026/11/01(日)", now)).toBe(7);
-  expect(daysFrom("?", now)).toBe(0);
-});
+import { dateTitle, dayRows, isSameDay, periodOf } from "./dayRows";
 
 const item = (title: string, start: string, o: Partial<HomeDayItem> = {}): HomeDayItem => ({
   start, end: "", title, teachers: [], room: "", keijiCount: 0, syllabusRef: "", memo: null, plain: false, ...o,
