@@ -19,12 +19,20 @@ export type Section = { id: number; title: string; summary: string | null; items
 
 const DAYS: Record<string, string> = { 1: "月", 2: "火", 3: "水", 4: "木", 5: "金", 6: "土" };
 
-/** "333 専門…" → "3学期 水曜 3限"、"399 …" → "3学期"。読めなければ null */
-// shortcut: 3 桁は最初の学期・開始の時限だけ。2 コマ続き・2 学期にまたがる授業は MUSCAT の時間割と照合する後の PR で直す
-export function termLabel(name: string): string | null {
-  const m = /^([1-9])([1-69])([1-9])(?!\d)/.exec(name.trim());
+export type Slot = { term: number; day: number | null; period: number | null };
+
+/** "333 専門…" → { term: 3, day: 3(水), period: 3 }。day・period は 9(なし)なら null。読めなければ null */
+// shortcut: 開始の時限だけ。2 コマ続き・2 学期にまたがる授業は MUSCAT 連携の PR で照合に替える
+export function readSlot(name: string): Slot | null {
+  const m = /^([1-4])([1-69])([1-79])(?!\d)/.exec(name.trim());
   if (!m) return null;
-  return [`${m[1]}学期`, m[2] === "9" ? "" : `${DAYS[m[2]!]}曜`, m[3] === "9" ? "" : `${m[3]}限`].filter(Boolean).join(" ");
+  return { term: Number(m[1]), day: m[2] === "9" ? null : Number(m[2]), period: m[3] === "9" ? null : Number(m[3]) };
+}
+
+/** "333 専門…" → "3学期 水曜 3限"、"399 …" → "3学期"。読めなければ null */
+export function termLabel(name: string): string | null {
+  const s = readSlot(name);
+  return s && [`${s.term}学期`, s.day ? `${DAYS[s.day]}曜` : "", s.period ? `${s.period}限` : ""].filter(Boolean).join(" ");
 }
 
 /** <title> "コース: 333 専門…(…) | MU-LMS" → "333 専門…(…)" */

@@ -2,17 +2,20 @@ import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarM
 import { ACTIVE, MB } from "@/ui/AppSidebar";
 import { openOriginal } from "./route";
 
-const ITEMS = [
-  { title: "マイコース", href: "/my/courses.php" },
-  { title: "カレンダー", href: "/calendar/view.php?view=month" },
-  { title: "成績", href: "/grade/report/overview/index.php" },
+export type Active = "home" | "courses" | "calendar" | "grades" | null;
+
+const ITEMS: { title: string; href: string; key?: Active }[] = [
+  { title: "マイコース", href: "/my/courses.php", key: "courses" },
+  { title: "カレンダー", href: "/calendar/view.php?view=month", key: "calendar" },
+  { title: "成績", href: "/grade/report/overview/index.php", key: "grades" },
   { title: "メッセージ", href: "/message/index.php" },
 ];
 const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
 const ROW = `${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm`;
 
-/** 左の一覧。ホーム以外は今は元の画面への普通のリンク(全画面の遷移)。開閉・幅・押し出しは App(Sidebar)の仕事。 */
-export function LmsSidebar({ home, onPick, onLogout }: { home: boolean; onPick?: () => void; onLogout: () => void }) {
+/** 左の一覧。どれも普通のリンク(全画面の遷移)で、今の画面の項目だけ強調する。開閉・幅・押し出しは App(Sidebar)の仕事。 */
+export function LmsSidebar({ active, onPick, onLogout }: { active: Active; onPick?: () => void; onLogout: () => void }) {
+  const home = active === "home";
   return (
     <>
       <SidebarContent className="gap-0 p-0">
@@ -22,7 +25,7 @@ export function LmsSidebar({ home, onPick, onLogout }: { home: boolean; onPick?:
           </SidebarMenuItem>
           {ITEMS.map((i) => (
             <SidebarMenuItem key={i.href}>
-              <SidebarMenuButton size="md" href={i.href} className={ROW}>{i.title}</SidebarMenuButton>
+              <SidebarMenuButton size="md" href={i.href} isActive={!!i.key && i.key === active} aria-current={i.key && i.key === active ? "page" : undefined} className={ROW}>{i.title}</SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

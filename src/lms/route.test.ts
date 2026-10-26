@@ -23,3 +23,9 @@ test("元の画面で開くと決めたら対象から外れる(search は見な
   expect(isAppPath({ pathname: "/course/view.php", search: "?id=1" })).toBe(true); // ほかのページは描く
   sessionStorage.removeItem("mu-lms-skip:/?redirect=0");
 });
+
+test("マイコース・カレンダー・成績", () => {
+  const ps = ["/my/courses.php", "/calendar/view.php", "/grade/report/overview/index.php", "/grade/report/user/index.php"];
+  expect(ps.map(isTargetPath)).toEqual([true, true, true, true]);
+  expect(ps.map((p) => routeOf(p))).toEqual(["courses", "calendar", "grades", "grades"]);
+});

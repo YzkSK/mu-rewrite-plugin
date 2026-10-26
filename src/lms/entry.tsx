@@ -6,6 +6,7 @@ import { clearLoggedOut, clearTried, decide, isLoggedIn, LOGIN_URL, markTried, p
 import { courseName } from "@/portal/lib/lms";
 import { readAssignPage, readSubmitForm } from "./assign";
 import { readCoursePage } from "./course";
+import { OVERVIEW_URL, readGradeList } from "./grades";
 import type { View } from "./LmsApp";
 import { isAppPath, routeOf } from "./route";
 
@@ -79,6 +80,18 @@ if (window === window.top) {
           const page = readCoursePage(document, location.search);
           view = { kind: "course", page };
           heading = courseName(page.name) || "コース";
+        } else if (route === "courses") {
+          view = { kind: "courses" };
+          heading = "マイコース";
+        } else if (route === "calendar") {
+          view = { kind: "calendar", search: location.search };
+          heading = "カレンダー";
+        } else if (route === "grades") {
+          // 一覧のページなら今のページから読む。コースの評定のページでは画面が一覧を取りに行く
+          const overview = location.pathname === OVERVIEW_URL;
+          const id = Number(new URLSearchParams(location.search).get("id")) || null;
+          view = { kind: "grades", list: overview ? readGradeList(document) : null, id: overview ? null : id };
+          heading = "成績";
         } else if (route === "assign" || route === "submit") {
           const page = readAssignPage(document, location.search);
           heading = page.title || "課題";
