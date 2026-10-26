@@ -27,6 +27,7 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
   const slots = useSlots(initialSlots);
   const [courses, setCourses] = useState<MyCourse[] | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
+  const [day, setDay] = useState(now.getDay() || 1); // 日曜は月
   const [term, setTerm] = useState(termOfMonth(now.getMonth() + 1));
   const load = useCallback(() => {
     setCourses(null);
@@ -39,13 +40,40 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
   if (!courses) return <PageLoading title="マイコース" />;
 
   const p = placeCourses(courses, term, slots);
+  const dayRows = [1, 2, 3, 4, 5, 6, 7].flatMap((period) =>
+    (p.grid[`${day}-${period}`] ?? []).map(({ course: c, rows }) => ({
+      key: `${period}-${c.id}`,
+      label: `${Array.from({ length: rows }, (_, k) => period + k).join("・")}限`,
+      c,
+    })),
+  );
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
       <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border">
         {[1, 2, 3, 4].map((t) => (
-          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{`${t}学期`}</button>
+          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[639px]:h-11 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{`${t}学期`}</button>
         ))}
       </div>
+      <div className="min-[640px]:hidden">
+        <Box title="時間割">
+          <div role="group" aria-label="曜日" className="flex border-b border-border">
+            {DAYS.map((d, i) => (
+              <button key={d} type="button" aria-pressed={i + 1 === day} onClick={() => setDay(i + 1)} className={`min-h-11 flex-1 cursor-pointer border-r border-border text-[13.5px] last:border-r-0 ${i + 1 === day ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{d}</button>
+            ))}
+          </div>
+          {dayRows.length ? (
+            <ul className="m-0 list-none p-0">
+              {dayRows.map(({ key, label, c }) => (
+                <Row key={key}>
+                  <span className="w-14 shrink-0 py-2 text-[13px] text-muted-foreground">{label}</span>
+                  <a href={c.url} className="flex min-h-11 min-w-0 flex-1 items-center text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere]">{courseName(c.name)}</a>
+                </Row>
+              ))}
+            </ul>
+          ) : <Note>この曜日の授業はありません</Note>}
+        </Box>
+      </div>
+      <div className="max-[639px]:hidden">
       <Box title="時間割">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] table-fixed border-collapse text-[13px]">
@@ -75,6 +103,7 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
           </table>
         </div>
       </Box>
+      </div>
       <List title="曜日・時限の無いコース" list={p.noSlot} />
       <List title="そのほか" list={p.other} />
       {!courses.length ? <Box title="コース"><Note>登録されているコースはありません</Note></Box> : null}

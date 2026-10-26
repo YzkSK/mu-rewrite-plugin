@@ -27,7 +27,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   };
 
   return (
-    <div className="mx-auto flex max-w-[1000px] flex-col gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4 p-4">
       <AssignHead page={page} title={`${page.title}を提出`} />
       <div className="flex flex-wrap items-start gap-4">
         <div className="flex min-w-0 flex-[2_1_380px] flex-col gap-3">

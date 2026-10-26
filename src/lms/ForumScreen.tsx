@@ -34,7 +34,7 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
       <h1 className="m-0 text-lg font-semibold [overflow-wrap:anywhere]">{forumName || list?.name || "フォーラム"}</h1>
     </div>
   );
-  if (lst.failed && !list) return <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="話題の一覧を取得できませんでした。" onRetry={lst.reload} /></div>;
+  if (lst.failed && !list) return <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="話題の一覧を取得できませんでした。" onRetry={lst.reload} /></div>;
   const current = list?.discussions.find((x) => x.id === d);
 
   return (

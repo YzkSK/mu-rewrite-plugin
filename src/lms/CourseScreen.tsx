@@ -79,7 +79,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
     </div>
   );
 
-  if (failed) return <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="コースの内容を取得できませんでした。" onRetry={page.id === null ? undefined : load} /></div>;
+  if (failed) return <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="コースの内容を取得できませんでした。" onRetry={page.id === null ? undefined : load} /></div>;
   if (!sections) return <PageLoading title={courseName(page.name) || "コース"} />;
 
   const filled = sections.filter((s) => s.items.length || s.summary);
@@ -87,7 +87,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
   const go = (id: number) => refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-wrap items-start gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-start gap-4 p-4">
       {head}
       <nav aria-label="目次" className="sticky top-4 hidden w-[180px] flex-none min-[1000px]:block">
         <ul className="m-0 flex list-none flex-col gap-0.5 p-0">

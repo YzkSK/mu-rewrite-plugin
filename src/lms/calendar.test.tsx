@@ -35,6 +35,16 @@ test("monthOf: ?time= から年月、無ければ今", () => {
   expect(monthOf("", NOW)).toEqual({ year: 2026, month: 10 });
 });
 
+test("狭い幅: 予定のある日だけの一覧(両方の形が出る)", () => {
+  const h = renderToString(<CalendarScreen initial={month} now={NOW} />);
+  for (const t of ["min-[640px]:hidden", "max-[639px]:hidden", "10月1日(木)", "10月2日(金)", "専門"]) expect(h).toContain(t);
+  expect(h).not.toContain("10月3日");
+  const empty = toMonth(2026, 10, { ...raw, weeks: [] }, new Set(), now);
+  expect(renderToString(<CalendarScreen initial={empty} now={NOW} />)).toContain("この月の予定はありません");
+  const today = toMonth(2026, 10, { ...raw, weeks: [{ prepadding: [], postpadding: [], days: [{ mday: 4, istoday: true, events: [ev(9, "「第9回」の提出期限", now)] }] }] }, new Set(), now);
+  expect(renderToString(<CalendarScreen initial={today} now={NOW} />)).toMatch(/10月4日\(日\)[\s\S]*今日/);
+});
+
 test("画面: 題名・色・凡例・今日の丸・コース絞り込み", () => {
   const h = renderToString(<CalendarScreen initial={month} now={NOW} />);
   for (const t of ["2026年10月", "今日", "すべてのコース", "第1回", "期限切れ・未提出", "bg-[#FBEAEA]", "bg-muted", "bg-sidebar-accent", "bg-primary", "title="]) expect(h).toContain(t);

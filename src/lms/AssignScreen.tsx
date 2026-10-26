@@ -40,7 +40,7 @@ export function AssignScreen({ page }: { page: AssignPage }) {
   const more = page.rows.filter((r) => !SHOWN.has(r.label));
 
   return (
-    <div className="mx-auto flex max-w-[900px] flex-col gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[900px] flex-col gap-4 p-4">
       <AssignHead page={page} title={page.title} />
       <div className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
         <div className="flex flex-wrap divide-x divide-border">

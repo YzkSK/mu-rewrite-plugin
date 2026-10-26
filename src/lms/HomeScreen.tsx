@@ -125,7 +125,7 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
   if (!data) return <PageLoading title="ホーム" />;
   if (!data.due && !data.news && !data.recent) return <div className="p-4"><ErrorNotice title="読み込めませんでした" message="MU-LMS の情報を取得できませんでした。" onRetry={load} /></div>;
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-wrap items-start gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-start gap-4 p-4">
       <div className="flex min-w-0 flex-[3_1_420px] flex-col gap-4">
         <DueBox due={data.due} now={Math.floor(now.getTime() / 1000)} />
       </div>
