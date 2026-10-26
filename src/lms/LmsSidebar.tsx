@@ -2,13 +2,13 @@ import { SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuButton, SidebarM
 import { ACTIVE, MB } from "@/ui/AppSidebar";
 import { openOriginal } from "./route";
 
-export type Active = "home" | "courses" | "calendar" | "grades" | null;
+export type Active = "home" | "courses" | "calendar" | "grades" | "messages" | null;
 
 const ITEMS: { title: string; href: string; key?: Active }[] = [
   { title: "マイコース", href: "/my/courses.php", key: "courses" },
   { title: "カレンダー", href: "/calendar/view.php?view=month", key: "calendar" },
   { title: "成績", href: "/grade/report/overview/index.php", key: "grades" },
-  { title: "メッセージ", href: "/message/index.php" },
+  { title: "メッセージ", href: "/message/index.php", key: "messages" },
 ];
 const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
 const ROW = `${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm`;
@@ -43,6 +43,9 @@ export function LmsSidebar({ active, onPick, onLogout }: { active: Active; onPic
               MUSCAT
               <span className="ml-auto text-[11px] text-muted-foreground">外部</span>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="sm" href="/user/profile.php" className={FOOT}>プロファイル・設定</SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton size="sm" className={FOOT} onClick={openOriginal}>元の LMS で開く</SidebarMenuButton>

@@ -123,12 +123,21 @@ export function parseSectionHtml(html: string): Page {
   return { summary, acts };
 }
 
-type RawState = {
+export type RawState = {
   section: { id: number; number: number; title: string; cmlist: string[]; hassummary: boolean; visible?: boolean }[];
   cm: { id: number | string; name: string; module: string; url?: string; visible?: boolean; uservisible?: boolean }[];
 };
 
-const needsPage = (s: RawState["section"][number]): boolean => s.visible !== false && (s.cmlist.length > 0 || s.hassummary);
+/** 利用者に見える教材か */
+export const isShown = (cm: RawState["cm"][number]): boolean => cm.uservisible !== false && !(cm.visible === false && cm.uservisible !== true);
+
+/** 節と教材の一覧(state)だけ取る */
+export async function loadState(courseId: number): Promise<RawState> {
+  const raw = await ajax<string | RawState>("core_courseformat_get_state", { courseid: courseId });
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
+}
+
+const needsPage =(s: RawState["section"][number]): boolean => s.visible !== false && (s.cmlist.length > 0 || s.hassummary);
 
 /** state と節ごとの HTML(読めなければ null)から画面の形にする。並び・名前・URL・種類は state が正。中身の無い節も返す */
 export function composeCourse(state: RawState, pages: Record<number, string | null>): Section[] {
@@ -138,7 +147,7 @@ export function composeCourse(state: RawState, pages: Record<number, string | nu
     const items: Item[] = [];
     for (const id of s.cmlist.map(String)) {
       const cm = cms.get(id);
-      if (!cm || cm.uservisible === false || (cm.visible === false && cm.uservisible !== true)) continue;
+      if (!cm || !isShown(cm)) continue;
       const act = page?.acts.get(id);
       if (cm.module === "label") {
         const videos = act?.html ? videosOf(act.html) : [];
@@ -155,8 +164,7 @@ export function composeCourse(state: RawState, pages: Record<number, string | nu
 
 /** 節と教材を取る(節の中身は並列)。セッション切れなら読み直す */
 export async function loadCourse(courseId: number): Promise<Section[]> {
-  const raw = await ajax<string | RawState>("core_courseformat_get_state", { courseid: courseId });
-  const state: RawState = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const state = await loadState(courseId);
   const targets = state.section.filter(needsPage);
   const got = await Promise.allSettled(targets.map(async (s) => {
     const r = await fetch(`/course/section.php?id=${s.id}`, { credentials: "include" });

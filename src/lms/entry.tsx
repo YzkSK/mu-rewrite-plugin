@@ -7,8 +7,11 @@ import { courseName } from "@/portal/lib/lms";
 import { readAssignPage, readSubmitForm } from "./assign";
 import { readCoursePage } from "./course";
 import { OVERVIEW_URL, readGradeList } from "./grades";
-import type { View } from "./LmsApp";
-import { isAppPath, routeOf } from "./route";
+import { titleOf, type View } from "./LmsApp";
+import { readDiscussionPage, readForumList } from "./forum";
+import { readLtiPage } from "./lti";
+import { readProfile } from "./profile";
+import { isAppPath, openOriginal, routeOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 
@@ -101,7 +104,18 @@ if (window === window.top) {
             if (!form) throw new Error("提出フォームが見つかりません");
             view = { kind: "submit", page, form };
           }
+        } else if (route === "forum") view = { kind: "forum", list: readForumList(document) };
+        else if (route === "discussion") view = { kind: "discussion", page: readDiscussionPage(document, location.search) };
+        else if (route === "messages") view = { kind: "messages", path: location.pathname, search: location.search };
+        else if (route === "lti") view = { kind: "lti", page: readLtiPage(document, location.search) };
+        else if (route === "search") view = { kind: "search", search: location.search };
+        else if (route === "profile") {
+          // 自分以外のプロファイルは元の画面で見る(元の script は止めてあるので、印を付けて読み直す)
+          const other = new URLSearchParams(location.search).get("id");
+          if (other !== null && Number(other) !== id) { openOriginal(); return; }
+          view = { kind: "profile", page: readProfile(document) };
         }
+        if (view && ["forum", "discussion", "messages", "lti", "search", "profile"].includes(view.kind)) heading = titleOf(view);
         mountLms(name || null, id, view);
         document.title = `${heading} | MU-LMS`;
         state = "on";
