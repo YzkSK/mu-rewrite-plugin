@@ -1,3 +1,4 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
-GlobalRegistrator.register({ url: "https://muscat.example/uprx/up/bs/Bsa00101.xhtml" });
+// 読み込みを止めた script などは、裏でエラーを投げず「読み込めた」扱いにする(そのエラーが別のテストの失敗に数えられて、時々落ちた)
+GlobalRegistrator.register({ url: "https://muscat.example/uprx/up/bs/Bsa00101.xhtml", settings: { handleDisabledFileLoadingAsSuccess: true } });

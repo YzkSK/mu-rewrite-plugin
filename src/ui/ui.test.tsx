@@ -55,5 +55,5 @@ test("useToast は toast() で role=status を出し、3 秒で消える", async
   await act(async () => void (await new Promise((r) => setTimeout(r, 3100))));
   expect(el.querySelector('[role="status"]')).toBeNull();
   await act(async () => root.unmount());
-});
+}, 15_000); // 本物の時計で 3 秒待つので、全部を並べて流して重いときに既定の 5 秒を超えることがあった
 

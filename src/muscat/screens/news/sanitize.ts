@@ -33,7 +33,10 @@ function clean(parent: Node): void {
 
 /** 掲示の本文(リッチテキスト)を、表示してよい形だけにする。許可タグ以外は中身だけ残し、属性は a の href だけ */
 export function sanitizeNewsHtml(html: string): string {
-  const body = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html").body;
-  clean(body);
-  return body.innerHTML;
+  // template の中身は文書につながらないので、iframe や img を読み込まない(DOMParser だとテストの happy-dom が
+  // iframe を読もうとして、裏で別のテストを落としていた)
+  const t = document.createElement("template");
+  t.innerHTML = html;
+  clean(t.content);
+  return t.innerHTML;
 }
