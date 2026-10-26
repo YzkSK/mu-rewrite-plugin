@@ -226,6 +226,51 @@ test("小窓の ✕: 同じ widgetVar の消えた closeBtn が表に先にあ�
   expect(sent.map((r) => r.body.get("jakarta.faces.source"))).toEqual(["dlg3:f:cb"]);
 });
 
+test("DataTable の行を選ぶチェック: 通信せず <表の id>_selection に data-rk を足し引きし、削除の本文に乗る(実機で記録)", async () => {
+  const T = "funcForm:mailAddrList";
+  const box = (rk: string) => `<tr data-rk="${rk}"><td class="ui-selection-column"><div class="ui-chkbox"><div class="ui-helper-hidden-accessible"><input type="checkbox" name="${T}_checkbox"></div><div class="ui-chkbox-box" id="box${rk}"></div></div></td><td>a${rk}@example.com</td></tr>`;
+  const d = new DOMParser().parseFromString(
+    `<form id="funcForm" action="/f" method="post"><input type="hidden" name="jakarta.faces.ViewState" value="vs1">
+    <div id="${T}" class="ui-datatable"><table><tbody id="${T}_data">${box("11")}${box("22")}</tbody></table><input type="hidden" id="${T}_selection" name="${T}_selection" value=""></div>
+    <button id="funcForm:del" type="button" onclick="${AB()}">選択した行を削除</button></form>`,
+    "text/html",
+  );
+  assignRefs(d);
+  const sent: Req[] = [];
+  const io = { post: async (_k: string, req: Req) => (sent.push(req), OK), page: async () => {} };
+  const click = (id: string) => vdrive(d, [{ kind: "click", ref: assignRef(d.getElementById(id)!) }], io);
+  const sel = () => (d.getElementById(`${T}_selection`) as HTMLInputElement).value;
+  expect(await click("box22")).toBe("none");
+  expect(sel()).toBe("22");
+  await click("box11");
+  expect(sel()).toBe("22,11");
+  await click("box22");
+  expect(sel()).toBe("11");
+  expect(d.querySelector('tr[data-rk="11"]')!.classList.contains("ui-state-highlight")).toBe(true);
+  expect(sent).toHaveLength(0);
+  await click("funcForm:del");
+  expect(sent[0]!.body.get(`${T}_selection`)).toBe("11");
+});
+
+test("DataTable の 1 行だけ選ぶ表(ラジオ): 選んだ行に置き換え、選んである行を押しても外れない", async () => {
+  const T = "funcForm:one";
+  const row = (rk: string) => `<tr data-rk="${rk}"><td class="ui-selection-column"><div class="ui-radiobutton"><div class="ui-helper-hidden-accessible"><input type="radio" name="${T}_radio"></div><div class="ui-radiobutton-box" id="r${rk}"></div></div></td><td>${rk}</td></tr>`;
+  const d = new DOMParser().parseFromString(
+    `<form id="funcForm" action="/f" method="post"><div id="${T}" class="ui-datatable"><table><tbody>${row("11")}${row("22")}</tbody></table><input type="hidden" id="${T}_selection" name="${T}_selection" value=""></div></form>`,
+    "text/html",
+  );
+  assignRefs(d);
+  const io = { post: async () => OK, page: async () => {} };
+  const click = (id: string) => vdrive(d, [{ kind: "click", ref: assignRef(d.getElementById(id)!) }], io);
+  const sel = () => (d.getElementById(`${T}_selection`) as HTMLInputElement).value;
+  await click("r11");
+  await click("r22");
+  expect(sel()).toBe("22");
+  await click("r22");
+  expect(sel()).toBe("22");
+  expect([...d.querySelectorAll("tr.ui-state-highlight")].map((r) => r.getAttribute("data-rk"))).toEqual(["22"]);
+});
+
 const TBL = "funcForm:jinjiListMd4";
 const tableDoc = () =>
   new DOMParser().parseFromString(

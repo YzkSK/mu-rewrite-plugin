@@ -311,17 +311,44 @@ export async function vdrive(doc: Document, steps: DriveStep[], io: { post: Post
       if (kind) return paginate(pager, { page: kind });
       if (a.classList.contains("ui-paginator-page")) return paginate(pager, { page: (Number(a.textContent) || 1) - 1 });
     }
-    // e) 枠・ボタンの下の input を切り替える
+    // e) DataTable の行を選ぶチェック: 元の PrimeFaces は通信せず、隠し項目 <表の id>_selection に行の data-rk を足し引きする
+    // (個人設定のメールアドレスの削除で実機の記録と照合。これが空だと「削除対象を一覧から選択してください」になる)
+    const row = el.closest("td.ui-selection-column")?.closest("tr[data-rk]");
+    const table = row?.closest(".ui-datatable");
+    if (row && table) {
+      const key = row.getAttribute("data-rk")!;
+      const name = `${table.id}_selection`;
+      const box = inputOf(el);
+      // 1 行だけ選ぶ表(ラジオ)は置き換える。選んである行をもう一度押しても外れない
+      if (box?.type === "radio") {
+        if (box.checked) return;
+        setHidden(doc, name, key);
+        setCheck(box, true);
+        for (const r of table.querySelectorAll("tr[data-rk]")) {
+          r.classList.toggle("ui-state-highlight", r === row);
+          r.setAttribute("aria-selected", String(r === row));
+        }
+        return;
+      }
+      const keys = hiddenValue(doc, name).split(",").filter((k) => k && k !== key);
+      const on = box ? !box.checked : !hiddenValue(doc, name).split(",").includes(key); // 枠の今の状態から切り替え、隠し項目をそれに合わせる
+      setHidden(doc, name, (on ? [...keys, key] : keys).join(","));
+      if (box) setCheck(box, on);
+      row.classList.toggle("ui-state-highlight", on);
+      row.setAttribute("aria-selected", String(on));
+      return;
+    }
+    // f) 枠・ボタンの下の input を切り替える
     const input = inputOf(el);
     if (input && (input.type === "checkbox" || input.type === "radio")) {
       if (input.type === "radio" && input.checked) return;
       setCheck(input, input.type === "radio" ? true : !input.checked);
       return fireChange(input);
     }
-    // f) 画面の移動
+    // g) 画面の移動
     const href = a?.getAttribute("href") ?? "";
     if (href && !href.startsWith("#") && !href.startsWith("javascript:")) throw new NoticeError("このリンクはまだ開けません");
-    // g) それ以外は何も起きない
+    // h) それ以外は何も起きない
   }
 
   for (const [i, s] of steps.entries()) {
