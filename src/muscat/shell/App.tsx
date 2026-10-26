@@ -10,14 +10,14 @@ import { useBusy } from "./useBusy";
 import { getZoom, onZoomChange } from "./zoom";
 
 // sidebar を渡すと AppSidebar の代わりに描く(ポータル用)。関数なら、狭い画面で項目を選んだとき閉じる onPick を受け取る。brand / headerRight は Header へそのまま渡す
-type Props = { title: string; model?: NavModel; user?: string; lastLogin?: string; brand?: string; headerRight?: ReactNode; sidebar?: ReactNode | ((onPick?: () => void) => ReactNode); children: ReactNode };
+type Props = { title: string; model?: NavModel; user?: string; lastLogin?: string; brand?: string; headerRight?: ReactNode; barClassName?: string; sidebar?: ReactNode | ((onPick?: () => void) => ReactNode); children: ReactNode };
 
 const PENDING_MS = 8000;
 
 const FRAME_STYLE = { "--sidebar-width": "15rem", "--bar-h": "56px" } as CSSProperties;
 
 /** 上の段 + サイドバー + 本文。広い画面は押し出し、狭い画面は本文に重ねて幕を出す(Sheet は body に出てしまうので使わない)。 */
-export function App({ title, model, user, lastLogin, brand, headerRight, sidebar, children }: Props) {
+export function App({ title, model, user, lastLogin, brand, headerRight, barClassName, sidebar, children }: Props) {
   const { narrow, open, change } = useSidebarState();
   const busy = useBusy();
   // 移動が終わると新しい画面として作り直されるので、ここで戻すのは移動が起きなかったときの保険
@@ -48,7 +48,7 @@ export function App({ title, model, user, lastLogin, brand, headerRight, sidebar
       style={{ ...FRAME_STYLE, zoom, height: `calc(100vh / ${zoom})` }}
       className={`${mounting ? "mu-noanim " : ""}group/frame relative min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
-      <Header title={title} user={user} lastLogin={lastLogin} brand={brand} right={headerRight} />
+      <Header title={title} user={user} lastLogin={lastLogin} brand={brand} right={headerRight} barClassName={barClassName} />
       <TopProgress busy={busy || pending !== null} />
       <div className="relative flex min-h-0 flex-1">
         {narrow ? (

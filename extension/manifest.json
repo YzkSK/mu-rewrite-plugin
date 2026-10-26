@@ -15,6 +15,11 @@
       "run_at": "document_start"
     },
     {
+      "matches": ["https://musashino-u.myopenlms.net/*"],
+      "js": ["dist/lms-react.js"],
+      "run_at": "document_start"
+    },
+    {
       "matches": ["https://unipa.m-muscat.musashino-u.ac.jp/uprx/*"],
       "js": ["dist/muscat-react.js"],
       "run_at": "document_start"
