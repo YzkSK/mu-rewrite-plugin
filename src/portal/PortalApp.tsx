@@ -1,0 +1,71 @@
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { AccountDialog } from "./AccountDialog";
+import { App } from "@/muscat/shell/App";
+import { ErrorNotice } from "@/ui/ErrorNotice";
+import { PageLoading } from "@/ui/PageLoading";
+import { fetchCalendar } from "./api";
+import { loadTop, TOP, type PortalData, type TopData } from "./data";
+import { PortalSidebar } from "./PortalSidebar";
+import { SignOutDialog } from "./SignOutDialog";
+import { NAV_EVENT, NOTICES, routeOf, slugOf } from "./route";
+import { NoticesScreen } from "./screens/NoticesScreen";
+import { PageScreen, usePage } from "./screens/PageScreen";
+import { TopPage } from "./screens/TopPage";
+
+const subscribe = (cb: () => void) => {
+  window.addEventListener("popstate", cb);
+  window.addEventListener(NAV_EVENT, cb);
+  return () => { window.removeEventListener("popstate", cb); window.removeEventListener(NAV_EVENT, cb); };
+};
+const here = () => location.pathname + location.search;
+
+/** 開始が一覧のときトップのデータは無い。トップへ移ったとき取る(取れたものは data.ts が覚える) */
+function Top({ initial }: { initial: TopData | null }) {
+  const [top, setTop] = useState(initial);
+  const [failed, setFailed] = useState(false);
+  const [tries, setTries] = useState(0);
+  useEffect(() => {
+    if (top) return;
+    setFailed(false);
+    loadTop().then(setTop).catch((e) => { console.error("[mu-portal]", e); setFailed(true); });
+  }, [top, tries]);
+  if (failed) return <div className="p-4"><ErrorNotice title="トップページを読み込めませんでした" message="" onRetry={() => setTries(tries + 1)} /></div>;
+  if (!top) return <PageLoading title={TOP} />;
+  const cal = top.calendar;
+  return <TopPage data={top} loadMonth={(y, m) => fetchCalendar(cal?.sources ?? [], !!cal?.addOutLook, y, m)} />;
+}
+
+/** 枠(上の段 + サイドバー)にトップページ・お知らせ一覧・通常のページを入れる */
+export function PortalApp({ data }: { data: PortalData }) {
+  const [account, setAccount] = useState(false);
+  const closeAccount = useCallback(() => setAccount(false), []);
+  const [signOut, setSignOut] = useState(false);
+  const closeSignOut = useCallback(() => setSignOut(false), []);
+  const url = useSyncExternalStore(subscribe, here, () => "");
+  const u = new URL(url, location.origin);
+  const route = routeOf(u);
+  const slug = route === "page" ? slugOf(u.pathname) : route === "notices" ? NOTICES : TOP;
+  const page = usePage(route === "page" ? slug : null);
+  const title = "page" in page ? page.page.title : slug;
+  // 元のアプリを止めたので、タブの題名もこちらで付ける(元と同じ「<ページ名> - MUポータル」)
+  useEffect(() => { document.title = `${title} - MUポータル`; }, [title]);
+  return (
+    <>
+    {/* 小窓を開いている間は後ろを操作させない(Tab で後ろに抜けない) */}
+    <div inert={account || signOut}className="contents">
+    <App
+      title={title}
+      brand="MU Portal"
+      headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
+      sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} onAccount={() => setAccount(true)} onSignOut={() => setSignOut(true)} />}
+    >
+      {route === "notices" ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} />
+        : route === "page" ? <PageScreen key={slug} slug={slug} state={page} />
+        : <Top initial={data.top} />}
+    </App>
+    </div>
+    {account ? <AccountDialog userName={data.shell.userName ?? ""} onClose={closeAccount} /> : null}
+    {signOut ? <SignOutDialog onClose={closeSignOut} /> : null}
+    </>
+  );
+}

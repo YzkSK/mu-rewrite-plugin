@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/forms";
+/* Starwind の checkbox の印。部品の中で import するとページ側に入り、Shadow DOM の中に届かない */
+@import "../components/starwind/checkbox/styles.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-accent: var(--primary-accent);
+  --color-primary-dark: var(--mu-primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-accent: var(--secondary-accent);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-outline: var(--outline);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-outline: var(--sidebar-ring);
+
+  --radius-xs: calc(var(--radius) - 0.375rem);
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-2xl: calc(var(--radius) + 0.5rem);
+  --radius-3xl: calc(var(--radius) + 1rem);
+}
+
+/* MU ポータルと同じライト固定の配色。Shadow DOM では :root が効かないので :host も指定する。 */
+:root,
+:host {
+  --mu-primary: #541b86;
+  --mu-primary-dark: #3b1260;
+  --mu-primary-soft: #eee8f4;
+  --mu-alert: #b3261e;
+  --mu-font: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+
+  --background: #f3f2f5;
+  --foreground: #1f1a24;
+  --card: #ffffff;
+  --card-foreground: #1f1a24;
+  --popover: #ffffff;
+  --popover-foreground: #1f1a24;
+  --primary: var(--mu-primary);
+  --primary-foreground: #ffffff;
+  --primary-accent: var(--mu-primary);
+  --secondary: var(--mu-primary-soft);
+  --secondary-foreground: var(--mu-primary);
+  --secondary-accent: var(--mu-primary);
+  --muted: #f4f2f6;
+  --muted-foreground: #6b6474;
+  --accent: var(--mu-primary-soft);
+  --accent-foreground: var(--mu-primary);
+  --info: var(--color-sky-300);
+  --info-foreground: var(--color-sky-950);
+  --success: var(--color-green-300);
+  --success-foreground: var(--color-green-950);
+  --warning: var(--color-amber-300);
+  --warning-foreground: var(--color-amber-950);
+  --error: var(--mu-alert);
+  --error-foreground: #ffffff;
+  --border: #d9d4df;
+  --input: #c9c3d1;
+  --outline: var(--mu-primary);
+  --radius: 0.25rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--mu-primary);
+  --sidebar-accent: #eee8f4;
+  --sidebar-accent-foreground: #541b86;
+  --sidebar-border: #d9d4df;
+  --sidebar-ring: var(--mu-primary);
+
+  font-family: var(--mu-font);
+}
+
+/* 元のページの CSS がホストの要素に書体を当てて :host の指定に勝つので、shadow の中の要素に当てる(実機で確認) */
+:host > * { font-family: var(--mu-font); }
+
+@keyframes mu-down { from { height: 0; opacity: 0; } to { height: var(--starwind-collapsible-panel-height); opacity: 1; } }
+@keyframes mu-up { from { height: var(--starwind-collapsible-panel-height); opacity: 1; } to { height: 0; opacity: 0; } }
+
+/* 折りたたみ(高さは Starwind の実行部が入れ、閉じる側はアニメの終了を待って隠す) */
+[data-sw-collapsible-panel] { overflow: hidden; }
+[data-sw-collapsible-panel][data-state="open"] { animation: mu-down 200ms ease-out; }
+[data-sw-collapsible-panel][data-state="closed"] { animation: mu-up 200ms ease-out forwards; }
+/* 折りたたみは、自分で開閉するまで動かさない(AppSidebar が付ける。後から animation を付けると、その時点で再生されるため) */
+.mu-still [data-sw-collapsible-panel] { animation: none !important; }
+/* 画面を移った直後の最初の描画(App が付ける)は、何も動かさない。描いた瞬間に Tailwind の値(影・輪郭など)が初めの値から変わり、transition でボタンがちらついた(実機で確認) */
+.mu-noanim, .mu-noanim * { transition: none !important; }
+/* サイドバーの押し出し */
+[data-slot="sidebar-gap"], [data-slot="sidebar-container"] { transition-duration: 250ms; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+
+@keyframes mu-slide { 0% { left: -35%; } 100% { left: 100%; } }
+@keyframes mu-dot { 0%, 80%, 100% { opacity: .2; } 30% { opacity: 1; } }
+/* 読み込みの帯と「…」の点 */
+.mu-dots i { font-style: normal; animation: mu-dot 1.2s ease-in-out infinite; }
+.mu-dots i:nth-child(2) { animation-delay: .2s; }
+.mu-dots i:nth-child(3) { animation-delay: .4s; }
+
+/* 一覧の行は上から 40ms ずつ(13 行目以降は同時)、カレンダーのマスは左上から斜めに 15ms ずつ、件数は一瞬のフェード */
+@keyframes mu-fadein { from { opacity: 0; } to { opacity: 1; } }
+.mu-row { animation: mu-fadein 220ms ease-out both; animation-delay: calc(min(var(--i, 0), 11) * 40ms); }
+.mu-cell { animation: mu-fadein 250ms ease-out both; animation-delay: calc(var(--i, 0) * 15ms); }
+.mu-fade { animation: mu-fadein 180ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mu-row, .mu-cell, .mu-fade { animation: none !important; }
+  [data-slot="progress-indicator"] { animation: none !important; left: 0 !important; width: 100% !important; opacity: .6; }
+  .mu-dots i { animation: none !important; }
+  [data-sw-collapsible-panel] { animation: none !important; }
+  *, ::before, ::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+}
+
+/* Spin(回る読み込みのしるし)。will-change で別の層にし、ページの処理が止まっても回る */
+@keyframes mu-spin { to { transform: rotate(360deg); } }
+.mu-spin { animation: mu-spin .8s linear infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .mu-spin { animation-duration: 2.4s; } }
