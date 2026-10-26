@@ -67,7 +67,7 @@ if (window === window.top) {
         const id = readUserId(document);
         const name = id === null ? null : await fetchUserName(id).catch((e) => { console.error("[mu-lms]", e); return null; });
         if (state !== "loading") return;
-        mountLms(name || null);
+        mountLms(name || null, id);
         document.title = "ホーム | MU-LMS";
         state = "on";
         release();

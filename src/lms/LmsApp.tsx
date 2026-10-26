@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
 import { App } from "@/muscat/shell/App";
-import { EmptyState } from "@/ui/EmptyState";
+import { HomeScreen } from "./HomeScreen";
 import { LmsSidebar } from "./LmsSidebar";
 import { LogoutDialog } from "./LogoutDialog";
 
 /** 枠(上の段 + サイドバー)にホームを入れる。上の段だけ LMS の色 */
-export function LmsApp({ userName }: { userName: string | null }) {
+export function LmsApp({ userName, userId }: { userName: string | null; userId: number | null }) {
   const [logout, setLogout] = useState(false);
   const closeLogout = useCallback(() => setLogout(false), []);
   return (
@@ -19,7 +19,7 @@ export function LmsApp({ userName }: { userName: string | null }) {
       headerRight={userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{userName} さん</span> : null}
       sidebar={(onPick) => <LmsSidebar onPick={onPick} onLogout={() => setLogout(true)} />}
     >
-      <EmptyState title="提出期限・コースはまもなくここに出ます" />
+      <HomeScreen userId={userId} />
     </App>
     </div>
     {logout ? <LogoutDialog onClose={closeLogout} /> : null}

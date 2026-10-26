@@ -7,18 +7,24 @@ async function lmsDue() {
     const html = await (await fetch(LMS + "/my/", { credentials: "include" })).text();
     const sesskey = (/"sesskey":"([^"]+)"/.exec(html) || [])[1];
     if (!sesskey) return { login: false };
-    const body = [{ index: 0, methodname: METHOD, args: { limitnum: 20, timesortfrom: Math.floor(Date.now() / 1000) - 14 * 86400, limittononsuspendedevents: true } }];
+    // 60 日前から取る(2 週間前からだと古い期限切れが抜けた)。過去と未来は分ける(古い期限切れで上限を使い切らないため)
+    const now = Math.floor(Date.now() / 1000);
+    const body = [
+      { index: 0, methodname: METHOD, args: { limitnum: 20, timesortfrom: now - 60 * 86400, timesortto: now - 1, limittononsuspendedevents: true } },
+      { index: 1, methodname: METHOD, args: { limitnum: 20, timesortfrom: now, limittononsuspendedevents: true } },
+    ];
     const res = await fetch(`${LMS}/lib/ajax/service.php?sesskey=${encodeURIComponent(sesskey)}&info=${METHOD}`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const r = (await res.json())[0];
+    const rs = await res.json();
+    const r = rs.find((x) => x.error) ?? rs[0];
     if (r.error) return r.exception?.errorcode === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.error) };
     return {
       login: true,
-      events: (r.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, url: e.url })),
+      events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, url: e.url })),
     };
   } catch (e) {
     return { error: e.message };

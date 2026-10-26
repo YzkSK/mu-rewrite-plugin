@@ -20,7 +20,7 @@ function mount(node: ReactNode, full: boolean): void {
   flushSync(() => r.render(node));
 }
 
-export const mountLms = (userName: string | null): void => mount(<LmsApp userName={userName} />, false);
+export const mountLms = (userName: string | null, userId: number | null): void => mount(<LmsApp userName={userName} userId={userId} />, false);
 /** 読み込み失敗の画面を Shadow DOM に出す */
 export const mountLmsError = (): void => mount(<LmsError />, true);
 /** ログアウト直後・ログイン失敗の案内を出す */
