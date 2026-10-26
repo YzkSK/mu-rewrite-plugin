@@ -306,9 +306,22 @@ export function SyllabusDetailBody({ detail, toc = true, order = "site" }: BodyP
   // 目次の印は、出している最初の節から(基本情報が無い授業で、出していない節に印を付けない)
   const [picked, setCur] = useState<number | null>(null);
   const cur = picked !== null && shown.includes(picked) ? picked : (shown[0] ?? 0);
+  // 目次を押して動かしている間は、スクロールで印を書き換えない(末尾の短い節を押すと、最後の節に印が移ってしまう)
+  const jumping = useRef(0);
   const go = (i: number) => {
     setCur(i);
+    jumping.current = Date.now() + 800;
     body.current?.querySelector(`[data-sec="${i}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  /** 本文のスクロールに目次の印を合わせる: 上端を越えた最後の節。いちばん下まで来たら最後の節 */
+  const follow = () => {
+    const el = body.current;
+    if (!el || Date.now() < jumping.current) return;
+    const secs = [...el.querySelectorAll<HTMLElement>("[data-sec]")];
+    const top = el.getBoundingClientRect().top + 24;
+    const atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    const hit = atEnd ? secs.at(-1) : secs.filter((s) => s.getBoundingClientRect().top <= top).at(-1) ?? secs[0];
+    if (hit) setCur(Number(hit.dataset.sec));
   };
   return (
     <div className="flex min-h-0 flex-1">
@@ -326,7 +339,14 @@ export function SyllabusDetailBody({ detail, toc = true, order = "site" }: BodyP
           </button>
         ))}
       </nav>}
-      <div ref={body} className={`min-w-0 flex-1 overflow-y-auto pb-7 pt-1 ${drawer ? "px-4" : "px-[22px]"}`}>
+      <div
+        ref={body}
+        onScroll={toc ? follow : undefined}
+        // 利用者が自分で動かし始めたら、目次を押した直後でも追従に戻す
+        onWheel={() => void (jumping.current = 0)}
+        onTouchStart={() => void (jumping.current = 0)}
+        onKeyDown={() => void (jumping.current = 0)}
+        className={`min-w-0 flex-1 overflow-y-auto pb-7 pt-1 ${drawer ? "px-4" : "px-[22px]"}`}>
         {shown.map((i, k) => {
           const Content = BODIES[i]!;
           return (
