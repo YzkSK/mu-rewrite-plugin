@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { ErrorNotice } from "@/ui/ErrorNotice";
@@ -30,6 +30,12 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
     await run(op, undefined, fail);
     setAct(null);
   };
+  // 引き出しの「シラバスを開く」から来たときは、最初に 1 回だけ授業の詳細まで開く
+  useEffect(() => {
+    const p = client.syllabus.takePending();
+    if (p) void go("open", (c) => c.syllabus.findAndOpen(p), "シラバスを開けませんでした");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const click = (ref: string) => {
     setDismissed("");
     const open = page?.result?.rows.some((r) => r.openRef === ref);

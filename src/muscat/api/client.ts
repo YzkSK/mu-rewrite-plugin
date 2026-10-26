@@ -1,6 +1,6 @@
 import { getAttendance } from "./attendance";
 import { createCore, type Shown } from "./core";
-import { getCourse, saveMemo } from "./course";
+import { getCourse, getCourseSyllabus, saveMemo } from "./course";
 import { getExportRequest, type ExportKind, type ExportRequest } from "./exportForm";
 import type { Fetch } from "./recover";
 import type { MenuIds, MenuLabel } from "./session";
@@ -13,9 +13,9 @@ import { parseGenericPage } from "./parse/generic";
 import { readHome, showDayHome } from "./home";
 import { addAddress, addFavorite, deleteAddresses, readSettings, resetFavorite, saveSettings, type SettingsSave } from "./settings";
 import { fillRoom, readRoom, type RoomValues } from "./room";
-import { readSyllabus, searchSyllabus, type SyllabusQuery } from "./syllabus";
+import { findAndOpenSyllabus, readSyllabus, searchSyllabus, type SyllabusQuery, type SyllabusTarget } from "./syllabus";
 import { readTeacherSchedule, searchTeacher } from "./teacherSchedule";
-import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomeEvent, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
+import type { Attendance, CourseDetail, GenericPage, GradeFilter, Grades, HomeEvent, HomePage, InfoPage, NewsPage, RoomInfo, RoomPage, RoomRow, SettingsPage, SyllabusDetail, SyllabusPage, TeacherEvent, TeacherSchedulePage, Timetable } from "./types";
 import { fetchHomeEvents, fetchTeacherEvents } from "./teacherEvents";
 import { ParseError } from "./errors";
 import { roomBooking, roomInfo, roomMore, roomNext, roomSubmit } from "./roomFetch";
@@ -54,6 +54,14 @@ export type MuscatClient = {
     read(): Promise<SyllabusPage>;
     /** 条件を入れて検索を押す。省略した欄・グループは触らない */
     search(q: SyllabusQuery): Promise<void>;
+    /** 授業のシラバス詳細を開く予約を入れて「シラバス」へ移る(移った先の画面が takePending で受け取る) */
+    open(course: SyllabusTarget): Promise<void>;
+    /** 開く予約を返して消す */
+    takePending(): SyllabusTarget | null;
+    /** 授業名で検索し、その授業の詳細を開く。見つからなければ ParseError */
+    findAndOpen(course: SyllabusTarget): Promise<void>;
+    /** ホームの履修授業のシラバス照会ボタンで開いた詳細を読む(画面は動かさない)。履修授業に無ければ ParseError("履修授業にありません") */
+    ofCourse(key: SyllabusTarget): Promise<SyllabusDetail>;
   };
   teacherSchedule: {
     /** 生きたページの教員スケジュール(検索欄・一覧・カレンダーのうち出ているもの)を読む */
@@ -111,6 +119,7 @@ export function createMuscatClient(deps: {
   now?: () => number;
 }): MuscatClient {
   const core = createCore(deps);
+  let pending: SyllabusTarget | null = null;
   return {
     getTimetable: (year) => getTimetable(core, year),
     getAttendance: (termKey, baseDate) => getAttendance(core, termKey, baseDate),
@@ -129,7 +138,28 @@ export function createMuscatClient(deps: {
       }),
     news: { read: () => readNews(core), search: (q) => searchNews(core, q), markAllRead: (t) => markAllReadNews(core, t) },
     home: { read: () => readHome(core), showDay: (date, now) => showDayHome(core, date, now) },
-    syllabus: { read: () => readSyllabus(core), search: (q) => searchSyllabus(core, q) },
+    syllabus: {
+      read: () => readSyllabus(core),
+      search: (q) => searchSyllabus(core, q),
+      open: async (course) => {
+        pending = course; // 移った時点で画面が描かれて読むので、navigate より前
+        try {
+          await core.navigate("シラバス");
+        } catch (e) {
+          if (pending === course) pending = null;
+          throw e;
+        }
+        // 別の移動に追い越されてシラバス検索の画面になっていなければ、後で普通に開いたシラバスで使わないよう消す(後の open の予約は残す)
+        if (!core.shown().doc.getElementById("funcForm:kaikoGakki_input") && pending === course) pending = null;
+      },
+      takePending: () => {
+        const p = pending;
+        pending = null;
+        return p;
+      },
+      findAndOpen: (course) => findAndOpenSyllabus(core, course),
+      ofCourse: (key) => getCourseSyllabus(core, key),
+    },
     teacherSchedule: { read: () => readTeacherSchedule(core), search: (q) => searchTeacher(core, q) },
     teacherEvents: (start, end) => core.runLive((live) => fetchTeacherEvents(live.doc, deps.fetch, start, end)),
     homeEvents: (start, end) => core.runLive((live) => fetchHomeEvents(live.doc, deps.fetch, start, end)),

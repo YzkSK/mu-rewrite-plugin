@@ -32,7 +32,11 @@ export function parseSyllabusDetail(doc: Document): SyllabusDetail | null {
     if (row.parentElement?.closest(".rowMargin")) continue; // 値の中の行は親の値として読む
     const heads = [...row.children].filter((c) => c.classList.contains("ui-widget-header"));
     const bodies = [...row.children].filter((c) => c.classList.contains("ui-widget-content"));
-    if (heads.length === 0) continue;
+    // 見出しの無い行は表の中身(成績評価の内訳・教科書の書名・実務経験の本文など。実機で確認)
+    if (heads.length === 0) {
+      if (bodies.length) rows.push({ kind: "cells", cells: bodies.map(cellText) });
+      continue;
+    }
     if (bodies.length === 0) {
       rows.push(heads.length === 1 ? { kind: "section", title: cellText(heads[0]!) } : { kind: "head", cells: heads.map(cellText) });
     } else {

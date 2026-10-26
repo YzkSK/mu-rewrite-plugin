@@ -1,12 +1,14 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
-import type { AttendanceMark, CourseDetail } from "@/muscat/api/types";
+import { ParseError } from "@/muscat/api/errors";
+import type { AttendanceMark, CourseDetail, SyllabusDetail } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { Panel } from "@/ui/Panel";
 import { errorToast, useToast } from "@/ui/Toast";
 import { errorMessage } from "../errorMessage";
+import { SyllabusDetailBody } from "../syllabus/SyllabusDetailView";
 import { useCourse, type CourseKey, type CourseState } from "./useCourse";
 
 type Props = {
@@ -86,7 +88,21 @@ function Memo({ client, course, toast }: { client: MuscatClient; course: CourseD
   );
 }
 
-function Body({ client, course, onNav, toast }: { client: MuscatClient; course: CourseDetail; onNav: Props["onNav"]; toast: (m: string) => void }) {
+type SyllabusState = { status: "loading" } | { status: "ready"; detail: SyllabusDetail } | { status: "error"; error: string };
+
+/** 引き出しの中のシラバス詳細(ふせん・印刷・✕ は出さない) */
+export function SyllabusPane({ state, onBack, onRetry }: { state: SyllabusState; onBack: () => void; onRetry: () => void }) {
+  return (
+    <>
+      <button type="button" className="cursor-pointer self-start border-0 bg-transparent px-2 py-1 text-sm text-primary" onClick={onBack}>‹ 授業に戻る</button>
+      {state.status === "loading" && <PageLoading title="シラバス" />}
+      {state.status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={state.error} onRetry={onRetry} />}
+      {state.status === "ready" && <SyllabusDetailBody detail={state.detail} toc={false} />}
+    </>
+  );
+}
+
+function Body({ client, course, onNav, onSyllabus, toast }: { client: MuscatClient; course: CourseDetail; onNav: Props["onNav"]; onSyllabus: () => void; toast: (m: string) => void }) {
   const slots = slotLabel(course.slots);
   return (
     <div className="flex flex-col gap-4">
@@ -125,7 +141,7 @@ function Body({ client, course, onNav, toast }: { client: MuscatClient; course: 
         </Panel>
       )}
       <div className="flex gap-2">
-        <Button variant="secondary" onClick={() => onNav("シラバス")}>シラバスを開く</Button>
+        <Button variant="secondary" onClick={onSyllabus}>シラバスを開く</Button>
         <Button variant="secondary" onClick={() => onNav("成績照会")}>成績を見る</Button>
       </div>
     </div>
@@ -146,6 +162,24 @@ export function CourseDrawer({ client, course: key, onClose, onNav, initial }: P
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  const [syl, setSyl] = useState<SyllabusState | null>(null);
+  const run = useRef(0);
+  const openSyllabus = () => {
+    const n = ++run.current;
+    setSyl({ status: "loading" });
+    const target = { title: key.title, code: course?.code || key.code };
+    client.syllabus.ofCourse(target).then(
+      (detail) => n === run.current && setSyl({ status: "ready", detail }),
+      (e) => {
+        if (n !== run.current) return;
+        // 履修授業のボタンで開けなければ、シラバス画面で検索して開く(授業コードも渡す。移れば引き出しも消える)
+        if (e instanceof ParseError && e.message === "履修授業にありません") {
+          setSyl(null);
+          void client.syllabus.open(target).catch((err: unknown) => n === run.current && setSyl({ status: "error", error: errorMessage(err) }));
+        } else setSyl({ status: "error", error: errorMessage(e) });
+      },
+    );
+  };
   const ghost = "cursor-pointer border-0 bg-transparent px-2 py-1 text-sm text-primary";
   return (
     <div className="fixed inset-0 z-40">
@@ -167,9 +201,15 @@ export function CourseDrawer({ client, course: key, onClose, onNav, initial }: P
             <h2 className="m-0 text-[19px] font-bold">{key.title}</h2>
             {(course?.code ?? key.code) && <span className="text-xs text-muted-foreground">{course?.code ?? key.code}</span>}
           </div>
-          {status === "loading" && <PageLoading title="授業" />}
-          {status === "error" && <ErrorNotice title="授業を読み込めませんでした" message={error ?? ""} onRetry={reload} />}
-          {status === "ready" && course && <Body client={client} course={course} onNav={onNav} toast={toast} />}
+          {syl ? (
+            <SyllabusPane state={syl} onBack={() => { run.current++; setSyl(null); }} onRetry={openSyllabus} />
+          ) : (
+            <>
+              {status === "loading" && <PageLoading title="授業" />}
+              {status === "error" && <ErrorNotice title="授業を読み込めませんでした" message={error ?? ""} onRetry={reload} />}
+              {status === "ready" && course && <Body client={client} course={course} onNav={onNav} onSyllabus={openSyllabus} toast={toast} />}
+            </>
+          )}
         </div>
         {node}
       </aside>

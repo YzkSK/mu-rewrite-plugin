@@ -41,14 +41,62 @@ function Row({ row }: { row: SyllabusDetailRow }) {
       </div>
     );
   }
+  if (row.kind === "cells") {
+    return (
+      <div className="grid gap-x-2 border-b border-border/60 px-3 py-1.5 text-[12.5px]" style={{ gridTemplateColumns: `repeat(${row.cells.length}, minmax(0, 1fr))` }}>
+        {row.cells.map((c, i) => <span key={i} className={`min-w-0 whitespace-pre-line break-words${dim(c)}`}>{c || "－"}</span>)}
+      </div>
+    );
+  }
   return (
-    <dl className="m-0 grid grid-cols-[150px_1fr] max-[767px]:grid-cols-1">
+    <dl className="m-0 grid grid-cols-[150px_minmax(0,1fr)] max-[767px]:grid-cols-1">
       <dt className="bg-muted/50 px-3 py-1.5 text-[12.5px] text-muted-foreground">{row.label}</dt>
-      <dd className="m-0 flex flex-wrap gap-x-6 px-3 py-1.5 text-[12.5px]">
+      <dd className="m-0 flex min-w-0 flex-wrap gap-x-6 px-3 py-1.5 text-[12.5px]">
         {row.values.length === 0 && <span className="text-muted-foreground/50">－</span>}
-        {row.values.map((v, i) => <span key={i} className={`whitespace-pre-line${dim(v)}`}>{v || "－"}</span>)}
+        {/* 長い英語の氏名などが枠からはみ出さないよう折り返す */}
+        {row.values.map((v, i) => <span key={i} className={`min-w-0 whitespace-pre-line break-words${dim(v)}`}>{v || "－"}</span>)}
       </dd>
     </dl>
+  );
+}
+
+/** 目次と節の本文。授業の引き出しの中でも使う */
+export function SyllabusDetailBody({ detail, toc = true }: { detail: SyllabusDetail; toc?: boolean }) {
+  const [cur, setCur] = useState(0);
+  const body = useRef<HTMLDivElement>(null);
+  const groups = groupRows(detail.rows);
+  const go = (i: number) => {
+    setCur(i);
+    body.current?.querySelector(`[data-sec="${i}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  return (
+    <div className="flex min-h-0 flex-1">
+      {toc && <nav aria-label="目次" className="w-[170px] flex-none overflow-y-auto border-r border-border py-2 text-[13px] max-[767px]:hidden">
+        {SECTIONS.map((s, i) => (
+          <button
+            key={s}
+            type="button"
+            aria-current={cur === i || undefined}
+            onClick={() => go(i)}
+            className={`block w-full cursor-pointer border-0 px-4 py-1.5 text-left ${cur === i ? "bg-accent font-semibold text-primary" : "bg-transparent"}`}
+          >
+            {s}
+          </button>
+        ))}
+      </nav>}
+      <div ref={body} className="min-w-0 flex-1 overflow-y-auto px-5 py-4">
+        {groups.map((rows, i) =>
+          rows.length === 0 ? null : (
+            <section key={i} data-sec={i} className="mb-6">
+              <h3 className="m-0 mb-2 text-sm font-semibold">{SECTIONS[i]}</h3>
+              <div className="flex flex-col gap-px">
+                {rows.map((r, j) => <Row key={j} row={r} />)}
+              </div>
+            </section>
+          ),
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -56,8 +104,6 @@ type Props = { detail: SyllabusDetail; busy: boolean; onNote: () => void; onPrin
 
 /** 科目の詳細。右から出る引き出し(上の帯の下から)。幕・Esc・✕で閉じる */
 export function SyllabusDetailView({ detail, busy, onNote, onPrint, onClose }: Props) {
-  const [cur, setCur] = useState(0);
-  const body = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
@@ -65,14 +111,9 @@ export function SyllabusDetailView({ detail, busy, onNote, onPrint, onClose }: P
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const groups = groupRows(detail.rows);
   const period = find(detail.rows, "開講期");
   const credit = find(detail.rows, "単位数");
   const meta = [detail.code, period, credit].filter(Boolean).join("　");
-  const go = (i: number) => {
-    setCur(i);
-    body.current?.querySelector(`[data-sec="${i}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
   return (
     <div className="fixed inset-x-0 bottom-0 top-(--bar-h) z-40">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -93,33 +134,7 @@ export function SyllabusDetailView({ detail, busy, onNote, onPrint, onClose }: P
           <Button variant="secondary" disabled={busy || !detail.printRef} onClick={onPrint}>印刷</Button>
           <button type="button" aria-label="閉じる" onClick={onClose} className="h-8 w-8 cursor-pointer rounded-[4px] border-0 bg-transparent text-base text-muted-foreground hover:bg-muted">✕</button>
         </div>
-        <div className="flex min-h-0 flex-1">
-          <nav aria-label="目次" className="w-[170px] flex-none overflow-y-auto border-r border-border py-2 text-[13px] max-[767px]:hidden">
-            {SECTIONS.map((s, i) => (
-              <button
-                key={s}
-                type="button"
-                aria-current={cur === i || undefined}
-                onClick={() => go(i)}
-                className={`block w-full cursor-pointer border-0 px-4 py-1.5 text-left ${cur === i ? "bg-accent font-semibold text-primary" : "bg-transparent"}`}
-              >
-                {s}
-              </button>
-            ))}
-          </nav>
-          <div ref={body} className="min-w-0 flex-1 overflow-y-auto px-5 py-4">
-            {groups.map((rows, i) =>
-              rows.length === 0 ? null : (
-                <section key={i} data-sec={i} className="mb-6">
-                  <h3 className="m-0 mb-2 text-sm font-semibold">{SECTIONS[i]}</h3>
-                  <div className="flex flex-col gap-px">
-                    {rows.map((r, j) => <Row key={j} row={r} />)}
-                  </div>
-                </section>
-              ),
-            )}
-          </div>
-        </div>
+        <SyllabusDetailBody detail={detail} />
       </aside>
     </div>
   );

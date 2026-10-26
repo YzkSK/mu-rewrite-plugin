@@ -25,6 +25,7 @@ test("授業名・時限(全角数字も)・教員・教室・掲示・メモ", 
     room: "本館 101",
     notices: [{ date: "2026/10/20", title: "休講のお知らせ" }, { date: "2026/10/21", title: "補講について" }],
     memo: { value: "持ち物", inputName: "funcForm:l:0:jugyoMemo", saveId: "funcForm:l:0:save" },
+    syllabusId: "s0",
   });
   expect(b!.notices).toEqual([]);
 });

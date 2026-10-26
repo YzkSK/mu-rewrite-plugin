@@ -203,7 +203,7 @@ export type SyllabusPage = {
   detail: SyllabusDetail | null;
 };
 /** 詳細の 1 行。section は見出し、head は表の見出し(セルが 2 つ以上)、field は項目名と値(表の行では値が複数) */
-export type SyllabusDetailRow = { kind: "section"; title: string } | { kind: "head"; cells: string[] } | { kind: "field"; label: string; values: string[] };
+export type SyllabusDetailRow = { kind: "section"; title: string } | { kind: "head"; cells: string[] } | { kind: "cells"; cells: string[] } | { kind: "field"; label: string; values: string[] };
 export type SyllabusDetail = { title: string; code: string; rows: SyllabusDetailRow[]; noteOn: boolean; noteRef: string; printRef: string; closeRef: string };
 
 /** kind は元の画面の種類 class(zoneJugyo → "jugyo", zoneResOther → "resOther")。start/end は 0:00 からの分、lane は重なったときの段 */
@@ -263,6 +263,8 @@ export type CourseListItem = {
   room: string;
   notices: { date: string; title: string }[];
   memo: { value: string; inputName: string; saveId: string } | null;
+  /** シラバス照会ボタンの id(無ければ "") */
+  syllabusId: string;
 };
 /** 授業の引き出しの中身。見つからなかった部分は null か空 */
 export type CourseDetail = {

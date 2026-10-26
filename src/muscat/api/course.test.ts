@@ -75,3 +75,53 @@ test("saveMemo: ホームでなければ取り込んでから送る。授業が�
   expect(calls.map((x) => x.url)).toEqual(["/uprx/ShibbolethAuthServlet", "/login", "/f"]);
   await expect(c.saveMemo("無い授業", "a")).rejects.toThrow();
 });
+
+// シラバス照会ボタンつきのホーム。小窓は押したあとの応答で開く
+const syllabusHome = homeDoc("new").replace(
+  `<input class="ui-inputtext"`,
+  `<div class="lessonBtnArea"><button id="funcForm:syl0" type="button" onclick="PrimeFaces.ab({s:&quot;funcForm:syl0&quot;,f:&quot;funcForm&quot;,p:&quot;funcForm:syl0&quot;});return false;">シラバス照会</button></div><input class="ui-inputtext"`,
+);
+const dialogReply = `<partial-response><changes><update id="funcForm:dlg"><![CDATA[<div id="pkx02301:dialog" aria-hidden="false"><span class="ui-dialog-title">シラバス照会</span>
+<div class="rowStyle rowMargin"><div class="ui-widget-header">授業コード・授業科目</div><div class="ui-widget-content"><div>0010010101 合成演習</div></div></div></div>
+<button id="funcForm:closeB" type="button" onclick="PrimeFaces.ab({s:&quot;funcForm:closeB&quot;,f:&quot;funcForm&quot;});return false;"></button>
+<script>PrimeFaces.cw("CommandButton","pkx02301-closeBtn",{id:"funcForm:closeB"});</script>]]></update></changes></partial-response>`;
+
+function sylServer() {
+  const sources: (string | null)[] = [];
+  const f: Fetch = async (url, init) => {
+    const body = String(init?.body ?? "");
+    url = new URL(url, "http://x").pathname;
+    if (url.includes("ShibbolethAuthServlet")) return new Response(relay);
+    if (url === "/login") return new Response(menu + syllabusHome.replace(`<form id="funcForm"`, `<div id="funcForm:dlg"></div><form id="funcForm"`));
+    if (body.includes("partial.ajax")) {
+      const s = new URLSearchParams(body).get("jakarta.faces.source");
+      sources.push(s);
+      return new Response(s === "funcForm:syl0" ? dialogReply : "<partial-response><changes></changes></partial-response>");
+    }
+    return new Response(menu + attendance);
+  };
+  return { f, sources };
+}
+
+test("getCourseSyllabus: シラバス照会ボタン → 詳細を読む → closeBtn の順に送る", async () => {
+  const { f, sources } = sylServer();
+  const c = createMuscatClient({ fetch: f, doc: toDoc("<p>x</p>"), ids, now });
+  const d = await c.syllabus.ofCourse({ title: "合成演習" });
+  expect([d.code, d.title]).toEqual(["0010010101", "合成演習"]);
+  expect(sources).toEqual(["funcForm:syl0", "funcForm:closeB"]);
+});
+
+test("getCourseSyllabus: 開いた詳細の授業コードが違えば(同名の別クラス)、閉じてから「履修授業にありません」(検索で開く予備へ)", async () => {
+  const { f, sources } = sylServer();
+  const c = createMuscatClient({ fetch: f, doc: toDoc("<p>x</p>"), ids, now });
+  await expect(c.syllabus.ofCourse({ title: "合成演習", code: "9999999999" })).rejects.toThrow("履修授業にありません");
+  expect(sources).toEqual(["funcForm:syl0", "funcForm:closeB"]);
+  expect((await c.syllabus.ofCourse({ title: "合成演習", code: "0010010101" })).code).toBe("0010010101");
+});
+
+test("getCourseSyllabus: 履修授業に無ければ ParseError で何も送らない", async () => {
+  const { f, sources } = sylServer();
+  const c = createMuscatClient({ fetch: f, doc: toDoc("<p>x</p>"), ids, now });
+  await expect(c.syllabus.ofCourse({ title: "無い授業" })).rejects.toThrow("履修授業にありません");
+  expect(sources).toEqual([]);
+});

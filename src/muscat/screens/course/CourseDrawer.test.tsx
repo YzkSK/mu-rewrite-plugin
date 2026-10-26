@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import type { CourseDetail } from "@/muscat/api/types";
 import { fakeClient } from "../fakeClient";
-import { CourseDrawer } from "./CourseDrawer";
+import { CourseDrawer, SyllabusPane } from "./CourseDrawer";
 import type { CourseState } from "./useCourse";
 
 const detail: CourseDetail = {
@@ -56,6 +56,13 @@ test("掲示とメモと下のボタン。掲示が無ければ節ごと出さ�
   const none = render(ready({ notices: [], memo: null }));
   expect(none).not.toContain("この授業の掲示");
   expect(none).not.toContain("メモを保存");
+});
+
+test("シラバス表示: 戻るボタンと詳細。ふせん・印刷・✕ は出さない", () => {
+  const d = { title: "合成演習", code: "5300100033", rows: [{ kind: "field" as const, label: "担当教員", values: ["教員A"] }], noteOn: false, noteRef: "", printRef: "", closeRef: "" };
+  const html = renderToString(<SyllabusPane state={{ status: "ready", detail: d }} onBack={() => {}} onRetry={() => {}} />);
+  for (const s of ["‹ 授業に戻る", "担当教員", "教員A"]) expect(html).toContain(s);
+  for (const s of ["ふせん", "印刷", "閉じる"]) expect(html).not.toContain(s);
 });
 
 test("読み込み中・エラー(もう一度読み込む)", () => {

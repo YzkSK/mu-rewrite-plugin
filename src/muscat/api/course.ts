@@ -3,7 +3,9 @@ import type { Core } from "./core";
 import { ParseError } from "./errors";
 import { parseAttendance } from "./parse/attendance";
 import { parseCourseList } from "./parse/courseList";
-import type { CourseDetail } from "./types";
+import { parseSyllabusDetail } from "./parse/syllabusDetail";
+import type { CourseDetail, SyllabusDetail } from "./types";
+import { scanWidgets } from "./virtual/widgets";
 
 const squeeze = (s: string) => s.replace(/\s+/g, "");
 
@@ -26,6 +28,28 @@ export function getCourse(core: Core, key: { title: string; code?: string }): Pr
       notices: item?.notices ?? [],
       memo: item?.memo?.value ?? null,
     };
+  });
+}
+
+/** ホームの履修授業のシラバス照会ボタンを押して、開いた小窓を読む。ref は aside の文書の札なので画面では使わない */
+export function getCourseSyllabus(core: Core, key: { title: string; code?: string }): Promise<SyllabusDetail> {
+  return core.aside(async (ctx) => {
+    if (!(await ctx.openHome())) return null;
+    const ids = parseCourseList(ctx.doc()).filter((c) => c.title === key.title && c.syllabusId).map((c) => c.syllabusId);
+    if (!ids.length) throw new ParseError("履修授業にありません");
+    // 同じ授業名のクラスが複数あれば、開いた詳細の授業コードで見分ける
+    for (const id of ids) {
+      if (!(await ctx.click(id))) return null;
+      const detail = parseSyllabusDetail(ctx.doc());
+      if (!detail) throw new ParseError("シラバスを読めませんでした");
+      // 元の ✕ と同じ閉じる通信。失敗しても読んだ詳細は返す
+      const doc = ctx.doc();
+      const close = [...scanWidgets(doc).values()].find((w) => w.widgetVar === "pkx02301-closeBtn" && doc.getElementById(w.id));
+      if (close) await ctx.click(close.id).catch(() => false);
+      // 授業コードが読めない詳細は、同じ名前のクラスが 1 つだけのときに限って受け入れる
+      if (!key.code || detail.code === key.code || (!detail.code && ids.length === 1)) return detail;
+    }
+    throw new ParseError("履修授業にありません"); // 授業コードが合うクラスが無い(検索で開く予備に回す)
   });
 }
 

@@ -23,6 +23,7 @@ function parseCourse(li: Element): CourseListItem {
       return [{ date: DATE.exec(text)?.[0] ?? "", title }];
     }),
     memo: input ? { value: input.value, inputName: input.name, saveId: save?.id ?? "" } : null,
+    syllabusId: li.querySelector(".lessonBtnArea button")?.id ?? "",
   };
 }
 
