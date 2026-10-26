@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { PERIODS } from "@/muscat/screens/home/dayRows";
 import { fmtDue } from "@/portal/lib/lib";
+import { courseName } from "@/portal/lib/lms";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { groupDue, loadHome, remain, type Due, type HomeData, type News, type Recent } from "./home";
+import { loadCourses, termOfMonth, todayClasses, type MyCourse } from "./courses";
+import { useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 
 const LINK = "text-[12.5px] text-primary hover:underline";
@@ -85,10 +89,32 @@ function RecentBox({ recent }: { recent: Recent[] | null }) {
   );
 }
 
-type Props = { userId: number | null; initial?: HomeData; now?: Date };
+function TodayBox({ list }: { list: ReturnType<typeof todayClasses> }) {
+  return (
+    <Box title="今日の授業">
+      {!list.length ? <Note>今日は授業がありません</Note> : (
+        <ul className="m-0 list-none p-0">
+          {list.map(({ course: c, periods }, i) => (
+            <Row key={i}>
+              <span className="w-28 flex-none text-[12.5px] text-muted-foreground">{`${periods.join("・")}限 ${PERIODS[periods[0]! - 1]?.start}-${PERIODS[periods[periods.length - 1]! - 1]?.end}`}</span>
+              <a className="min-w-0 flex-1 text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere]" href={c.url}>{courseName(c.name)}</a>
+            </Row>
+          ))}
+        </ul>
+      )}
+    </Box>
+  );
+}
 
-/** MU-LMS のホーム。左に提出期限、右にアナウンスと最近のコース(狭い幅では縦に積む) */
-export function HomeScreen({ userId, initial, now = new Date() }: Props) {
+type Props = { userId: number | null; initial?: HomeData; now?: Date; initialSlots?: SlotMap | null; initialCourses?: MyCourse[] };
+
+/** MU-LMS のホーム。左に提出期限、右に今日の授業・アナウンス・最近のコース(狭い幅では縦に積む)。今日の授業は MUSCAT の対応表が届いたら出す */
+export function HomeScreen({ userId, initial, now = new Date(), initialSlots, initialCourses }: Props) {
+  const slots = useSlots(initialSlots);
+  const [courses, setCourses] = useState<MyCourse[] | null>(initialCourses ?? null);
+  useEffect(() => {
+    if (slots && !initialCourses) loadCourses().then(setCourses, () => {});
+  }, [slots, initialCourses]);
   const [data, setData] = useState<HomeData | null>(initial ?? null);
   const load = useCallback(() => {
     setData(null);
@@ -104,6 +130,7 @@ export function HomeScreen({ userId, initial, now = new Date() }: Props) {
         <DueBox due={data.due} now={Math.floor(now.getTime() / 1000)} />
       </div>
       <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-4">
+        {slots && courses ? <TodayBox list={todayClasses(courses, slots, termOfMonth(now.getMonth() + 1), now.getDay())} /> : null}
         <NewsBox news={data.news} />
         <RecentBox recent={data.recent} />
       </div>

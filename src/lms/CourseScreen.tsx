@@ -4,6 +4,7 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
 import { isLate, loadCourse, shortStatus, termLabel, type CoursePage, type Item, type Section } from "./course";
+import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 import { openOriginal } from "./route";
 
@@ -46,10 +47,11 @@ function SectionCard({ s, now, refFn }: { s: Section; now: number; refFn: (el: H
   );
 }
 
-type Props = { page: CoursePage; initial?: Section[]; now?: Date };
+type Props = { page: CoursePage; initial?: Section[]; now?: Date; initialSlots?: SlotMap | null };
 
-/** コースの画面。左に目次、中央に全部の節、右に先生(狭い幅では目次を出さず、中央→先生の順に縦積み) */
-export function CourseScreen({ page, initial, now = new Date() }: Props) {
+/** コースの画面。左に目次、中央に全部の節、右に先生(狭い幅では目次を出さず、中央→先生の順に縦積み)。見出しの学期・曜日・時限は MUSCAT の対応表が届いたら描き直す */
+export function CourseScreen({ page, initial, now = new Date(), initialSlots }: Props) {
+  const slots = useSlots(initialSlots);
   const [sections, setSections] = useState<Section[] | null>(initial ?? null);
   const [failed, setFailed] = useState(page.id === null);
   const load = useCallback(() => {
@@ -61,7 +63,9 @@ export function CourseScreen({ page, initial, now = new Date() }: Props) {
   useEffect(() => { if (!initial) load(); }, [initial, load]);
   const refs = useRef<Record<number, HTMLElement | null>>({});
 
-  const term = termLabel(page.name);
+  const code = codeOf(page.shortname);
+  const found = code ? slots?.get(code) : undefined;
+  const term = found ? slotLabel(found) : termLabel(page.name);
   const sub = [term, page.shortname].filter(Boolean).join("、");
   const ms = now.getTime();
 

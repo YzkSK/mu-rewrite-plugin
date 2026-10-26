@@ -17,7 +17,7 @@ test("termOfMonth", () => {
 test("placeCourses: 時間割・曜日時限なし・そのほか", () => {
   const c = (id: number, name: string): MyCourse => ({ id, name, url: `/c/${id}` });
   const p = placeCourses([c(1, "333 A"), c(2, "333 B"), c(3, "399 C"), c(4, "111 D"), c(5, "ゼミ")], 3);
-  expect(p.grid["3-3"]!.map((x) => x.id)).toEqual([1, 2]);
+  expect(p.grid["3-3"]!.map((x) => x.course.id)).toEqual([1, 2]);
   expect(p.noSlot.map((x) => x.id)).toEqual([3]);
   expect(p.other.map((x) => x.id)).toEqual([5]);
   expect(Object.keys(p.grid)).toEqual(["3-3"]);

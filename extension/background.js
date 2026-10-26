@@ -1,3 +1,5 @@
+import { formOf, menuIdOf } from "./muscatTimetable.js";
+
 // MU LMS の提出期限。content script からは別オリジンなので SW が Cookie 付きで取る
 const LMS = "https://musashino-u.myopenlms.net";
 const METHOD = "core_calendar_get_action_events_by_timesort";
@@ -89,6 +91,41 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // 入り直しの許容時間(bounce のガードと同じ 5 分)の間は、ログインに時間がかかっても戻り先を返す
     sendResponse(v && v.bounce && Date.now() - v.bounce < 5 * 60 * 1000 ? { leaf: v.leaf } : {});
   });
+  return true;
+});
+
+// MUSCAT の時間割の HTML を fetch だけで取る(中継ページ → autoLogin → メニューの「学生時間割表」)。
+// サーバー側の「今の画面」が変わり、開いている MUSCAT のタブの操作が壊れるので、タブがあれば取らない
+async function muscatTimetable() {
+  try {
+    if ((await chrome.tabs.query({ url: MUSCAT + "*" })).length) return { busy: true };
+    const post = (url, fields, extra) => {
+      const body = new URLSearchParams(fields);
+      for (const [k, v] of extra) body.set(k, v);
+      return fetch(url, { method: "POST", credentials: "include", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    };
+    const relay = await fetch(MUSCAT + "ShibbolethAuthServlet", { credentials: "include" });
+    const login = relay.ok ? formOf(await relay.text(), "loginForm") : null;
+    if (!login) return { login: false };
+    const home = await post(new URL(login.action, relay.url).href, login.fields, [["loginForm:autoLogin", "loginForm:autoLogin"]]);
+    if (!home.ok) return { error: "home " + home.status };
+    const homeHtml = await home.text();
+    const menu = formOf(homeHtml, "menuForm");
+    const id = menuIdOf(homeHtml, "学生時間割表");
+    if (!menu || !id) return { error: "メニューが読めません" };
+    const res = await post(new URL(menu.action, home.url).href, menu.fields, [
+      ["rx.sync.source", "menuForm:mainMenu"], ["menuForm:mainMenu", "menuForm:mainMenu"], ["menuForm:mainMenu_menuid", id],
+    ]);
+    if (!res.ok) return { error: "timetable " + res.status };
+    return { html: await res.text() };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (!msg || msg.type !== "mu-muscat-timetable") return;
+  muscatTimetable().then(sendResponse);
   return true;
 });
 

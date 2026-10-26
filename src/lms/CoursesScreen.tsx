@@ -4,6 +4,7 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
 import { loadCourses, placeCourses, termOfMonth, type MyCourse } from "./courses";
+import { useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 
 const DAYS = ["月", "火", "水", "木", "金", "土"];
@@ -19,10 +20,11 @@ function List({ title, list }: { title: string; list: MyCourse[] }) {
   );
 }
 
-type Props = { initial?: MyCourse[]; now?: Date };
+type Props = { initial?: MyCourse[]; now?: Date; initialSlots?: SlotMap | null };
 
-/** マイコース。学期を選ぶと、月〜土 × 1〜7 限の表にコースを置く */
-export function CoursesScreen({ initial, now = new Date() }: Props) {
+/** マイコース。学期を選ぶと、月〜土 × 1〜7 限の表にコースを置く。MUSCAT の対応表は後から届いて描き直す */
+export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props) {
+  const slots = useSlots(initialSlots);
   const [courses, setCourses] = useState<MyCourse[] | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const [term, setTerm] = useState(termOfMonth(now.getMonth() + 1));
@@ -36,7 +38,7 @@ export function CoursesScreen({ initial, now = new Date() }: Props) {
   if (failed) return <div className="p-4"><ErrorNotice title="読み込めませんでした" message="コースの一覧を取得できませんでした。" onRetry={load} /></div>;
   if (!courses) return <PageLoading title="マイコース" />;
 
-  const p = placeCourses(courses, term);
+  const p = placeCourses(courses, term, slots);
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">
       <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border">
@@ -57,11 +59,16 @@ export function CoursesScreen({ initial, now = new Date() }: Props) {
               {[1, 2, 3, 4, 5, 6, 7].map((period) => (
                 <tr key={period}>
                   <th className="border-b border-border bg-muted p-1.5 font-semibold text-muted-foreground">{`${period}限`}</th>
-                  {DAYS.map((d, i) => (
-                    <td key={d} className="h-14 border-b border-l border-border p-1.5 align-top">
-                      {(p.grid[`${i + 1}-${period}`] ?? []).map((c) => <a key={c.id} href={c.url} className="block text-foreground hover:underline [overflow-wrap:anywhere]">{courseName(c.name)}</a>)}
-                    </td>
-                  ))}
+                  {DAYS.map((d, i) => {
+                    const key = `${i + 1}-${period}`;
+                    if (p.covered.has(key)) return null;
+                    const cells = p.grid[key] ?? [];
+                    return (
+                      <td key={d} rowSpan={Math.max(1, ...cells.map((x) => x.rows))} className="h-14 border-b border-l border-border p-1.5 align-top">
+                        {cells.map(({ course: c }) => <a key={c.id} href={c.url} className="block text-foreground hover:underline [overflow-wrap:anywhere]">{courseName(c.name)}</a>)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

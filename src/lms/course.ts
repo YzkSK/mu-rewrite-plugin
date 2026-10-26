@@ -22,7 +22,7 @@ const DAYS: Record<string, string> = { 1: "月", 2: "火", 3: "水", 4: "木", 5
 export type Slot = { term: number; day: number | null; period: number | null };
 
 /** "333 専門…" → { term: 3, day: 3(水), period: 3 }。day・period は 9(なし)なら null。読めなければ null */
-// shortcut: 開始の時限だけ。2 コマ続き・2 学期にまたがる授業は MUSCAT 連携の PR で照合に替える
+// shortcut: フォールバック用。開始の時限だけで、2 コマ続き・2 学期にまたがる授業は分からない(MUSCAT の対応表があればそちらを使う)
 export function readSlot(name: string): Slot | null {
   const m = /^([1-4])([1-69])([1-79])(?!\d)/.exec(name.trim());
   if (!m) return null;
