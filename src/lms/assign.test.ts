@@ -1,0 +1,116 @@
+import { afterEach, expect, test } from "bun:test";
+import { buildSubmission, htmlToText, readAssignPage, readSubmitForm, submit, textToHtml, type SubmitForm } from "./assign";
+
+const realFetch = globalThis.fetch;
+afterEach(() => { globalThis.fetch = realFetch; });
+
+test("textToHtml: 空行で段落、改行は <br>、文字はエスケープ", () => {
+  expect(textToHtml("a\nb\n\nc")).toBe("<p>a<br>b</p><p>c</p>");
+  expect(textToHtml("<script>alert(1)</script> & \"x\"")).toBe("<p>&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;x&quot;</p>");
+  expect(textToHtml("  \r\n ")).toBe("");
+});
+
+test("htmlToText: <p>/<br> は改行、ほかのタグは外す", () => {
+  expect(htmlToText("<p>a<br>b</p><p>c &amp; <b>d</b></p>")).toBe("a\nb\n\nc & d");
+  expect(htmlToText("")).toBe("");
+});
+
+const form: SubmitForm = {
+  action: "/mod/assign/view.php",
+  fields: [["lastmodified", "1"], ["id", "55"], ["userid", "9"], ["action", "savesubmission"], ["sesskey", "k"], ["_qf__mod_assign_submission_form", "1"], ["onlinetext_editor[format]", "1"], ["onlinetext_editor[itemid]", "77"]],
+  text: "<p>old</p>",
+  hasFiles: false,
+  submitName: "submitbutton",
+  submitValue: "変更を保存する",
+};
+
+test("buildSubmission: hidden 全部・本文・submitbutton", () => {
+  const p = buildSubmission(form, "x\n\ny<");
+  for (const [k, v] of form.fields) expect(p.get(k)).toBe(v);
+  expect(p.get("onlinetext_editor[text]")).toBe("<p>x</p><p>y&lt;</p>");
+  expect(p.get("submitbutton")).toBe("変更を保存する");
+});
+
+test("buildSubmission: 書き換えていなければ元の HTML のまま送る", () => {
+  const rich = { ...form, text: '<p>a <a href="https://x">link</a></p><p>b</p>' };
+  expect(buildSubmission(rich, htmlToText(rich.text)).get("onlinetext_editor[text]")).toBe(rich.text);
+});
+
+test("submit: ログイン画面に転送されたら失敗(書きかけを消さない)", async () => {
+  reply("https://lms/login/index.php", "<form id='login'></form>");
+  await expect(submit(form, "a", () => {})).rejects.toThrow("ログインが切れていた");
+});
+
+const reply = (url: string, html: string, status = 200) => {
+  globalThis.fetch = (async () => ({ ok: status < 400, url, text: async () => html })) as unknown as typeof fetch;
+};
+
+test("submit: 成功は課題ページへ", async () => {
+  reply("https://lms/mod/assign/view.php?id=55", "<div id='region-main'>ok</div>");
+  let to = "";
+  await submit(form, "a", (u) => { to = u; });
+  expect(to).toBe("/mod/assign/view.php?id=55");
+});
+
+test("submit: 送った中身は POST の urlencoded", async () => {
+  let init: RequestInit | undefined;
+  globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return { ok: true, url: "https://lms/x", text: async () => "" }; }) as unknown as typeof fetch;
+  await submit(form, "a", () => {});
+  expect(init?.method).toBe("POST");
+  expect(init?.credentials).toBe("include");
+  expect((init?.body as URLSearchParams).get("action")).toBe("savesubmission");
+});
+
+test("submit: URL が editsubmission のまま・フォームが残る・HTTP エラーは失敗(理由つき)", async () => {
+  reply("https://lms/mod/assign/view.php?id=55&action=editsubmission", "<div class='alert-danger'> 保存できません </div>");
+  await expect(submit(form, "a", () => {})).rejects.toThrow("保存できません");
+  reply("https://lms/mod/assign/view.php", '<form class="mform"><input name="_qf__mod_assign_submission_form" value="1"></form><span class="error">必須です</span>');
+  await expect(submit(form, "a", () => {})).rejects.toThrow("必須です");
+  reply("https://lms/mod/assign/view.php?id=55", "x", 500);
+  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
+});
+
+const PAGE = `<title>2026_5300100047: 中間課題 | MU-LMS</title>
+<script>var c={"courseId":42}</script>
+<nav class="breadcrumb"><a href="/course/view.php?id=42"> 専門 </a></nav>
+<div id="region-main">
+  <div data-region="activity-dates"><div>開始: 2026年 09月 24日(木曜日) 17:20</div><div>期限: 2026年 09月 24日(木曜日) 18:30</div></div>
+  <div class="activity-description"><p>説明</p><script>x</script></div>
+  <table class="submissionstatustable"><tbody>
+    <tr><th>提出ステータス</th><td class="submissionstatussubmitted">提出済み</td></tr>
+    <tr><th>残り時間</th><td class="earlysubmission">1日</td></tr>
+    <tr><th>オンラインテキスト</th><td><div class="no-overflow"><p>本文</p></div></td></tr>
+  </tbody></table>
+  <form action="/mod/assign/view.php"><input type="hidden" name="id" value="55"><input type="hidden" name="action" value="editsubmission"><button>提出を直す</button></form>
+</div>`;
+
+test("readAssignPage: 実機の形", () => {
+  document.documentElement.innerHTML = `<head>${PAGE.split("<script>")[0]}</head><body>${PAGE.slice(PAGE.indexOf("<script>"))}</body>`;
+  const p = readAssignPage(document, "?id=55");
+  expect(p).toMatchObject({ id: 55, courseId: 42, courseName: "専門", title: "中間課題", canSubmit: true });
+  expect(p.dates).toEqual([{ label: "開始", value: "2026年 09月 24日(木曜日) 17:20" }, { label: "期限", value: "2026年 09月 24日(木曜日) 18:30" }]);
+  expect(p.description).toBe("<p>説明</p>");
+  expect(p.rows.map((r) => [r.label, r.cls])).toEqual([["提出ステータス", "submissionstatussubmitted"], ["残り時間", "earlysubmission"], ["オンラインテキスト", ""]]);
+  expect(p.rows[2]!.html).toContain("本文");
+  expect(readAssignPage(document, "?id=55&action=editsubmission").title).toBe("中間課題");
+});
+
+test("readAssignPage: 提出画面の題名は ' - ' 以降を外す・コース名が無ければ null", () => {
+  document.documentElement.innerHTML = "<head><title>s: 中間課題 - 提出を編集する | MU-LMS</title></head><body></body>";
+  const p = readAssignPage(document, "?id=55&action=editsubmission");
+  expect(p).toMatchObject({ title: "中間課題", courseName: null, courseId: null, canSubmit: false, description: null });
+});
+
+test("readSubmitForm: hidden・本文・ファイル欄・ボタン", () => {
+  document.documentElement.innerHTML = `<body><form class="mform" action="/mod/assign/view.php" method="post">
+    <input type="hidden" name="id" value="55"><input type="hidden" name="sesskey" value="k">
+    <input type="hidden" name="onlinetext_editor[itemid]" value="77">
+    <textarea name="onlinetext_editor[text]">&lt;p&gt;old&lt;/p&gt;</textarea>
+    <input name="files_filemanager" type="hidden" value="88">
+    <input type="submit" name="submitbutton" value="変更を保存する"><input type="submit" name="cancel" value="キャンセル"></form></body>`;
+  const f = readSubmitForm(document)!;
+  expect(f.fields).toEqual([["id", "55"], ["sesskey", "k"], ["onlinetext_editor[itemid]", "77"], ["files_filemanager", "88"]]);
+  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", hasFiles: true, submitValue: "変更を保存する" });
+  document.body.innerHTML = "";
+  expect(readSubmitForm(document)).toBeNull();
+});

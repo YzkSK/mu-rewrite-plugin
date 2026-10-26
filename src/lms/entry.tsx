@@ -4,7 +4,9 @@ import { fetchUserName, setSesskey } from "./api";
 import { mountLms, mountLmsError, mountLmsGate, unmountLms } from "./host";
 import { clearLoggedOut, clearTried, decide, isLoggedIn, LOGIN_URL, markTried, peekLoggedOut, peekTried, readSesskey, readUserId, watchLogout } from "./login";
 import { courseName } from "@/portal/lib/lms";
+import { readAssignPage, readSubmitForm } from "./assign";
 import { readCoursePage } from "./course";
+import type { View } from "./LmsApp";
 import { isAppPath, routeOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
@@ -70,9 +72,25 @@ if (window === window.top) {
         const name = id === null ? null : await fetchUserName(id).catch((e) => { console.error("[mu-lms]", e); return null; });
         if (state !== "loading") return;
         // ページを読むのはここだけ(画面には渡す)。mount より前に読む
-        const course = routeOf(location.pathname) === "course" ? readCoursePage(document, location.search) : null;
-        mountLms(name || null, id, course);
-        document.title = course ? `${courseName(course.name) || "コース"} | MU-LMS` : "ホーム | MU-LMS";
+        const route = routeOf(location.pathname, location.search);
+        let view: View | null = null;
+        let heading = "ホーム";
+        if (route === "course") {
+          const page = readCoursePage(document, location.search);
+          view = { kind: "course", page };
+          heading = courseName(page.name) || "コース";
+        } else if (route === "assign" || route === "submit") {
+          const page = readAssignPage(document, location.search);
+          heading = page.title || "課題";
+          if (route === "assign") view = { kind: "assign", page };
+          else {
+            const form = readSubmitForm(document);
+            if (!form) throw new Error("提出フォームが見つかりません");
+            view = { kind: "submit", page, form };
+          }
+        }
+        mountLms(name || null, id, view);
+        document.title = `${heading} | MU-LMS`;
         state = "on";
         release();
       } catch (e) {
