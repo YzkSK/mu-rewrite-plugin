@@ -1,9 +1,15 @@
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { unblockNativeScripts } from "@/ui/block";
+import css from "@/ui/tokens.css?inline";
 import { createMuscatClient } from "./api/client";
 import { readMenuIds } from "./api/menuIds";
 import * as bg from "./shell/bg";
 import { boot } from "./shell/boot";
+import { LoggedOut } from "./shell/LoggedOut";
+import { LOGGED_OUT_KEY } from "./shell/loginPage";
 import { mountApp } from "./shell/mountApp";
+import { mountShadowRoot } from "./shell/mount";
 import { openNative } from "./shell/native";
 import { installPreHide, preEpoch, releasePreHide } from "./shell/pre";
 import { mountShell, unmountShell } from "./shell/screenHost";
@@ -59,6 +65,18 @@ if (window === window.top && boot({ doc: document, pathname: location.pathname, 
           onScreen,
         );
         requestAnimationFrame(() => mark("paint"));
+      },
+      showLoggedOut: (props) => {
+        const enter = () => {
+          try {
+            sessionStorage.removeItem(LOGGED_OUT_KEY);
+            sessionStorage.setItem("mu-m-sso", String(Date.now())); // 失敗して戻ったら、また飛ばさずに案内を出す
+          } catch {}
+          location.assign("/uprx/ShibbolethAuthServlet");
+        };
+        const mountPoint = document.createElement("div");
+        mountShadowRoot(document, css).appendChild(mountPoint);
+        flushSync(() => createRoot(mountPoint).render(<LoggedOut {...props} onEnter={enter} />));
       },
       unblock,
       release,
