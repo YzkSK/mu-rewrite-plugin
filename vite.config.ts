@@ -3,10 +3,12 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-// 既定は MUSCAT、--mode portal で MU ポータル、--mode lms で MU-LMS(出力先は同じ extension/dist)
-const TARGETS: Record<string, { entry: string; name: string; file: string }> = {
+// 既定は MUSCAT、--mode portal で MU ポータル、--mode lms で MU-LMS(出力先は同じ extension/dist)。
+// --mode pdf は LMS の PDF プレビューが開いたときだけ読み込む pdf.js(ES module)
+const TARGETS: Record<string, { entry: string; name: string; file: string; format?: "es" }> = {
   portal: { entry: "src/portal/entry.tsx", name: "MuPortal", file: "portal-react.js" },
   lms: { entry: "src/lms/entry.tsx", name: "MuLms", file: "lms-react.js" },
+  pdf: { entry: "src/lms/pdfjs.ts", name: "MuPdf", file: "lms-pdf.js", format: "es" },
 };
 export default defineConfig(({ mode }) => {
   const t = TARGETS[mode] ?? { entry: "src/muscat/entry.tsx", name: "MuMuscat", file: "muscat-react.js" };
@@ -19,7 +21,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: false,
       lib: {
         entry: t.entry,
-        formats: ["iife"],
+        formats: [t.format ?? "iife"],
         name: t.name,
         fileName: () => t.file,
       },

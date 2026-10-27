@@ -6,6 +6,7 @@ import { LoginRequiredError } from "./api";
 import { isLate, loadCourse, shortStatus, termLabel, type CoursePage, type Item, type Section } from "./course";
 import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
+import { PdfViewer } from "./PdfViewer";
 import { openOriginal } from "./route";
 
 const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ" };
@@ -13,13 +14,21 @@ const PURPLE = new Set(["assign", "quiz"]);
 // ラベルの本文は外部由来の HTML(sanitize 済み)。見た目だけ最低限そろえる
 const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5";
 
+
 function ItemRow({ it, now }: { it: Item; now: number }) {
   const late = isLate(it.status, now);
+  const [preview, setPreview] = useState(false);
+  const closePreview = useCallback(() => setPreview(false), []);
+  const isPdf = it.mod === "resource" && it.type === "PDF" && !!it.url;
   return (
     <Row>
       <span className={`h-fit w-[4.5rem] flex-none rounded-[3px] px-1 text-center text-[11px] leading-[18px] ${PURPLE.has(it.mod) ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}>{TAG[it.mod] ?? it.mod}</span>
       <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">
-        {it.url ? <a className="text-foreground hover:underline" href={it.url}>{it.name}</a> : it.name}
+        {it.url
+          // PDF は押したらプレビュー(修飾キー付きは元どおりブラウザに任せる)
+          ? <a className="text-foreground hover:underline" href={it.url} onClick={isPdf ? (e) => { if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); setPreview(true); } : undefined}>{it.name}</a>
+          : it.name}
+        {preview ? <PdfViewer name={it.name} url={it.url} onClose={closePreview} /> : null}
         {it.type ? <small className="ml-1.5 text-[11px] text-muted-foreground">{it.type}</small> : null}
       </span>
       {it.status ? <span className={`h-fit max-w-[45%] flex-none text-right text-[12px] ${late ? "font-bold text-error" : "text-muted-foreground"}`}>{shortStatus(it.status)}</span> : null}

@@ -26,5 +26,8 @@
       "run_at": "document_start"
     }
   ],
+  "web_accessible_resources": [
+    { "resources": ["dist/lms-pdf.js"], "matches": ["https://musashino-u.myopenlms.net/*"] }
+  ],
   "background": { "service_worker": "background.js", "type": "module" }
 }
