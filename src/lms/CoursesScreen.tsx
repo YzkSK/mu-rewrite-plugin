@@ -5,7 +5,7 @@ import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
 import { loadCourses, placeCourses, termOfMonth, type MyCourse } from "./courses";
 import { readSlot, termLabel } from "./course";
-import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
+import { codeOf, slotLabel, useSlots, useSlotsMiss, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 
 const DAYS = ["月", "火", "水", "木", "金", "土"];
@@ -48,6 +48,7 @@ type Props = { initial?: MyCourse[]; now?: Date; initialSlots?: SlotMap | null }
 /** マイコース。学期を選ぶと、月〜土 × 1〜7 限の表にコースを置く。MUSCAT の対応表は後から届いて描き直す */
 export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props) {
   const slots = useSlots(initialSlots);
+  const miss = useSlotsMiss();
   const [courses, setCourses] = useState<MyCourse[] | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const [day, setDay] = useState(now.getDay() || 1); // 日曜は月
@@ -77,6 +78,7 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
           <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[639px]:h-11 max-[639px]:flex-1 max-[639px]:px-0 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{t === ALL ? "すべて" : `${t}学期`}</button>
         ))}
       </div>
+      {miss && <p role="status" className="m-0 text-[13px] text-muted-foreground">MUSCAT の時間割: {miss}曜日・時限はコース名から推測しています(2 コマ続きの授業などはずれることがあります)。</p>}
       {term === ALL ? <AllList courses={courses} slots={slots} /> : <>
 
       <div className="min-[640px]:hidden">
