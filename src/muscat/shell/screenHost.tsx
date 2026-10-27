@@ -15,6 +15,7 @@ import { SupersededError } from "../api/errors";
 import { popAction, popDirection, pushEntry, replaceEntry, screenHistoryOp } from "./history";
 import { App } from "./App";
 import { drawerItems, lastLoginOf, loginUserOf } from "./drawerItems";
+import { LOGGED_OUT_KEY } from "./loginPage";
 import { mountShadowRoot, unmountShadowRoot } from "./mount";
 import { isHomeScreen, resolveScreen } from "./resolveScreen";
 import { screenCodeOf } from "./screenCode";
@@ -96,7 +97,13 @@ function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: S
   const model = drawerItems(
     {
       go: (label) => void client.navigate(label).catch(fail),
-      logout: () => void client.logout().then((url) => actions.assign(url), fail),
+      logout: () =>
+        void client.logout().then((url) => {
+          try {
+            sessionStorage.setItem(LOGGED_OUT_KEY, "1"); // 戻った /uprx/ から SSO へ飛ばして入り直さない
+          } catch {}
+          actions.assign(url);
+        }, fail),
       openNative: actions.openNative,
     },
     groups,

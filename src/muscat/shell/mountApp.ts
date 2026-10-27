@@ -1,4 +1,5 @@
 import type { MuscatClient } from "../api/client";
+import { LOGGED_OUT_KEY, isLoginPage, loginPageAction, publicSyllabusHref } from "./loginPage";
 import { reenter } from "./reenter";
 import { isHomeScreen, isLoggedIn } from "./resolveScreen";
 import { screenCodeOf } from "./screenCode";
@@ -6,9 +7,11 @@ import type { OnScreen } from "./screenHost";
 
 export type AppDeps = {
   bg: { reportScreen(leaf: string): void; askRestore(): Promise<string>; reportBounce(): Promise<void>; isBouncing(): Promise<boolean> };
-  storage: Pick<Storage, "getItem" | "setItem">;
+  storage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
   pathname: string;
   replace(url: string): void;
+  /** パスワードのログイン画面の代わりに、拡張の小さな画面を描く */
+  showLoggedOut(props: { failed: boolean; syllabusHref: string }): void;
   /** この Document(元の画面。script は動いていない)を複製して持つ client */
   createClient(doc: Document): MuscatClient;
   /** 描く。画面が替わるたびに onScreen を呼ぶ */
@@ -27,6 +30,16 @@ export type AppDeps = {
  */
 export async function mountApp(doc: Document, d: AppDeps): Promise<void> {
   if (!isLoggedIn(doc)) {
+    if (isLoginPage(doc)) {
+      if (loginPageAction({ storage: d.storage, now: d.now() }) === "sso") return d.replace("/uprx/ShibbolethAuthServlet");
+      let loggedOut = false;
+      try {
+        loggedOut = !!d.storage.getItem(LOGGED_OUT_KEY);
+      } catch {}
+      d.showLoggedOut({ failed: !loggedOut, syllabusHref: publicSyllabusHref(doc) });
+      d.release();
+      return;
+    }
     const bounced = await reenter({ loggedIn: false, pathname: d.pathname, storage: d.storage, now: d.now(), reportBounce: d.bg.reportBounce, replace: d.replace });
     if (bounced) return;
     d.unblock(); // 中継ページの自動送信など、元の script が要る
@@ -34,6 +47,9 @@ export async function mountApp(doc: Document, d: AppDeps): Promise<void> {
     if (!(await d.bg.isBouncing())) d.release();
     return;
   }
+  try {
+    d.storage.removeItem(LOGGED_OUT_KEY); // 入れたので、次に /uprx/ を開いたときは SSO へ飛ばす
+  } catch {}
   const client = d.createClient(doc);
   // 入り直した直後なら、ホームを描かずに直前の画面へ進む。開けなければホームのまま
   if (isHomeScreen(screenCodeOf(doc), doc)) {

@@ -9,8 +9,9 @@ const page = (top: string, extra = "", menu = true) =>
     "text/html",
   );
 
-function setup(over: { restore?: string; bouncing?: boolean; pathname?: string; navFails?: boolean } = {}) {
+function setup(over: { restore?: string; bouncing?: boolean; pathname?: string; navFails?: boolean; store?: Record<string, string> } = {}) {
   const log: string[] = [];
+  const store = over.store ?? {};
   let onScreen: Parameters<AppDeps["mount"]>[1] = () => {};
   const deps: AppDeps = {
     bg: {
@@ -19,7 +20,8 @@ function setup(over: { restore?: string; bouncing?: boolean; pathname?: string; 
       reportBounce: async () => void log.push("bounce"),
       isBouncing: async () => over.bouncing ?? false,
     },
-    storage: { getItem: () => null, setItem: () => {} },
+    storage: { getItem: (k) => store[k] ?? null, setItem: (k, v) => void (store[k] = v), removeItem: (k) => void delete store[k] },
+    showLoggedOut: (p) => void log.push(`loggedOut:${p.failed}:${p.syllabusHref}`),
     pathname: over.pathname ?? "/uprx/up/pk/pky001/Pky00101.xhtml",
     replace: (u) => void log.push(`replace:${u}`),
     createClient: () =>
@@ -34,7 +36,7 @@ function setup(over: { restore?: string; bouncing?: boolean; pathname?: string; 
     release: () => void log.push("release"),
     now: () => 1_000_000,
   };
-  return { deps, log, fire: (title: string | null, home = false) => onScreen(title === null ? null : genericScreen(title), home) };
+  return { deps, log, store, fire: (title: string | null, home = false) => onScreen(title === null ? null : genericScreen(title), home) };
 }
 
 test("ログイン済み → 描き、画面ができたら題名を記録して覆いを外す(元の画面は動かさない)", async () => {
@@ -81,4 +83,32 @@ test("メニューなしの中継ページ: 元の script を動かし直す。b
   const free = setup();
   await mountApp(page("", "", false), free.deps);
   expect(free.log).toEqual(["unblock", "release"]);
+});
+
+const loginPage = () =>
+  new DOMParser().parseFromString(
+    '<body><form id="loginForm"><input type="password"></form><a href="https://x.test/syl">シラバスはこちらから閲覧可能です</a></body>',
+    "text/html",
+  );
+
+test("ログイン画面: 印が無ければ SSO へ飛ばす(unblock も release もしない)", async () => {
+  const { deps, log, store } = setup({ pathname: "/uprx/" });
+  await mountApp(loginPage(), deps);
+  expect(log).toEqual(["replace:/uprx/ShibbolethAuthServlet"]);
+  expect(store["mu-m-sso"]).toBe("1000000");
+});
+
+test("ログイン画面: ログアウト直後は拡張の画面(failed なし)、SSO から戻ったときは failed。元の画面は出さない", async () => {
+  const out = setup({ pathname: "/uprx/", store: { "mu-m-logged-out": "1" } });
+  await mountApp(loginPage(), out.deps);
+  expect(out.log).toEqual(["loggedOut:false:https://x.test/syl", "release"]);
+  const back = setup({ pathname: "/uprx/", store: { "mu-m-sso": "999000" } });
+  await mountApp(loginPage(), back.deps);
+  expect(back.log).toEqual(["loggedOut:true:https://x.test/syl", "release"]);
+});
+
+test("ログイン済みのページに来たらログアウトの印を消す", async () => {
+  const { deps, store } = setup({ store: { "mu-m-logged-out": "1" } });
+  await mountApp(page("[Kmh006] シラバス"), deps);
+  expect(store["mu-m-logged-out"]).toBeUndefined();
 });
