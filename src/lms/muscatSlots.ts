@@ -80,20 +80,34 @@ async function load(): Promise<SlotMap | null> {
   } catch { /* 保存が読めなければ取り直す */ }
   const r = await ask();
   if (!r?.html) { // busy・未ログイン・失敗は保存しない(3 桁の読みのまま)。なぜ使えなかったかだけ残す
-    console.info("[mu-lms] MUSCAT の時間割を使わない:", r?.busy ? "MUSCAT のタブが開いている" : r?.login === false ? "MUSCAT 未ログイン" : r?.error ?? "応答なし");
+    miss = r?.busy ? "MUSCAT のタブが開いているため読み込んでいません。タブを閉じてから開き直すと読み込みます。"
+      : r?.login === false ? "MUSCAT にログインしていないため読み込めませんでした。"
+      : "読み込みに失敗しました" + (r?.error ? `(${r.error})` : "") + "。";
+    if (!api()?.runtime?.sendMessage) miss = null; // 拡張の外(開発・テスト)では出さない
+    console.info("[mu-lms] MUSCAT の時間割を使わない:", miss);
     return null;
   }
+  miss = null;
   try {
     const map = buildSlots(parseTimetable(new DOMParser().parseFromString(r.html, "text/html")));
     await api()?.storage?.local.set({ [KEY]: { at: Date.now(), map: [...map] } }).catch(() => {});
     return map;
   } catch (e) {
     console.error("[mu-lms]", e);
+    miss = "時間割の画面を読み取れませんでした。";
     return null;
   }
 }
 
 let inflight: Promise<SlotMap | null> | null = null;
+let miss: string | null = null;
+
+/** 対応表を取れなかった理由(取れた・保存を使った・まだ取っていないときは null) */
+export function useSlotsMiss(): string | null {
+  const [m, setM] = useState<string | null>(null);
+  useEffect(() => { void getSlots().then(() => setM(miss)); }, []);
+  return m;
+}
 
 /** MUSCAT の時間割から作った対応表。取れなければ null(呼び出し側は 3 桁の読みにフォールバック)。同時の呼び出しは 1 回にまとめる */
 export function getSlots(): Promise<SlotMap | null> {
