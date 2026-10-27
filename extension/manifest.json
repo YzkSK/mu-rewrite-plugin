@@ -6,7 +6,8 @@
   "host_permissions": [
     "https://portal.musashino-u.ac.jp/*",
     "https://musashino-u.myopenlms.net/*",
-    "https://unipa.m-muscat.musashino-u.ac.jp/*"
+    "https://unipa.m-muscat.musashino-u.ac.jp/*",
+    "https://ecsn.m-muscat.musashino-u.ac.jp/*"
   ],
   "content_scripts": [
     {

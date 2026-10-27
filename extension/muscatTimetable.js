@@ -20,21 +20,20 @@ function attrsOf(tag) {
 // 引用符の中の > でタグを切らない
 const tagRe = (name) => new RegExp(`<${name}\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, "gi");
 
-/** id の合う <form> の { open: 開きタグの属性, body: 中身 }。無ければ null */
-function formBlock(html, id) {
+/** 条件に合う <form> の { attrs: 開きタグの属性, body: 中身 }。id(文字列)か (attrs, body) => boolean。無ければ null */
+function formBlock(html, match) {
   for (const m of html.matchAll(tagRe("form"))) {
     const attrs = attrsOf(m[0]);
-    if (attrs.get("id") !== id) continue;
     const from = m.index + m[0].length;
     const end = html.indexOf("</form>", from);
-    return { attrs, body: html.slice(from, end < 0 ? html.length : end) };
+    const body = html.slice(from, end < 0 ? html.length : end);
+    if (typeof match === "string" ? attrs.get("id") !== match : !match(attrs, body)) continue;
+    return { attrs, body };
   }
   return null;
 }
 
-/** <form id="..."> の { action, fields: [name, value][] }。submit/button/image と、チェックの無い checkbox/radio は除く */
-export function formOf(html, id) {
-  const f = formBlock(html, id);
+const fieldsOf = (f) => {
   if (!f) return null;
   const fields = [];
   for (const m of f.body.matchAll(tagRe("input"))) {
@@ -45,7 +44,13 @@ export function formOf(html, id) {
     fields.push([a.get("name"), a.get("value") ?? ""]);
   }
   return { action: f.attrs.get("action") ?? "", fields };
-}
+};
+
+/** <form id="..."> の { action, fields: [name, value][] }。submit/button/image と、チェックの無い checkbox/radio は除く */
+export const formOf = (html, id) => fieldsOf(formBlock(html, id));
+
+/** SSO が返す「読み込んだら自動で送る」フォーム(SAMLResponse か SAMLRequest を持つもの)。無ければ null */
+export const samlFormOf = (html) => fieldsOf(formBlock(html, (_a, body) => /name\s*=\s*["']?SAML(Response|Request)\b/i.test(body)));
 
 /** menuForm の中で、テキストが label のリンクの data-pfconfirmcommand からメニュー ID を読む。無ければ null */
 export function menuIdOf(html, label) {

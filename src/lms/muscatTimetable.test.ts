@@ -1,5 +1,13 @@
 import { expect, test } from "bun:test";
-import { formOf, menuIdOf } from "../../extension/muscatTimetable.js";
+import { formOf, menuIdOf, samlFormOf } from "../../extension/muscatTimetable.js";
+
+test("samlFormOf: SSO の自動送信フォーム(id なし)を読む・無ければ null", () => {
+  const html = `<body onload="document.forms[0].submit()"><form method="post" action="https://unipa.example/Shibboleth.sso/SAML2/POST">
+    <input type="hidden" name="SAMLResponse" value="PHNhbWw+"/><input type="hidden" name="RelayState" value="ss:mem:1&amp;2"/>
+    <noscript><input type="submit" value="Continue"/></noscript></form></body>`;
+  expect(samlFormOf(html)).toEqual({ action: "https://unipa.example/Shibboleth.sso/SAML2/POST", fields: [["SAMLResponse", "PHNhbWw+"], ["RelayState", "ss:mem:1&2"]] });
+  expect(samlFormOf(`<form id="loginForm" action="/x"><input name="a" value="b"></form>`)).toBeNull();
+});
 
 const relay = `<html><body><form method="post" id="loginForm" action="/uprx/login.xhtml?a=1&amp;b=2">
 <input type="hidden" value='vs&quot;1&#39;' name="jakarta.faces.ViewState">

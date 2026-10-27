@@ -1,4 +1,4 @@
-import { formOf, menuIdOf } from "./muscatTimetable.js";
+import { formOf, menuIdOf, samlFormOf } from "./muscatTimetable.js";
 
 // MU LMS の提出期限。content script からは別オリジンなので SW が Cookie 付きで取る
 const LMS = "https://musashino-u.myopenlms.net";
@@ -104,8 +104,17 @@ async function muscatTimetable() {
       for (const [k, v] of extra) body.set(k, v);
       return fetch(url, { method: "POST", credentials: "include", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
     };
-    const relay = await fetch(MUSCAT + "ShibbolethAuthServlet", { credentials: "include" });
-    const login = relay.ok ? formOf(await relay.text(), "loginForm") : null;
+    let relay = await fetch(MUSCAT + "ShibbolethAuthServlet", { credentials: "include" });
+    let html = relay.ok ? await relay.text() : "";
+    // MUSCAT のログインがまだ無いとき(ブラウザを開き直した直後など)は、大学の SSO が「自動で送るフォーム」を返す。
+    // ブラウザなら JS で送られるので、ここで代わりに送る(SSO にもログインしていなければ ID・パスワードの画面になり、送れない)
+    for (let hop = 0; hop < 3 && !formOf(html, "loginForm"); hop++) {
+      const saml = samlFormOf(html);
+      if (!saml) break;
+      relay = await post(new URL(saml.action, relay.url).href, saml.fields, []);
+      html = relay.ok ? await relay.text() : "";
+    }
+    const login = formOf(html, "loginForm");
     if (!login) return { login: false };
     const home = await post(new URL(login.action, relay.url).href, login.fields, [["loginForm:autoLogin", "loginForm:autoLogin"]]);
     if (!home.ok) return { error: "home " + home.status };
