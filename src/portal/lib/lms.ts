@@ -1,5 +1,6 @@
 /** background の mu-lms-due が返す形 */
-export type LmsDue = { name: string; course: string; due: number; overdue: boolean; url: string };
+/** closed: 期限切れで締め切られた(もう出せない) */
+export type LmsDue = { name: string; course: string; due: number; overdue: boolean; closed?: boolean; url: string };
 export type LmsResult = { login: false } | { login: true; events: LmsDue[] } | { error: string };
 
 /** 「03_【課題提出先】」の提出期限 → 03_【課題提出先】(合わなければそのまま) */

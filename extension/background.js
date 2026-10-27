@@ -1,3 +1,31 @@
+import { formOf, menuIdOf, samlFormOf } from "./muscatTimetable.js";
+import { isNewer } from "./version.js";
+
+// 新版の通知。GitHub の最新リリースが今の版より新しければ、バッジとポップアップで知らせる
+async function checkUpdate() {
+  try {
+    const res = await fetch("https://api.github.com/repos/YzkSK/mu-rewrite-plugin/releases/latest");
+    if (!res.ok) return; // リリース無し(404)・レート制限などは何もしない
+    const { tag_name, html_url } = await res.json();
+    const version = String(tag_name).replace(/^v/, "");
+    if (isNewer(version, chrome.runtime.getManifest().version)) {
+      await chrome.storage.local.set({ "mu-update": { version, url: html_url } });
+      await chrome.action.setBadgeText({ text: "NEW" });
+      await chrome.action.setBadgeBackgroundColor({ color: "#541b86" });
+    } else {
+      await chrome.storage.local.remove("mu-update");
+      await chrome.action.setBadgeText({ text: "" });
+    }
+  } catch {}
+}
+chrome.runtime.onStartup.addListener(checkUpdate);
+chrome.runtime.onInstalled.addListener(checkUpdate);
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (!msg || msg.type !== "mu-check-update") return;
+  checkUpdate().then(() => sendResponse({}));
+  return true;
+});
+
 // MU LMS の提出期限。content script からは別オリジンなので SW が Cookie 付きで取る
 const LMS = "https://musashino-u.myopenlms.net";
 const METHOD = "core_calendar_get_action_events_by_timesort";
@@ -7,18 +35,24 @@ async function lmsDue() {
     const html = await (await fetch(LMS + "/my/", { credentials: "include" })).text();
     const sesskey = (/"sesskey":"([^"]+)"/.exec(html) || [])[1];
     if (!sesskey) return { login: false };
-    const body = [{ index: 0, methodname: METHOD, args: { limitnum: 20, timesortfrom: Math.floor(Date.now() / 1000) - 14 * 86400, limittononsuspendedevents: true } }];
+    // 60 日前から取る(2 週間前からだと古い期限切れが抜けた)。過去と未来は分ける(古い期限切れで上限を使い切らないため)
+    const now = Math.floor(Date.now() / 1000);
+    const body = [
+      { index: 0, methodname: METHOD, args: { limitnum: 20, timesortfrom: now - 60 * 86400, timesortto: now - 1, limittononsuspendedevents: true } },
+      { index: 1, methodname: METHOD, args: { limitnum: 20, timesortfrom: now, limittononsuspendedevents: true } },
+    ];
     const res = await fetch(`${LMS}/lib/ajax/service.php?sesskey=${encodeURIComponent(sesskey)}&info=${METHOD}`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const r = (await res.json())[0];
+    const rs = await res.json();
+    const r = rs.find((x) => x.error) ?? rs[0];
     if (r.error) return r.exception?.errorcode === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.error) };
     return {
       login: true,
-      events: (r.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, url: e.url })),
+      events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, closed: !!e.overdue && !e.action?.actionable, url: e.url })),
     };
   } catch (e) {
     return { error: e.message };
@@ -83,6 +117,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // 入り直しの許容時間(bounce のガードと同じ 5 分)の間は、ログインに時間がかかっても戻り先を返す
     sendResponse(v && v.bounce && Date.now() - v.bounce < 5 * 60 * 1000 ? { leaf: v.leaf } : {});
   });
+  return true;
+});
+
+// MUSCAT の時間割の HTML を fetch だけで取る(中継ページ → autoLogin → メニューの「学生時間割表」)。
+// サーバー側の「今の画面」が変わり、開いている MUSCAT のタブの操作が壊れるので、タブがあれば取らない
+async function muscatTimetable() {
+  try {
+    if ((await chrome.tabs.query({ url: MUSCAT + "*" })).length) return { busy: true };
+    const post = (url, fields, extra) => {
+      const body = new URLSearchParams(fields);
+      for (const [k, v] of extra) body.set(k, v);
+      return fetch(url, { method: "POST", credentials: "include", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
+    };
+    let relay = await fetch(MUSCAT + "ShibbolethAuthServlet", { credentials: "include" });
+    let html = relay.ok ? await relay.text() : "";
+    // MUSCAT のログインがまだ無いとき(ブラウザを開き直した直後など)は、大学の SSO が「自動で送るフォーム」を返す。
+    // ブラウザなら JS で送られるので、ここで代わりに送る(SSO にもログインしていなければ ID・パスワードの画面になり、送れない)
+    for (let hop = 0; hop < 3 && !formOf(html, "loginForm"); hop++) {
+      const saml = samlFormOf(html);
+      if (!saml) break;
+      relay = await post(new URL(saml.action, relay.url).href, saml.fields, []);
+      html = relay.ok ? await relay.text() : "";
+    }
+    const login = formOf(html, "loginForm");
+    if (!login) return { login: false };
+    const home = await post(new URL(login.action, relay.url).href, login.fields, [["loginForm:autoLogin", "loginForm:autoLogin"]]);
+    if (!home.ok) return { error: "home " + home.status };
+    const homeHtml = await home.text();
+    const menu = formOf(homeHtml, "menuForm");
+    const id = menuIdOf(homeHtml, "学生時間割表");
+    if (!menu || !id) return { error: "メニューが読めません" };
+    const res = await post(new URL(menu.action, home.url).href, menu.fields, [
+      ["rx.sync.source", "menuForm:mainMenu"], ["menuForm:mainMenu", "menuForm:mainMenu"], ["menuForm:mainMenu_menuid", id],
+    ]);
+    if (!res.ok) return { error: "timetable " + res.status };
+    return { html: await res.text() };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (!msg || msg.type !== "mu-muscat-timetable") return;
+  muscatTimetable().then(sendResponse);
   return true;
 });
 

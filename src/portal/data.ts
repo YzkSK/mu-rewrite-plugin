@@ -16,6 +16,7 @@ export type TopData = {
   callout: string | null;
   personal: InfoList | null; // null は読み込み失敗
   news: InfoList | null;
+  newsUnread: number | null; // お知らせの未読の総数。null は取れなかった
   calendar: CalendarData | null; // null はブロックなし。first が null なら失敗
   lms: LmsResult;
 };
@@ -63,15 +64,18 @@ export const loadTop = once(async (): Promise<TopData> => {
   const newsBlock = notes.find((b) => !isPersonal(b.data?.header));
   const cal = findBlocks(blocks, "calendar")[0]?.data;
   const now = new Date();
-  const [personalLists, news, first] = await Promise.all([
+  const [personalLists, news, newsUnread, first] = await Promise.all([
     safe(Promise.all(personalBlocks.map((b) => fetchInfo(infoQuery(b.data ?? {}))))),
     newsBlock ? safe(fetchInfo(infoQuery(newsBlock.data ?? {}))) : Promise.resolve(null),
+    // 一覧は数件しか来ないので、未読の総数は同じ条件の「未読のみ」の件数で取る
+    newsBlock ? safe(fetchInfo(infoQuery({ ...newsBlock.data, unreadOnly: true }))) : Promise.resolve(null),
     cal ? safe(fetchCalendar(cal.sources ?? [], !!cal.addOutLook, now.getFullYear(), now.getMonth() + 1)) : Promise.resolve(null),
   ]);
   return {
     ...fromBlocks(blocks),
     personal: personalLists && { items: personalLists.flatMap((l) => l.items), count: null },
     news,
+    newsUnread: newsUnread?.count ?? null,
     calendar: cal ? { header: cal.header || "学年暦", sources: cal.sources ?? [], addOutLook: !!cal.addOutLook, first } : null,
     lms: await lms,
   };

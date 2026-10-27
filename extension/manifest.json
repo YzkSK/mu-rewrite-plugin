@@ -6,7 +6,8 @@
   "host_permissions": [
     "https://portal.musashino-u.ac.jp/*",
     "https://musashino-u.myopenlms.net/*",
-    "https://unipa.m-muscat.musashino-u.ac.jp/*"
+    "https://unipa.m-muscat.musashino-u.ac.jp/*",
+    "https://ecsn.m-muscat.musashino-u.ac.jp/*"
   ],
   "content_scripts": [
     {
@@ -15,10 +16,19 @@
       "run_at": "document_start"
     },
     {
+      "matches": ["https://musashino-u.myopenlms.net/*"],
+      "js": ["dist/lms-react.js"],
+      "run_at": "document_start"
+    },
+    {
       "matches": ["https://unipa.m-muscat.musashino-u.ac.jp/uprx/*"],
       "js": ["dist/muscat-react.js"],
       "run_at": "document_start"
     }
   ],
-  "background": { "service_worker": "background.js" }
+  "web_accessible_resources": [
+    { "resources": ["dist/lms-pdf.js"], "matches": ["https://musashino-u.myopenlms.net/*"] }
+  ],
+  "action": { "default_popup": "options.html" },
+  "background": { "service_worker": "background.js", "type": "module" }
 }

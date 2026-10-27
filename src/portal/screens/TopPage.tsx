@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { InfoItem, InfoList } from "../api";
 import type { TopData } from "../data";
 import { fmtDue, fmtWhen, type CalEvent } from "../lib/lib";
-import { courseName, dueName, type LmsResult } from "../lib/lms";
+import { courseName, dueName, type LmsDue, type LmsResult } from "../lib/lms";
 import { sanitize } from "../lib/sanitize";
 import { navigate, NOTICES_URL } from "../route";
 import { AcademicCalendar } from "./AcademicCalendar";
@@ -32,8 +32,25 @@ function ListBody({ list, empty, row }: { list: InfoList | null; empty: string; 
   return <ul className="m-0 list-none p-0">{list.items.map(row)}</ul>;
 }
 
+function DueItem({ e }: { e: LmsDue }) {
+  return (
+    <li className="flex gap-3 border-b border-border px-4 py-2.5 last:border-b-0">
+      <span className={`w-24 flex-none text-[12.5px] ${e.overdue ? "text-error" : "text-muted-foreground"}`}>
+        {fmtDue(e.due)}{e.overdue ? <span className="block font-semibold">{e.closed ? "締切" : "期限切れ"}</span> : null}
+      </span>
+      <span className="min-w-0 flex-1">
+        <a className="block text-[13.5px] font-semibold text-foreground hover:underline [overflow-wrap:anywhere]" href={e.url} target="_blank" rel="noopener noreferrer">{dueName(e.name)}</a>
+        {e.course ? <span className="block text-[12px] text-muted-foreground">{courseName(e.course)}</span> : null}
+      </span>
+    </li>
+  );
+}
+
 function LmsBox({ lms }: { lms: LmsResult }) {
-  const events = "login" in lms && lms.login ? [...lms.events].sort((a, b) => a.due - b.due) : [];
+  const all = "login" in lms && lms.login ? [...lms.events].sort((a, b) => a.due - b.due) : [];
+  // 締め切られた(もう出せない)期限切れは並べず、件数の 1 行に畳む
+  const events = all.filter((e) => !e.closed);
+  const closed = all.filter((e) => e.closed);
   const overdue = events.filter((e) => e.overdue).length;
   return (
     <Box
@@ -47,21 +64,17 @@ function LmsBox({ lms }: { lms: LmsResult }) {
     >
       {"error" in lms ? <Note>読み込めませんでした</Note>
         : !lms.login ? <Note>MU LMS にログインすると表示されます</Note>
-        : !events.length ? <Note>提出期限の近い課題はありません</Note>
+        : !all.length ? <Note>提出期限の近い課題はありません</Note>
         : (
-          <ul className="m-0 list-none p-0">
-            {events.map((e, i) => (
-              <li key={i} className="flex gap-3 border-b border-border px-4 py-2.5 last:border-b-0">
-                <span className={`w-24 flex-none text-[12.5px] ${e.overdue ? "text-error" : "text-muted-foreground"}`}>
-                  {fmtDue(e.due)}{e.overdue ? <span className="block font-semibold">期限切れ</span> : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <a className="block text-[13.5px] font-semibold text-foreground hover:underline [overflow-wrap:anywhere]" href={e.url} target="_blank" rel="noopener noreferrer">{dueName(e.name)}</a>
-                  {e.course ? <span className="block text-[12px] text-muted-foreground">{courseName(e.course)}</span> : null}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <>
+            {events.length ? <ul className="m-0 list-none p-0">{events.map((e, i) => <DueItem key={i} e={e} />)}</ul> : <Note>出せる課題はありません</Note>}
+            {closed.length ? (
+              <details className="border-t border-border">
+                <summary className="cursor-pointer px-4 py-2 text-[12.5px] text-muted-foreground hover:bg-muted">{`締め切られた未提出 ${closed.length} 件`}</summary>
+                <ul className="m-0 list-none p-0">{closed.map((e, i) => <DueItem key={i} e={e} />)}</ul>
+              </details>
+            ) : null}
+          </>
         )}
     </Box>
   );
@@ -72,7 +85,7 @@ type Props = { data: TopData; loadMonth: (y: number, m: number) => Promise<CalEv
 /** トップページ。サービス帯 + 左右 2 列(個人呼出・学年暦 / お知らせ・LMS) */
 export function TopPage({ data, loadMonth, now = new Date() }: Props) {
   const { news, personal, calendar, links, callout } = data;
-  const unread = news?.items.filter((i) => i.is_read === false).length ?? 0;
+  const unread = data.newsUnread ?? news?.items.filter((i) => i.is_read === false).length ?? 0;
   const tile = "flex min-h-[132px] flex-[1_1_240px] flex-col justify-between p-5 text-white no-underline sm:p-6";
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">

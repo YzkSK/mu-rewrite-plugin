@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build && vite build --mode portal",
+    "build": "vite build && vite build --mode portal && vite build --mode lms && vite build --mode pdf",
+    "release": "bun scripts/release.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
@@ -11,6 +12,7 @@
     "@starwind-ui/react": "^1.4.0",
     "@tabler/icons-react": "^3.49.0",
     "@tailwindcss/forms": "^0.5.11",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tailwind-merge": "^3.7.0",
