@@ -11,6 +11,7 @@ const base: TopData = {
   callout: "MUSCAT稼働時間 <b>8:00-22:00</b>",
   personal: { items: [], count: null },
   news: { items: [{ uuid: "n1", title: "件名A", publish_from: "教務課", publish_start_at: Math.floor(NOW.getTime() / 1000), is_read: false, category: { name: "重要" } }], count: 12 },
+  newsUnread: null,
   calendar: { header: "学年暦", sources: ["s"], addOutLook: false, first: [] },
   lms: { login: false },
 };
@@ -37,6 +38,7 @@ test("個人呼出が 0 件なら空の文言", () => {
 test("大学からのお知らせ: 未読の札・件数・行(開閉ボタン)", () => {
   const h = html();
   for (const s of ["未読 1", "すべて見る(12件)", "件名A", "重要、教務課", 'aria-expanded="false"']) expect(h).toContain(s);
+  expect(html({ newsUnread: 34 })).toContain("未読 34"); // 総数が取れたら一覧の数より優先
 });
 
 test("LMS: 未ログイン・エラー・空・一覧", () => {

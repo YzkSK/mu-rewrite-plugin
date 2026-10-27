@@ -85,7 +85,7 @@ type Props = { data: TopData; loadMonth: (y: number, m: number) => Promise<CalEv
 /** トップページ。サービス帯 + 左右 2 列(個人呼出・学年暦 / お知らせ・LMS) */
 export function TopPage({ data, loadMonth, now = new Date() }: Props) {
   const { news, personal, calendar, links, callout } = data;
-  const unread = news?.items.filter((i) => i.is_read === false).length ?? 0;
+  const unread = data.newsUnread ?? news?.items.filter((i) => i.is_read === false).length ?? 0;
   const tile = "flex min-h-[132px] flex-[1_1_240px] flex-col justify-between p-5 text-white no-underline sm:p-6";
   return (
     <div className="mx-auto flex max-w-[1200px] flex-col gap-4 p-4">
