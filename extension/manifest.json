@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "permissions": [
     "webRequest",
     "storage"
