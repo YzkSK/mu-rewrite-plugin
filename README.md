@@ -8,6 +8,42 @@
 
 大学の非公式ツールです。表示を置き換えるだけで、送る内容は元のサイトと同じです。
 
+## 主な改善
+
+### MU ポータル
+
+- 画面を作り直して見やすく
+- ポータルでLMSの提出状況の確認が出来るように
+- RIP MobileMUSCAT👋
+
+| Before | After |
+|---|---|
+| ![MUポータル Before](docs/images/Portal_Before.png) | ![MUポータル After](docs/images/Portal_After.png) |
+
+### MUSCAT
+
+- 再読み込みしてもエラー画面やログイン画面が出ない
+- 画面の読み込みを速く
+
+| Before | After |
+|---|---|
+| ![MUSCAT Before](docs/images/MUSCAT_Before.png) | ![MUSCAT After](docs/images/MUSCAT_After.png) |
+
+### MU-LMS
+
+- 自動 SSO ログイン
+- ホームに締め切り・新着のお知らせ・最近のコースを表示
+- マイコースを MUSCAT の時間割と同じ形で表示(学期の切り替え、「すべて」も可)
+- コースページは全セクションを一度に表示、折りたたみ可
+- 課題ページから直接ファイル・テキストを提出(Moodle が受け付けたときだけ「提出済み」と表示)
+- PDF はダウンロードせずにその場でプレビュー
+- 月カレンダー・成績・お知らせ・メッセージ・通知・動画・検索
+- 期限切れで閉じた課題は件数にまとめて表示
+
+| Before | After |
+|---|---|
+| ![MU-LMS Before](docs/images/LMS_Before.png) | ![MU-LMS After](docs/images/LMS_After.png) |
+
 ## インストール
 
 Chrome ウェブストアには出していません。手で読み込みます。
