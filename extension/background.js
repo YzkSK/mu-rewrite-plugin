@@ -6,10 +6,12 @@ async function checkUpdate() {
   try {
     const res = await fetch("https://api.github.com/repos/YzkSK/mu-rewrite-plugin/releases/latest");
     if (!res.ok) return; // リリース無し(404)・レート制限などは何もしない
-    const { tag_name, html_url } = await res.json();
+    const { tag_name, html_url, assets } = await res.json();
     const version = String(tag_name).replace(/^v/, "");
     if (isNewer(version, chrome.runtime.getManifest().version)) {
-      await chrome.storage.local.set({ "mu-update": { version, url: html_url } });
+      // 添付の zip があればその直リンク(開くとダウンロードされる)。無ければ Releases のページ
+      const zip = (assets || []).find((a) => a.name.endsWith(".zip"));
+      await chrome.storage.local.set({ "mu-update": { version, url: zip ? zip.browser_download_url : html_url } });
       await chrome.action.setBadgeText({ text: "NEW" });
       await chrome.action.setBadgeBackgroundColor({ color: "#541b86" });
     } else {
