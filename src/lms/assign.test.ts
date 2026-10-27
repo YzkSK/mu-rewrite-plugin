@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { buildSubmission, htmlToText, readAssignPage, readSubmitForm, submit, textToHtml, type SubmitForm } from "./assign";
+import { buildSubmission, fetchStatus, htmlToText, readAssignPage, readSubmitForm, submit, textToHtml, type SubmitForm } from "./assign";
 
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });
@@ -41,20 +41,31 @@ test("submit: ログイン画面に転送されたら失敗(書きかけを消�
   await expect(submit(form, "a", () => {})).rejects.toThrow("ログインが切れていた");
 });
 
-const reply = (url: string, html: string, status = 200) => {
-  globalThis.fetch = (async () => ({ ok: status < 400, url, text: async () => html })) as unknown as typeof fetch;
+const reply = (url: string, html: string, status = 200, redirected = true) => {
+  globalThis.fetch = (async () => ({ ok: status < 400, url, redirected, text: async () => html })) as unknown as typeof fetch;
 };
 
 test("submit: 成功は課題ページへ", async () => {
-  reply("https://lms/mod/assign/view.php?id=55", "<div id='region-main'>ok</div>");
+  reply("https://lms/mod/assign/view.php?id=55&action=view", "<div id='region-main'>ok</div>");
   let to = "";
   await submit(form, "a", (u) => { to = u; });
   expect(to).toBe("/mod/assign/view.php?id=55");
+  reply("https://lms/mod/assign/view.php?id=55&action=grading", "ok");
+  await submit(form, "a", () => {});
+  reply("https://lms/mod/assign/view.php?id=55", "ok");
+  await submit(form, "a", () => {});
+});
+
+test("submit: 課題の画面へ転送されなければ、エラーが無くても失敗", async () => {
+  reply("https://lms/mod/assign/view.php", "<div id='region-main'>ok</div>", 200, false);
+  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
+  reply("https://lms/my/", "ok");
+  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
 });
 
 test("submit: 送った中身は POST の urlencoded", async () => {
   let init: RequestInit | undefined;
-  globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return { ok: true, url: "https://lms/x", text: async () => "" }; }) as unknown as typeof fetch;
+  globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return { ok: true, url: "https://lms/mod/assign/view.php?id=55&action=view", redirected: true, text: async () => "" }; }) as unknown as typeof fetch;
   await submit(form, "a", () => {});
   expect(init?.method).toBe("POST");
   expect(init?.credentials).toBe("include");
@@ -99,6 +110,22 @@ test("readAssignPage: 提出画面の題名は ' - ' 以降を外す・コース
   document.documentElement.innerHTML = "<head><title>s: 中間課題 - 提出を編集する | MU-LMS</title></head><body></body>";
   const p = readAssignPage(document, "?id=55&action=editsubmission");
   expect(p).toMatchObject({ title: "中間課題", courseName: null, courseId: null, canSubmit: false, description: null });
+});
+
+test("fetchStatus: 提出ステータスと最終更新日時の行だけ返す", async () => {
+  reply("https://lms/mod/assign/view.php?id=55", `<table class="submissionstatustable"><tbody>
+    <tr><th>提出ステータス</th><td>提出済み</td></tr><tr><th>残り時間</th><td>1日</td></tr><tr><th>最終更新日時</th><td>2026年 09月 24日</td></tr>
+  </tbody></table>`, 200, false);
+  expect((await fetchStatus(55))!.map((r) => [r.label, r.text])).toEqual([["提出ステータス", "提出済み"], ["最終更新日時", "2026年 09月 24日"]]);
+});
+
+test("fetchStatus: ログイン画面・404・通信失敗は null", async () => {
+  reply("https://lms/login/index.php", "<form id='login'></form>");
+  expect(await fetchStatus(55)).toBeNull();
+  reply("https://lms/mod/assign/view.php?id=55", "x", 404);
+  expect(await fetchStatus(55)).toBeNull();
+  globalThis.fetch = (async () => { throw new Error("net"); }) as unknown as typeof fetch;
+  expect(await fetchStatus(55)).toBeNull();
 });
 
 test("readSubmitForm: hidden・本文・ファイル欄・ボタン", () => {
