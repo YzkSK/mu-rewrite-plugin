@@ -2,6 +2,7 @@
 トップページ - MUポータル_files/
 .DS_Store
 node_modules/
+*.zip
 extension/dist/
 .vscode/
 docs/

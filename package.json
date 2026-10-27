@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "vite build && vite build --mode portal && vite build --mode lms && vite build --mode pdf",
+    "release": "bun scripts/release.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
