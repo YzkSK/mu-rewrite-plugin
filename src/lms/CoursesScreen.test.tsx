@@ -1,6 +1,23 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { CoursesScreen } from "./CoursesScreen";
+import { AllList, CoursesScreen } from "./CoursesScreen";
+
+test("学期の切り替えに「すべて」がある", () => {
+  expect(renderToString(<CoursesScreen initial={[]} now={new Date(2026, 9, 26)} />)).toContain("すべて");
+});
+
+test("すべてのコース: 対応表があればそれ、無ければ 3 桁、学期の順", () => {
+  const cs = [
+    { id: 1, name: "199 仏教", url: "https://x/1" },
+    { id: 2, name: "333 専門", url: "https://x/2", shortname: "2026_5300100047" },
+    { id: 3, name: "ゼミ", url: "https://x/3" },
+  ];
+  const slots = new Map([["2026_5300100047", { terms: [3, 4], slots: [{ term: 3, day: "水", periods: [3, 4] }] }]]);
+  const h = renderToString(<AllList courses={cs} slots={slots} />);
+  for (const t of ["すべてのコース(3)", "1学期", "3学期・4学期 水曜 3・4限", "—"]) expect(h).toContain(t);
+  expect(h.indexOf("仏教")).toBeLessThan(h.indexOf("専門"));
+  expect(h.indexOf("専門")).toBeLessThan(h.indexOf("ゼミ")); // 読めないものは最後
+});
 
 const courses = [
   { id: 1, name: "333 専門デプロイメントコースⅢ", url: "https://x/1" },

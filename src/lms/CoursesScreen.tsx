@@ -4,7 +4,8 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
 import { loadCourses, placeCourses, termOfMonth, type MyCourse } from "./courses";
-import { useSlots, type SlotMap } from "./muscatSlots";
+import { readSlot, termLabel } from "./course";
+import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 
 const DAYS = ["月", "火", "水", "木", "金", "土"];
@@ -15,6 +16,28 @@ function List({ title, list }: { title: string; list: MyCourse[] }) {
     <Box title={title}>
       <ul className="m-0 list-none p-0">
         {list.map((c) => <Row key={c.id}><a className="min-w-0 flex-1 text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere]" href={c.url}>{courseName(c.name)}</a></Row>)}
+      </ul>
+    </Box>
+  );
+}
+
+const ALL = 0; // 学期の切り替えの「すべて」
+
+/** 学期に関係なく全コース。学期・曜日・時限は MUSCAT の対応表、無ければコース名の先頭 3 桁。学期の順→名前の順 */
+export function AllList({ courses, slots }: { courses: MyCourse[]; slots: SlotMap | null }) {
+  const rows = courses.map((c) => {
+    const found = slots?.get(codeOf(c.shortname) ?? "");
+    return { c, label: (found ? slotLabel(found) : termLabel(c.name)) || "—", term: found?.terms[0] ?? readSlot(c.name)?.term ?? 9 };
+  }).sort((a, b) => a.term - b.term || courseName(a.c.name).localeCompare(courseName(b.c.name), "ja"));
+  return (
+    <Box title={`すべてのコース(${courses.length})`}>
+      <ul className="m-0 list-none p-0">
+        {rows.map(({ c, label }) => (
+          <Row key={c.id}>
+            <a className="flex min-h-9 min-w-0 flex-1 items-center text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere] max-[639px]:min-h-11" href={c.url}>{courseName(c.name)}</a>
+            <span className="flex-none self-center text-[12px] text-muted-foreground">{label}</span>
+          </Row>
+        ))}
       </ul>
     </Box>
   );
@@ -49,11 +72,13 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
   );
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
-      <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border">
-        {[1, 2, 3, 4].map((t) => (
-          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[639px]:h-11 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{`${t}学期`}</button>
+      <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border max-[639px]:w-full">
+        {[1, 2, 3, 4, ALL].map((t) => (
+          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[639px]:h-11 max-[639px]:flex-1 max-[639px]:px-0 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{t === ALL ? "すべて" : `${t}学期`}</button>
         ))}
       </div>
+      {term === ALL ? <AllList courses={courses} slots={slots} /> : <>
+
       <div className="min-[640px]:hidden">
         <Box title="時間割">
           <div role="group" aria-label="曜日" className="flex border-b border-border">
@@ -106,6 +131,7 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
       </div>
       <List title="曜日・時限の無いコース" list={p.noSlot} />
       <List title="そのほか" list={p.other} />
+      </>}
       {!courses.length ? <Box title="コース"><Note>登録されているコースはありません</Note></Box> : null}
     </div>
   );
