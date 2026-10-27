@@ -19,7 +19,7 @@ const form: SubmitForm = {
   action: "/mod/assign/view.php",
   fields: [["lastmodified", "1"], ["id", "55"], ["userid", "9"], ["action", "savesubmission"], ["sesskey", "k"], ["_qf__mod_assign_submission_form", "1"], ["onlinetext_editor[format]", "1"], ["onlinetext_editor[itemid]", "77"]],
   text: "<p>old</p>",
-  hasFiles: false,
+  files: null,
   submitName: "submitbutton",
   submitValue: "変更を保存する",
 };
@@ -107,10 +107,11 @@ test("readSubmitForm: hidden・本文・ファイル欄・ボタン", () => {
     <input type="hidden" name="onlinetext_editor[itemid]" value="77">
     <textarea name="onlinetext_editor[text]">&lt;p&gt;old&lt;/p&gt;</textarea>
     <input name="files_filemanager" type="hidden" value="88">
-    <input type="submit" name="submitbutton" value="変更を保存する"><input type="submit" name="cancel" value="キャンセル"></form></body>`;
+    <input type="submit" name="submitbutton" value="変更を保存する"><input type="submit" name="cancel" value="キャンセル"></form>
+    <script>M.form_filemanager.init(Y, {"itemid":88,"client_id":"c1","maxbytes":"100","maxfiles":"2","context":{"id":5},"author":"A"});"sesskey":"k"</script></body>`;
   const f = readSubmitForm(document)!;
   expect(f.fields).toEqual([["id", "55"], ["sesskey", "k"], ["onlinetext_editor[itemid]", "77"], ["files_filemanager", "88"]]);
-  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", hasFiles: true, submitValue: "変更を保存する" });
+  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", files: { itemid: 88, clientId: "c1" }, submitValue: "変更を保存する" });
   document.body.innerHTML = "";
   expect(readSubmitForm(document)).toBeNull();
 });

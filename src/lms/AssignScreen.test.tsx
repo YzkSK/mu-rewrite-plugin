@@ -37,11 +37,11 @@ test("課題ページ: 未提出なら「提出する」と「まだ提出され
   expect(h).toContain("まだ提出されていません");
 });
 
-const form: SubmitForm = { action: "/mod/assign/view.php", fields: [], text: "<p>a</p><p>b</p>", hasFiles: true, submitName: "submitbutton", submitValue: "x" };
+const form: SubmitForm = { action: "/mod/assign/view.php", fields: [], text: "<p>a</p><p>b</p>", files: { itemid: 88, clientId: "c1", ctxId: 5, author: "A", maxbytes: 52428800, maxfiles: 20, license: "allrightsreserved", repoId: 3, sesskey: "k" }, submitName: "submitbutton", submitValue: "x" };
 
-test("提出画面: 題名・字数・ファイル欄の案内・やめる", () => {
+test("提出画面: 題名・字数・ファイル欄・上限・選ぶボタン・やめる", () => {
   const h = renderToString(<SubmitScreen page={page} form={form} />);
-  for (const t of ["中間課題を提出", "2 字", "ファイルの提出は元の画面で行います", "元の画面で開く", "提出する", "やめる", 'href="/mod/assign/view.php?id=55"', "提出を確定する"]) expect(h).toContain(t);
-  expect(h).not.toContain("ファイルの提出は元の画面で行います".repeat(2));
-  expect(renderToString(<SubmitScreen page={page} form={{ ...form, hasFiles: false }} />)).not.toContain("ファイルの提出は");
+  for (const t of ["中間課題を提出", "2 字", "ファイル", "ファイルを選ぶ", "1 つ 50 MB まで・20 個まで", "押すまで先生には見えません","提出する", "やめる", 'href="/mod/assign/view.php?id=55"', "提出を確定する"]) expect(h).toContain(t);
+  expect(h).not.toContain("元の画面");
+  expect(renderToString(<SubmitScreen page={page} form={{ ...form, files: null }} />)).not.toContain("ファイルを選ぶ");
 });

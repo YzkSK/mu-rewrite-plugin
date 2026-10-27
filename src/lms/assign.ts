@@ -1,4 +1,5 @@
 import { sanitize } from "@/portal/lib/sanitize";
+import { readFileArea, type FileArea } from "./draftFiles";
 
 export type DateRow = { label: string; value: string };
 /** 状態の表の 1 行。html は td の中身(sanitize 済み)、text は文字だけ、cls は td の class */
@@ -24,7 +25,8 @@ export type SubmitForm = {
   fields: [string, string][];
   /** 本文の既存の HTML。入力欄が無い課題は null */
   text: string | null;
-  hasFiles: boolean;
+  /** ファイル欄の設定。ファイル欄が無い課題は null */
+  files: FileArea | null;
   submitName: string;
   submitValue: string;
 };
@@ -78,7 +80,7 @@ export function readSubmitForm(doc: Document): SubmitForm | null {
     action: form.getAttribute("action") || "/mod/assign/view.php",
     fields,
     text: form.querySelector<HTMLTextAreaElement>(`textarea[name="${TEXT_NAME}"]`)?.value ?? null,
-    hasFiles: !!form.querySelector('[name="files_filemanager"]'),
+    files: form.querySelector('[name="files_filemanager"]') ? readFileArea(doc) : null,
     submitName: "submitbutton",
     submitValue: btn?.value ?? "",
   };
