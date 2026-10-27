@@ -12,7 +12,7 @@ export function errorToast(title: string, message = ""): void {
 }
 
 export function ErrorToast() {
-  const shown = useSyncExternalStore(subscribe, () => errorShown);
+  const shown = useSyncExternalStore(subscribe, () => errorShown, () => null);
   useEffect(() => {
     if (!shown) return;
     const t = setTimeout(() => setError(null), 8000);
