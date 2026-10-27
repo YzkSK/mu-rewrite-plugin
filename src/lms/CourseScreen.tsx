@@ -27,24 +27,78 @@ function ItemRow({ it, now }: { it: Item; now: number }) {
   );
 }
 
-function SectionCard({ s, now, refFn }: { s: Section; now: number; refFn: (el: HTMLElement | null) => void }) {
+/** 動画ファイルの名前(URL の最後の部分) */
+const fileName = (url: string): string => { try { return decodeURIComponent(new URL(url, location.href).pathname.split("/").pop() ?? url); } catch { return url; } };
+
+/** ラベルに貼られた mp4。ほかの教材と同じ 1 行にして、押したときだけその場で再生の枠を開く */
+function VideoRow({ src }: { src: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="border-b border-border last:border-b-0">
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted">
+        <span className="h-fit w-[4.5rem] flex-none rounded-[3px] border border-border px-1 text-center text-[11px] leading-[18px] text-muted-foreground">動画</span>
+        <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">{fileName(src)}</span>
+        <span className="flex-none text-[12px] text-primary">{open ? "閉じる" : "再生"}</span>
+      </button>
+      {open ? <video controls autoPlay preload="metadata" src={src} className="mx-4 mb-3 max-w-[calc(100%-2rem)]" /> : null}
+    </li>
+  );
+}
+
+/** ラベルの本文に、動画のリンクのほかに文があるか(動画だけのラベルは本文を出さない) */
+const hasText = (html: string, videos: string[]): boolean => {
+  const body = new DOMParser().parseFromString(html, "text/html").body;
+  // 動画へのリンク・動画の要素そのものを除いてから、残りに文か画像があるかを見る(リンクの文字は「動画はこちら」などのこともある)
+  body.querySelectorAll("a[href], video, source").forEach((e) => {
+    const u = e.getAttribute("href") ?? e.getAttribute("src");
+    if (e.tagName !== "A" || (u && videos.some((v) => v.endsWith(u) || u.endsWith(fileName(v))))) e.remove();
+  });
+  return (body.textContent ?? "").trim().length > 0 || !!body.querySelector("img");
+};
+
+function SectionCard({ s, now, open, onToggle, refFn }: { s: Section; now: number; open: boolean; onToggle: () => void; refFn: (el: HTMLElement | null) => void }) {
   return (
     <div ref={refFn} className="scroll-mt-4">
-      <Box title={s.title} actions={<span className="text-[12px] text-muted-foreground">{s.items.length} 件</span>}>
+      <Box
+        title={s.title}
+        actions={
+          <button type="button" aria-expanded={open} onClick={onToggle} className="flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground hover:text-foreground">
+            {`${s.items.length} 件`}
+            <span className="text-primary">{open ? "閉じる" : "開く"}</span>
+          </button>
+        }
+      >
+        {open ? <>
         {s.summary ? <div className={`${PROSE} border-b border-border`} dangerouslySetInnerHTML={{ __html: s.summary }} /> : null}
         <ul className="m-0 list-none p-0">
-          {s.items.map((it) => it.html !== null
-            ? (
-              <li key={it.id} className={`${PROSE} border-b border-border last:border-b-0`}>
-                <div dangerouslySetInnerHTML={{ __html: it.html }} />
-                {it.videos.map((v) => <video key={v} controls preload="metadata" src={v} className="mt-2 max-w-full" />)}
-              </li>
-            )
-            : <ItemRow key={it.id} it={it} now={now} />)}
+          {s.items.flatMap((it) => it.html !== null
+            ? [
+              ...(it.videos.length && !hasText(it.html, it.videos) ? [] : [<li key={it.id} className={`${PROSE} border-b border-border last:border-b-0`} dangerouslySetInnerHTML={{ __html: it.html }} />]),
+              ...it.videos.map((v) => <VideoRow key={`${it.id}-${v}`} src={v} />),
+            ]
+            : [<ItemRow key={it.id} it={it} now={now} />])}
         </ul>
+        </> : null}
       </Box>
     </div>
   );
+}
+
+/** 閉じた節(コースごとにブラウザに覚える) */
+function useClosed(courseId: number | null) {
+  const key = `mu-lms-closed:${courseId}`;
+  const [closed, setClosed] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as number[]); } catch { return new Set(); }
+  });
+  const set = (next: Set<number>) => {
+    setClosed(next);
+    try { localStorage.setItem(key, JSON.stringify([...next])); } catch { /* 覚えられなくても開閉はできる */ }
+  };
+  return {
+    closed,
+    toggle: (id: number) => { const n = new Set(closed); if (!n.delete(id)) n.add(id); set(n); },
+    open: (id: number) => { if (closed.has(id)) { const n = new Set(closed); n.delete(id); set(n); } },
+  };
 }
 
 type Props = { page: CoursePage; initial?: Section[]; now?: Date; initialSlots?: SlotMap | null };
@@ -62,6 +116,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
   }, [page.id]);
   useEffect(() => { if (!initial) load(); }, [initial, load]);
   const refs = useRef<Record<number, HTMLElement | null>>({});
+  const fold = useClosed(page.id);
 
   const code = codeOf(page.shortname);
   const found = code ? slots?.get(code) : undefined;
@@ -84,7 +139,8 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
 
   const filled = sections.filter((s) => s.items.length || s.summary);
   const empty = sections.filter((s) => !(s.items.length || s.summary));
-  const go = (id: number) => refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 目次から飛んだ節は開く
+  const go = (id: number) => { fold.open(id); refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-start gap-4 p-4">
@@ -103,7 +159,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
         {empty.length ? <p className="m-0 px-2 pt-2 text-[12px] text-muted-foreground">{`空: ${empty.map((s) => s.title).join("・")}`}</p> : null}
       </nav>
       <div className="flex w-full min-w-0 flex-col gap-4 min-[1000px]:w-auto min-[1000px]:flex-1">
-        {filled.length ? filled.map((s) => <SectionCard key={s.id} s={s} now={ms} refFn={(el) => { refs.current[s.id] = el; }} />) : <Box title="内容"><Note>このコースにはまだ内容がありません</Note></Box>}
+        {filled.length ? filled.map((s) => <SectionCard key={s.id} s={s} now={ms} open={!fold.closed.has(s.id)} onToggle={() => fold.toggle(s.id)} refFn={(el) => { refs.current[s.id] = el; }} />) : <Box title="内容"><Note>このコースにはまだ内容がありません</Note></Box>}
       </div>
       <div className="w-full flex-none min-[1000px]:w-[240px]">
         <Box title="先生">

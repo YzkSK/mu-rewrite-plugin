@@ -12,6 +12,7 @@ const sections: Section[] = [
     it({ id: "1", name: "課題1", mod: "assign", status: "未提出 2026年10月5日" }),
     it({ id: "2", name: "資料", type: "PDF", status: "未提出 2026年12月5日" }),
     it({ id: "3", name: "", mod: "label", url: "", html: "<p>ラベル本文</p>", videos: ["https://x/a.mp4"] }),
+    it({ id: "4", name: "", mod: "label", url: "", html: '<p><a href="https://x/b.mp4">動画はこちら</a></p>', videos: ["https://x/b.mp4"] }),
   ] },
   { id: 3, title: "第2回", summary: null, items: [] },
   { id: 4, title: "第3回", summary: null, items: [] },
@@ -25,7 +26,14 @@ test("見出し・目次・空の行・先生", () => {
 
 test("ラベルは本文と動画、期日が過去の未提出だけ赤字", () => {
   expect(h).toContain("ラベル本文");
-  expect(h).toContain('src="https://x/a.mp4"');
+  // ラベルの動画は最初は「動画」の 1 行(再生の枠は押したときだけ)
+  expect(h).toMatch(/動画<\/span>[\s\S]*a\.mp4[\s\S]*再生/);
+  expect(h).not.toContain("<video");
+  // 動画のリンクだけのラベルは本文を出さず、動画の行だけ
+  expect(h).not.toContain('href="https://x/b.mp4"');
+  expect(h).toMatch(/b\.mp4[\s\S]*再生/);
+  // 節には開閉のボタン(最初は開いている)
+  expect(h).toContain('aria-expanded="true"');
   expect(h).toMatch(/font-bold text-error[^>]*>未提出・10\/5 まで/);
   expect(h).not.toMatch(/font-bold text-error[^>]*>未提出・12\/5 まで/);
 });
