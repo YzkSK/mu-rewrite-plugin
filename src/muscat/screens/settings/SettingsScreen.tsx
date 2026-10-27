@@ -1,5 +1,4 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { getZoom, onZoomChange, setZoom, ZOOMS } from "@/muscat/shell/zoom";
+import { useEffect, useState, type ReactNode } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { SettingsSave } from "@/muscat/api/settings";
 import type { CheckOption, SettingsPage, SettingsTable } from "@/muscat/api/types";
@@ -161,20 +160,6 @@ function Confirm({ onCancel, onOk }: { onCancel: () => void; onOk: () => void })
   );
 }
 
-/** この拡張だけの「表示の大きさ」。元のサイトの設定ではないので、選んだらすぐ変わり、保存も通信もない */
-function ZoomCard() {
-  const zoom = useSyncExternalStore(onZoomChange, getZoom, () => 100);
-  return (
-    <section className="rounded-[4px] border border-border bg-card">
-      <h2 className="m-0 border-b border-border bg-muted px-3.5 py-2 text-sm font-semibold">表示の大きさ</h2>
-      <div className="flex flex-col gap-2.5 p-3.5">
-        <span className="text-[13px] text-muted-foreground">この画面の文字や表をまとめて大きく・小さくします。このブラウザに覚えます。</span>
-        <RadioGroup label="表示の大きさ" options={ZOOMS.map((z) => ({ value: String(z.value), label: z.label }))} value={String(zoom)} onChange={(v) => setZoom(Number(v))} />
-      </div>
-    </section>
-  );
-}
-
 /** 個人設定。タブは元の画面の TabView を押して切り替え、値は画面で持って、保存などで元の画面に入れて押す */
 export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?: Document; initial?: LiveState<SettingsPage> }) {
   const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
@@ -218,7 +203,6 @@ export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?
               <Body page={page} run={(op, confirm, fail) => (confirm ? setAsk(() => op) : go(op, fail))} />
             </div>
           </BusyOverlay>
-          <ZoomCard />
           {ask && <Confirm onCancel={() => setAsk(null)} onOk={() => { setAsk(null); go(ask, "保存できませんでした"); }} />}
         </>
       )}

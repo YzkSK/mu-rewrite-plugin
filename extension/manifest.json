@@ -29,5 +29,6 @@
   "web_accessible_resources": [
     { "resources": ["dist/lms-pdf.js"], "matches": ["https://musashino-u.myopenlms.net/*"] }
   ],
+  "action": { "default_popup": "options.html" },
   "background": { "service_worker": "background.js", "type": "module" }
 }
