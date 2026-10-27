@@ -48,13 +48,10 @@ export function AcademicCalendar({ data, load, now = new Date() }: Props) {
   const weeks = events ? buildMonthGrid(events, shown.y, shown.m, todayKey) : [];
   const arrow = "flex size-7 cursor-pointer items-center justify-center rounded-[4px] border border-border bg-card text-foreground hover:bg-muted";
 
-  // 週ごとに「日付の行 + バーのレーン」を縦に積む
-  let row = 1;
-  const placed = weeks.map((w, i) => {
-    const r = row;
-    row += 1 + w.lanes;
-    return { w, r, i };
-  });
+  // 週ごとに「日付の行 + バーのレーン」を縦に積む。週の高さをそろえるため、レーン数は月内の最大に合わせる
+  const lanes = Math.max(0, ...weeks.map((w) => w.lanes));
+  const placed = weeks.map((w, i) => ({ w, r: 1 + i * (1 + lanes), i }));
+  const rows = weeks.map(() => `auto${" 20px".repeat(lanes)}`).join(" ");
 
   return (
     <section className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
@@ -72,7 +69,7 @@ export function AcademicCalendar({ data, load, now = new Date() }: Props) {
         </div>
         <div
           className={`grid grid-cols-7 gap-y-px text-[12px] transition-opacity ${busy ? "opacity-40" : ""}`}
-          style={{ gridAutoRows: "auto" }}
+          style={{ gridTemplateRows: rows, gridAutoRows: "auto" }}
         >
           {events === null ? <p className="col-span-7 m-0 py-6 text-center text-muted-foreground">読み込めませんでした</p> : null}
           {placed.flatMap(({ w, r, i }) => [
