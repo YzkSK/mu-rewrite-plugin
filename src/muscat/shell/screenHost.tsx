@@ -27,6 +27,23 @@ export type OnScreen = (screen: ScreenDef | null, home: boolean) => void;
 
 let current: { root: Root } | null = null;
 
+const RELOADED = "mu-muscat-auto-reload";
+/**
+ * メニューの無い応答(サーバー側の画面が別のタブ・拡張の取得でずれたとき)が届いたら、1 回だけ読み込み直す。
+ * 読み込み直すと入口から入り直して元の画面に戻る(既存の入り直し)。30 秒以内の 2 回目はしない(繰り返さない)
+ */
+export function autoReload(now = Date.now(), reload = () => location.reload()): boolean {
+  try {
+    const at = Number(sessionStorage.getItem(RELOADED));
+    if (at && now - at < 30_000) return false;
+    sessionStorage.setItem(RELOADED, String(now));
+  } catch {
+    return false; // 印を付けられなければ繰り返すおそれがあるのでしない
+  }
+  reload();
+  return true;
+}
+
 /**
  * サイドバー + 今の画面。今の画面は client が持つ(移動のたびに別の Document になる)ので、ここでは見張らず、その画面コードから選ぶ。
  * 移動のたびに App ごと作り直す(画面の中の状態を持ち越さない。元の画面を移っていたころと同じ)
@@ -49,6 +66,9 @@ function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: S
     if (op === "replace") replaceEntry({ mu: "screen", label: name });
     else pushEntry({ mu: "screen", label: name });
   }, [seq]); // 画面が替わったときだけ
+  useEffect(() => {
+    if (!screen) autoReload();
+  }, [seq]);
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
       const act = popAction(e.state, label.current, subs.open, popDirection(e.state));
@@ -89,7 +109,7 @@ function Shell({ client, actions, onScreen }: { client: MuscatClient; actions: S
           screen.render(client, doc)
         ) : (
           <div className="p-4">
-            <ErrorNotice title="この画面を表示できませんでした" message="MUSCAT の応答を読み取れませんでした" />
+            <ErrorNotice title="この画面を表示できませんでした" message="MUSCAT の応答を読み取れませんでした。別のタブで MUSCAT を操作すると起きます" onRetry={() => location.reload()} />
           </div>
         )}
       </App>

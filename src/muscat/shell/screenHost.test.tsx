@@ -2,7 +2,7 @@ import { afterEach, expect, mock, test } from "bun:test";
 import { fakeClient } from "../screens/fakeClient";
 
 mock.module("@/ui/tokens.css?inline", () => ({ default: "" }));
-const { mountShell, unmountShell } = await import("./screenHost");
+const { autoReload, mountShell, unmountShell } = await import("./screenHost");
 
 const host = () => document.getElementById("mu-react-host");
 const flush = () => new Promise((r) => setTimeout(r, 20));
@@ -85,7 +85,19 @@ test("ホーム(コードなし・#portalCont)は home、表示できない画�
   expect(setup(home).screens).toEqual(["ホーム:true"]);
   unmountShell();
   const bad = new DOMParser().parseFromString(`<body><p>エラー</p></body>`, "text/html");
+  sessionStorage.setItem("mu-muscat-auto-reload", String(Date.now())); // 直前に読み込み直した扱い(テストでは読み込み直さない)
   expect(setup(bad).screens).toEqual(["-:false"]);
   await flush();
   expect(text()).toContain("この画面を表示できませんでした");
+  sessionStorage.removeItem("mu-muscat-auto-reload");
+});
+
+test("autoReload: 1 回だけ読み込み直し、30 秒以内の 2 回目はしない", () => {
+  sessionStorage.removeItem("mu-muscat-auto-reload");
+  let n = 0;
+  expect(autoReload(1_000_000, () => n++)).toBe(true);
+  expect(autoReload(1_010_000, () => n++)).toBe(false);
+  expect(autoReload(1_040_000, () => n++)).toBe(true);
+  expect(n).toBe(2);
+  sessionStorage.removeItem("mu-muscat-auto-reload");
 });
