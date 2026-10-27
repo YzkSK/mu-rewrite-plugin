@@ -18,8 +18,8 @@ async function showUpdate() {
   const a = document.createElement("a");
   a.href = u.url;
   a.target = "_blank";
-  a.textContent = `新しい版 v${u.version} があります`;
-  update.append(a);
+  a.textContent = `新しい版 v${u.version} をダウンロード`;
+  update.append(a, "。展開して今のフォルダに上書きし、chrome://extensions で再読み込みしてください");
 }
 showUpdate();
 chrome.runtime.sendMessage({ type: "mu-check-update" }).then(showUpdate, () => {});

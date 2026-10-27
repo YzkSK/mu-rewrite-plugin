@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
-  "version": "0.7.0",
-  "permissions": ["webRequest", "storage"],
+  "version": "1.0.1",
+  "permissions": [
+    "webRequest",
+    "storage"
+  ],
   "host_permissions": [
     "https://portal.musashino-u.ac.jp/*",
     "https://musashino-u.myopenlms.net/*",
@@ -11,24 +14,48 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://portal.musashino-u.ac.jp/*"],
-      "js": ["dist/portal-react.js"],
+      "matches": [
+        "https://portal.musashino-u.ac.jp/*"
+      ],
+      "js": [
+        "dist/portal-react.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://musashino-u.myopenlms.net/*"],
-      "js": ["dist/lms-react.js"],
+      "matches": [
+        "https://musashino-u.myopenlms.net/*"
+      ],
+      "js": [
+        "dist/lms-react.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://unipa.m-muscat.musashino-u.ac.jp/uprx/*"],
-      "js": ["dist/muscat-react.js"],
+      "matches": [
+        "https://unipa.m-muscat.musashino-u.ac.jp/uprx/*"
+      ],
+      "js": [
+        "dist/muscat-react.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
-    { "resources": ["dist/lms-pdf.js"], "matches": ["https://musashino-u.myopenlms.net/*"] }
+    {
+      "resources": [
+        "dist/lms-pdf.js"
+      ],
+      "matches": [
+        "https://musashino-u.myopenlms.net/*"
+      ]
+    }
   ],
-  "action": { "default_popup": "options.html" },
-  "background": { "service_worker": "background.js", "type": "module" }
+  "action": {
+    "default_popup": "options.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
 }
