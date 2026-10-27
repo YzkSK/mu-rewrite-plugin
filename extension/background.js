@@ -26,7 +26,7 @@ async function lmsDue() {
     if (r.error) return r.exception?.errorcode === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.error) };
     return {
       login: true,
-      events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, url: e.url })),
+      events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, closed: !!e.overdue && !e.action?.actionable, url: e.url })),
     };
   } catch (e) {
     return { error: e.message };

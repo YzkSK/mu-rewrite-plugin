@@ -20,7 +20,8 @@ const html = (d: HomeData) => renderToString(<HomeScreen userId={1} initial={d} 
 
 test("提出期限: 札・小見出し・状態・種類名", () => {
   const h = html(data);
-  for (const t of ["期限切れ 2", "期限切れ・未提出", "今週", "それより先", "まだ出せる", "締切", "あと 1 日 1 時間", "課題、コースA", "小テスト、コースA", "other、コースA", "提出済みの課題は出ません"]) expect(h).toContain(t);
+  // 締め切られたものは並べず件数の行に畳む。札はまだ出せるものだけ数える
+  for (const t of ["期限切れ 1", "期限切れ・まだ出せる", "締め切られた未提出 1 件", "<details", "今週", "それより先", "まだ出せる", "締切", "あと 1 日 1 時間", "課題、コースA", "小テスト、コースA", "other、コースA", "提出済みの課題は出ません"]) expect(h).toContain(t);
 });
 
 test("アナウンスと最近のコース", () => {

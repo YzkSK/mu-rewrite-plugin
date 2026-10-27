@@ -51,6 +51,14 @@ test("LMS: 未ログイン・エラー・空・一覧", () => {
   for (const s of ["03_【課題提出先】", "英語基礎C [Re_a]", "10/30 23:59", "期限切れ 1"]) expect(h).toContain(s);
   expect(h).not.toContain("399 ");
   expect(h.indexOf("古い課題")).toBeLessThan(h.indexOf("03_【課題提出先】")); // 期限の早い順
+  // 締め切られたものは並べず件数の行に畳み、札にも数えない
+  const c = html({ lms: { login: true, events: [
+    { name: "出せる", course: "", due, overdue: false, url: "https://x/1" },
+    { name: "締切の課題", course: "", due: due - 86400, overdue: true, closed: true, url: "https://x/2" },
+  ] } });
+  expect(c).toContain("締め切られた未提出 1 件");
+  expect(c).not.toContain("期限切れ 1");
+  expect(c.indexOf("締切の課題")).toBeGreaterThan(c.indexOf("締め切られた未提出"));
 });
 
 test("学年暦: 月の操作と凡例", () => {

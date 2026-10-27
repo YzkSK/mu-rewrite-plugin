@@ -29,19 +29,29 @@ function DueRow({ e, now }: { e: Due; now: number }) {
 
 function DueBox({ due, now }: { due: Due[] | null; now: number }) {
   const g = due ? groupDue(due, now) : null;
-  const groups = g ? ([["期限切れ・未提出", g.overdue], ["今週", g.week], ["それより先", g.later]] as const).filter(([, l]) => l.length) : [];
+  // 締め切られた(もう出せない)期限切れは並べず、件数の 1 行に畳む。並べるのはまだ出せるものだけ
+  const open = g?.overdue.filter((e) => e.canSubmit) ?? [];
+  const closed = g?.overdue.filter((e) => !e.canSubmit) ?? [];
+  const groups = g ? ([["期限切れ・まだ出せる", open], ["今週", g.week], ["それより先", g.later]] as const).filter(([, l]) => l.length) : [];
   return (
-    <Box title="提出期限" actions={g?.overdue.length ? <span className="rounded-[3px] bg-error px-1.5 text-[11px] font-semibold leading-[17px] text-error-foreground">{`期限切れ ${g.overdue.length}`}</span> : null}>
+    <Box title="提出期限" actions={open.length ? <span className="rounded-[3px] bg-error px-1.5 text-[11px] font-semibold leading-[17px] text-error-foreground">{`期限切れ ${open.length}`}</span> : null}>
       {!due ? <Note>読み込めませんでした</Note>
-        : !groups.length ? <Note>提出期限のある課題はありません</Note>
+        : !groups.length && !closed.length ? <Note>提出期限のある課題はありません</Note>
         : (
           <>
+            {!groups.length ? <Note>出せる課題はありません</Note> : null}
             {groups.map(([label, list]) => (
               <div key={label}>
                 <h3 className="m-0 border-b border-border bg-muted px-4 py-1 text-[12px] font-semibold text-muted-foreground">{label}</h3>
                 <ul className="m-0 list-none p-0">{list.map((e, i) => <DueRow key={i} e={e} now={now} />)}</ul>
               </div>
             ))}
+            {closed.length ? (
+              <details className="border-t border-border">
+                <summary className="cursor-pointer px-4 py-2 text-[12.5px] text-muted-foreground hover:bg-muted">{`締め切られた未提出 ${closed.length} 件`}</summary>
+                <ul className="m-0 list-none p-0">{closed.map((e, i) => <DueRow key={i} e={e} now={now} />)}</ul>
+              </details>
+            ) : null}
             <p className="m-0 border-t border-border px-4 py-2 text-[11.5px] text-muted-foreground">提出済みの課題は出ません</p>
           </>
         )}
