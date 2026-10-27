@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
-import { htmlToText, submit, type AssignPage, type SubmitForm } from "./assign";
+import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
 import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
 import { Box } from "./parts";
@@ -92,12 +92,21 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState<StatusRow[] | null | "loading" | undefined>(undefined);
   const back = `/mod/assign/view.php?id=${page.id}`;
 
   const send = () => {
     setBusy(true);
     setError(null);
-    submit(form, text).then(() => save(page.id, null), (e: unknown) => { setError(e instanceof Error ? e.message : String(e)); setBusy(false); });
+    setStatus(undefined);
+    submit(form, text).then(() => save(page.id, null), (e: unknown) => {
+      setError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+      // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
+      if (page.id === null) return setStatus(null);
+      setStatus("loading");
+      fetchStatus(page.id).then(setStatus);
+    });
   };
 
   return (
@@ -134,6 +143,22 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
         </div>
       </div>
       {error ? <ErrorNotice title="提出できませんでした" message={error} /> : null}
+      {error && status === "loading" ? <p className="m-0 text-[12.5px] text-muted-foreground">課題の画面で提出状況を確かめています…</p> : null}
+      {error && status !== "loading" && status !== undefined
+        ? (
+          <div className="flex flex-col gap-1 text-[13px]">
+            {status?.length
+              ? (
+                <>
+                  <span className="text-muted-foreground">課題の画面では</span>
+                  {status.map((r) => <span key={r.label}>{`${r.label}: ${r.text}`}</span>)}
+                </>
+              )
+              : <span className="text-muted-foreground">提出状況を読めませんでした</span>}
+            <a className="w-fit text-primary hover:underline" href={back}>課題の画面を開く</a>
+          </div>
+        )
+        : null}
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" disabled={busy || uploading} onClick={send} className="h-9 cursor-pointer rounded-[4px] bg-primary px-5 text-[13.5px] text-primary-foreground hover:opacity-90 disabled:cursor-default disabled:opacity-60">{busy ? "提出しています…" : "提出する"}</button>
         <a className="inline-flex h-9 items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] hover:bg-muted" href={back}>やめる</a>

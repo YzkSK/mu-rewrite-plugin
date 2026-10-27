@@ -113,6 +113,18 @@ export function buildSubmission(form: SubmitForm, text: string): URLSearchParams
 /** 応答が提出フォームのままか(= 保存されず同じ画面に戻された) */
 const stillForm = (html: string): boolean => !!new DOMParser().parseFromString(html, "text/html").querySelector('form.mform input[name="_qf__mod_assign_submission_form"]');
 
+/** 課題の画面を取り直して「提出ステータス」「最終更新日時」の行を返す。読めなければ null */
+export async function fetchStatus(id: number): Promise<StatusRow[] | null> {
+  try {
+    const r = await fetch(new URL(`/mod/assign/view.php?id=${id}`, location.href), { credentials: "include" });
+    if (!r.ok || new URL(r.url || location.href).pathname.startsWith("/login/")) return null;
+    const doc = new DOMParser().parseFromString(await r.text(), "text/html");
+    return readAssignPage(doc, `?id=${id}`).rows.filter((x) => x.label === "提出ステータス" || x.label === "最終更新日時");
+  } catch {
+    return null;
+  }
+}
+
 /** 送る。成功したら課題ページへ移る。失敗は理由つきの Error */
 export async function submit(form: SubmitForm, text: string, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
   const r = await fetch(new URL(form.action, location.href), {
@@ -123,8 +135,11 @@ export async function submit(form: SubmitForm, text: string, go: (url: string) =
   });
   const html = await r.text();
   // ログインが切れていると、ログイン画面への転送を追って 200 が返る。成功と見なすと書きかけを消してしまう
-  if (new URL(r.url || location.href).pathname.startsWith("/login/")) throw new Error("ログインが切れていたため提出できませんでした。書いた本文は残っています");
-  if (!r.ok || r.url.includes("action=editsubmission") || stillForm(html)) {
+  const to = new URL(r.url || location.href);
+  if (to.pathname.startsWith("/login/")) throw new Error("ログインが切れていたため提出できませんでした。書いた本文は残っています");
+  // Moodle は保存できたときだけ課題の画面(採点できる人は採点一覧)へ転送する。それを確かめられなければ失敗
+  const saved = r.ok && r.redirected && to.pathname === "/mod/assign/view.php" && ["", "view", "grading"].includes(to.searchParams.get("action") ?? "");
+  if (!saved || stillForm(html)) {
     const why = [...new DOMParser().parseFromString(html, "text/html").querySelectorAll(".error, .alert-danger")].map((e) => squash(e.textContent)).filter(Boolean).join(" ");
     throw new Error(why || "提出できませんでした");
   }
