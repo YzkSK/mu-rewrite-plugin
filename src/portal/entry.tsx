@@ -5,6 +5,24 @@ import { mountPortal, mountPortalError, unmountPortal } from "./host";
 import { isAppPath, isTargetPath, isTopPath } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
+const TRIED = "mu-portal-login-tried";
+
+/** 未ログインで、60 秒以内に入り直しを試していなければ true(試した印を付ける)。SSO から戻っても未ログインなら繰り返さない */
+async function needsLogin(): Promise<boolean> {
+  try {
+    const r = await fetch("/api/auth/check-logged-in", { credentials: "include" });
+    if (!r.ok) return false; // 障害・制限のときは入り直さない
+    const j = await r.json();
+    // 未ログインは HTTP 200 で user: null(実機で確認)。それ以外の形は入り直さない
+    if (j?.user !== null || j?.result?.login) return false;
+    const at = Number(sessionStorage.getItem(TRIED));
+    if (at && Date.now() - at < 60_000) return false;
+    sessionStorage.setItem(TRIED, String(Date.now()));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // 開発用: localStorage["mu-dev"]="1" のブラウザだけ、ページの postMessage("mu-dev-reload") で拡張を読み込み直す
 try {
@@ -18,8 +36,15 @@ if (window === window.top && isTargetPath(location.pathname)) {
   let state: State = "off";
   let token = 0; // 古い非同期処理を無効化する
 
-  // 読めなかったとき。元のアプリは止めてあるので、渡さずに失敗の画面を出す
+  // 読めなかったとき。元のアプリは止めてあるので、渡さずに失敗の画面を出す。
+  // ただしポータルにログインしていない(ブラウザを開き直した直後など)なら、"/" へ移って SSO で入り直す(元のポータルと同じ。"/" は描かない)
   const fail = () => {
+    void needsLogin().then((login) => {
+      if (login) location.replace("/");
+      else showFailed();
+    });
+  };
+  const showFailed = () => {
     unmountPortal();
     mountPortalError();
     state = "failed";
