@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { InfoItem, InfoList } from "../api";
 import type { TopData } from "../data";
 import { fmtDue, fmtWhen, type CalEvent } from "../lib/lib";
@@ -46,8 +46,17 @@ function DueItem({ e }: { e: LmsDue }) {
   );
 }
 
-function LmsBox({ lms }: { lms: LmsResult }) {
-  const all = "login" in lms && lms.login ? [...lms.events].sort((a, b) => a.due - b.due) : [];
+function LmsBox({ lms: given }: { lms: LmsResult | Promise<LmsResult> }) {
+  const [lms, setLms] = useState<LmsResult | null>(given instanceof Promise ? null : given);
+  useEffect(() => {
+    let alive = true;
+    if (given instanceof Promise) void given.then((r) => alive && setLms(r));
+    else setLms(given);
+    return () => {
+      alive = false;
+    };
+  }, [given]);
+  const all = lms && "login" in lms && lms.login ? [...lms.events].sort((a, b) => a.due - b.due) : [];
   // 締め切られた(もう出せない)期限切れは並べず、件数の 1 行に畳む
   const events = all.filter((e) => !e.closed);
   const closed = all.filter((e) => e.closed);
@@ -62,7 +71,8 @@ function LmsBox({ lms }: { lms: LmsResult }) {
         </>
       }
     >
-      {"error" in lms ? <Note>読み込めませんでした</Note>
+      {!lms ? <Note>読み込み中…</Note>
+        : "error" in lms ? <Note>読み込めませんでした</Note>
         : !lms.login ? <Note>MU LMS にログインすると表示されます</Note>
         : !all.length ? <Note>提出期限の近い課題はありません</Note>
         : (

@@ -34,8 +34,19 @@ const METHOD = "core_calendar_get_action_events_by_timesort";
 
 async function lmsDue() {
   try {
-    const html = await (await fetch(LMS + "/my/", { credentials: "include" })).text();
-    const sesskey = (/"sesskey":"([^"]+)"/.exec(html) || [])[1];
+    const sesskeyOf = (html) => (/"sesskey":"([^"]+)"/.exec(html) || [])[1];
+    let res = await fetch(LMS + "/my/", { credentials: "include" });
+    let html = await res.text();
+    // LMS のログインが切れていると /my/ は大学の SSO へ転送され、「自動で送るフォーム」が返る。ブラウザの代わりに送って入り直す
+    // (SSO にもログインしていなければ ID・パスワードの画面になり、送れない)
+    for (let hop = 0; hop < 3 && !sesskeyOf(html); hop++) {
+      const saml = samlFormOf(html);
+      if (!saml) break;
+      res = await fetch(new URL(saml.action, res.url).href, { method: "POST", credentials: "include", body: new URLSearchParams(saml.fields) });
+      html = await res.text();
+    }
+    if (!sesskeyOf(html) && res.url.startsWith(LMS)) html = await (await fetch(LMS + "/my/", { credentials: "include" })).text(); // 戻り先がゲスト用トップのとき
+    const sesskey = sesskeyOf(html);
     if (!sesskey) return { login: false };
     // 60 日前から取る(2 週間前からだと古い期限切れが抜けた)。過去と未来は分ける(古い期限切れで上限を使い切らないため)
     const now = Math.floor(Date.now() / 1000);
@@ -43,13 +54,13 @@ async function lmsDue() {
       { index: 0, methodname: METHOD, args: { limitnum: 20, timesortfrom: now - 60 * 86400, timesortto: now - 1, limittononsuspendedevents: true } },
       { index: 1, methodname: METHOD, args: { limitnum: 20, timesortfrom: now, limittononsuspendedevents: true } },
     ];
-    const res = await fetch(`${LMS}/lib/ajax/service.php?sesskey=${encodeURIComponent(sesskey)}&info=${METHOD}`, {
+    const api = await fetch(`${LMS}/lib/ajax/service.php?sesskey=${encodeURIComponent(sesskey)}&info=${METHOD}`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const rs = await res.json();
+    const rs = await api.json();
     const r = rs.find((x) => x.error) ?? rs[0];
     if (r.error) return r.exception?.errorcode === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.error) };
     return {
