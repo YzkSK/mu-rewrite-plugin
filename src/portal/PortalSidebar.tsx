@@ -5,7 +5,7 @@ import { ACTIVE, MB } from "@/ui/AppSidebar";
 import type { PageNode } from "./api";
 import { TOP } from "./data";
 import { isHttp } from "./lib/sanitize";
-import { navigate, NOTICES, NOTICES_URL } from "./route";
+import { navigate, NOTICES, NOTICES_URL, openOriginal } from "./route";
 
 const PAGE = "/dashboard/page/";
 const isNotices = (n: PageNode) => !n.external_link && (n.slug || n.title) === NOTICES;
@@ -108,6 +108,9 @@ export function PortalSidebar({ tree, slug, onPick, onAccount, onSignOut }: { tr
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton size="sm" className={FOOT} onClick={() => { onAccount(); onPick?.(); }}>アカウントとセキュリティ</SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="sm" className={FOOT} onClick={() => openOriginal(slug)}>元の画面で開く</SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton size="sm" className={`${FOOT.replace("text-muted-foreground", "text-error hover:text-error")}`} onClick={() => { onSignOut(); onPick?.(); }}>サインアウト</SidebarMenuButton>

@@ -10,21 +10,21 @@ test("ホーム・グループ別の項目・固定部分が元の並びで出�
   const m = drawerItems(nav, groups, "MUSCAT");
   expect(m.home.label).toBe("ホーム");
   expect(m.groups.map((g) => [g.title, g.items.map((i) => i.label)])).toEqual([["授業", ["出席確認", "成績照会"]]]);
-  expect(m.footer.map((i) => i.label)).toEqual(["個人設定", "MU ポータルへ", "MU-LMS へ", "ログアウト", "元の画面で開く"]);
+  expect(m.footer.map((i) => i.label)).toEqual(["MU ポータルへ", "MU-LMS へ", "個人設定", "元の画面で開く", "ログアウト"]);
 });
 
 test("今の画面の項目は active(除かない)", () => {
   expect(drawerItems(nav, groups, "出席確認").groups[0]!.items.map((i) => i.active)).toEqual([true, false]);
   expect(drawerItems(nav, groups, "ホーム").home.active).toBe(true);
-  expect(drawerItems(nav, groups, "個人設定").footer[0]!.active).toBe(true);
+  expect(drawerItems(nav, groups, "個人設定").footer[2]!.active).toBe(true);
 });
 
 test("項目・ホーム・個人設定は画面の移動、ログアウトと元の画面で開くは別の操作、外部リンクは href", () => {
   hits.length = 0;
   const m = drawerItems(nav, groups, "x");
-  for (const i of [m.home, m.groups[0]!.items[1]!, m.footer[0]!, m.footer[3]!, m.footer[4]!]) (i as { onSelect(): void }).onSelect();
-  expect(hits).toEqual(["go:ホーム", "go:成績照会", "go:個人設定", "logout", "native"]);
-  expect(m.footer[1]).toMatchObject({ href: "https://portal.musashino-u.ac.jp/" });
+  for (const i of [m.home, m.groups[0]!.items[1]!, m.footer[2]!, m.footer[3]!, m.footer[4]!]) (i as { onSelect(): void }).onSelect();
+  expect(hits).toEqual(["go:ホーム", "go:成績照会", "go:個人設定", "native", "logout"]);
+  expect(m.footer[0]).toMatchObject({ href: "https://portal.musashino-u.ac.jp/" });
 });
 
 test("ユーザー名は p.loginInfo から。無ければ undefined", () => {

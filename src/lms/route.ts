@@ -36,5 +36,14 @@ export function openOriginal(): void {
   location.reload();
 }
 
+/** このページの「元の LMS で開く」印を消して読み込み直す(拡張の画面に戻る) */
+export function closeOriginal(): void {
+  try { sessionStorage.removeItem(SKIP + location.pathname + location.search); } catch { /* 消せなければ読み直しても同じ画面になるだけ */ }
+  location.reload();
+}
+
+/** 元の画面で開くと決めた対象ページか */
+export const isSkipped = (l: { pathname: string; search: string }): boolean => isTargetPath(l.pathname) && routeOf(l.pathname, l.search) !== null && skipped(l);
+
 /** 拡張が描く画面か(対象のパスで、元の画面で開くと決めていないとき) */
 export const isAppPath = (l: { pathname: string; search: string }): boolean => isTargetPath(l.pathname) && routeOf(l.pathname, l.search) !== null && !skipped(l);

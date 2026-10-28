@@ -16,6 +16,16 @@ export function openNative(storage: Store, now: number, assign: (url: string) =>
   assign(NATIVE_ENTRY);
 }
 
+/** 印を消して入口へ移る(入口の読み込みで entry が app に戻す) */
+export function closeNative(storage: Store, assign: (url: string) => void): void {
+  try {
+    storage.removeItem(NATIVE_KEY);
+  } catch {
+    /* 消せなくても入口へは移る */
+  }
+  assign(NATIVE_ENTRY);
+}
+
 export type Mode = "skip" | "native" | "app";
 
 /**

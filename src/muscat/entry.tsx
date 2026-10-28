@@ -10,7 +10,8 @@ import { LoggedOut } from "./shell/LoggedOut";
 import { LOGGED_OUT_KEY } from "./shell/loginPage";
 import { mountApp } from "./shell/mountApp";
 import { mountShadowRoot } from "./shell/mount";
-import { openNative } from "./shell/native";
+import { showBackButton } from "@/ui/backButton";
+import { closeNative, openNative } from "./shell/native";
 import { installPreHide, preEpoch, releasePreHide } from "./shell/pre";
 import { mountShell, unmountShell } from "./shell/screenHost";
 
@@ -18,7 +19,9 @@ const FAIL_SAFE_MS = 20_000;
 
 // iframe と /uprx/ 以外は何もしない(旧版と同じ)
 // document_start で動く。「元の画面で開く」の印があれば何もせず、なければ元の script を止めて自分で描く(描けないページは run の中で元に戻す)
-if (window === window.top && boot({ doc: document, pathname: location.pathname, storage: safeStorage(), now: Date.now() }).mode === "app") {
+const mode = window === window.top ? boot({ doc: document, pathname: location.pathname, storage: safeStorage(), now: Date.now() }).mode : "skip";
+if (mode === "native") showBackButton(document, () => closeNative(sessionStorage, (url) => location.assign(url)));
+if (mode === "app") {
   installPreHide(document);
   setTimeout(() => releasePreHide(document), FAIL_SAFE_MS); // 失敗しても元の画面を見せる
   // 描画までの各段階の時刻(ページ側から performance.getEntriesByType("mark") で読める。遅さの切り分け用)

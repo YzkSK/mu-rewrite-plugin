@@ -23,6 +23,8 @@ export type SubmitForm = {
   action: string;
   /** 本文・ボタン以外の hidden を全部(順番どおり) */
   fields: [string, string][];
+  /** 今の本文が Markdown 書式か */
+  markdown: boolean;
   /** 本文の既存の HTML。入力欄が無い課題は null */
   text: string | null;
   /** ファイル欄の設定。ファイル欄が無い課題は null */
@@ -80,6 +82,8 @@ export function readSubmitForm(doc: Document): SubmitForm | null {
     action: form.getAttribute("action") || "/mod/assign/view.php",
     fields,
     text: form.querySelector<HTMLTextAreaElement>(`textarea[name="${TEXT_NAME}"]`)?.value ?? null,
+    // 書式は hidden のことも select のこともある。4 = FORMAT_MARKDOWN なら本文は Markdown のまま入っている
+    markdown: form.querySelector<HTMLInputElement | HTMLSelectElement>('[name="onlinetext_editor[format]"]')?.value === "4",
     files: form.querySelector('[name="files_filemanager"]') ? readFileArea(doc) : null,
     submitName: "submitbutton",
     submitValue: btn?.value ?? "",
@@ -102,10 +106,14 @@ export function htmlToText(html: string): string {
 }
 
 /** 提出の POST の中身 */
-export function buildSubmission(form: SubmitForm, text: string): URLSearchParams {
+export function buildSubmission(form: SubmitForm, text: string, markdown = false): URLSearchParams {
   const p = new URLSearchParams(form.fields);
   // 書き換えていなければ元の HTML のまま送る(平文に直すと書式・リンク・画像が消える)
-  if (form.text !== null) p.set(TEXT_NAME, text === htmlToText(form.text) ? form.text : textToHtml(text));
+  if (form.text !== null && markdown) { p.set(TEXT_NAME, text); p.set("onlinetext_editor[format]", "4"); } // 4 = FORMAT_MARKDOWN。表示時に Moodle が HTML へ変換する
+  else if (form.text !== null) {
+    if (!form.markdown && text === htmlToText(form.text)) p.set(TEXT_NAME, form.text);
+    else { p.set(TEXT_NAME, textToHtml(text)); p.set("onlinetext_editor[format]", "1"); }
+  }
   p.set(form.submitName, form.submitValue);
   return p;
 }
@@ -126,12 +134,12 @@ export async function fetchStatus(id: number): Promise<StatusRow[] | null> {
 }
 
 /** 送る。成功したら課題ページへ移る。失敗は理由つきの Error */
-export async function submit(form: SubmitForm, text: string, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
+export async function submit(form: SubmitForm, text: string, markdown = false, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
   const r = await fetch(new URL(form.action, location.href), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: buildSubmission(form, text),
+    body: buildSubmission(form, text, markdown),
   });
   const html = await r.text();
   // ログインが切れていると、ログイン画面への転送を追って 200 が返る。成功と見なすと書きかけを消してしまう

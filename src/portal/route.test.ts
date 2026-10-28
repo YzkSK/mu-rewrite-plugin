@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { isAppPath, isNoticesPath, isTargetPath, isTopPath, NOTICES_URL, routeOf, slugOf } from "./route";
+import { isAppPath, isSkippedPath, isNoticesPath, isTargetPath, isTopPath, NOTICES_URL, routeOf, slugOf } from "./route";
 
 test("お知らせ一覧のパス: ?view=all のときだけ", () => {
   const p = "/dashboard/page/" + encodeURIComponent("お知らせ");
@@ -38,4 +38,11 @@ test("slug と トップページ判定", () => {
   expect(isTopPath("/dashboard/page/" + encodeURIComponent("トップページ"))).toBe(true);
   expect(isTopPath("/dashboard/page/" + encodeURIComponent("お知らせ"))).toBe(false);
   expect(isTopPath("/elsewhere")).toBe(false);
+});
+
+test("isSkippedPath: 印のあるページだけ true", () => {
+  sessionStorage.setItem("mu-portal-skip:abc", "1");
+  expect(isSkippedPath("/dashboard/page/abc")).toBe(true);
+  expect(isSkippedPath("/dashboard/page/other")).toBe(false);
+  expect(isSkippedPath("/elsewhere")).toBe(false);
 });

@@ -18,6 +18,7 @@ test("htmlToText: <p>/<br> は改行、ほかのタグは外す", () => {
 const form: SubmitForm = {
   action: "/mod/assign/view.php",
   fields: [["lastmodified", "1"], ["id", "55"], ["userid", "9"], ["action", "savesubmission"], ["sesskey", "k"], ["_qf__mod_assign_submission_form", "1"], ["onlinetext_editor[format]", "1"], ["onlinetext_editor[itemid]", "77"]],
+  markdown: false,
   text: "<p>old</p>",
   files: null,
   submitName: "submitbutton",
@@ -36,9 +37,20 @@ test("buildSubmission: 書き換えていなければ元の HTML のまま送る
   expect(buildSubmission(rich, htmlToText(rich.text)).get("onlinetext_editor[text]")).toBe(rich.text);
 });
 
+test("buildSubmission: markdown なら本文はそのまま・format は 4", () => {
+  const p = buildSubmission(form, "# t\n\n- a<");
+  expect(buildSubmission(form, "    code\n\n- a< ", true).get("onlinetext_editor[text]")).toBe("    code\n\n- a< ");
+  expect(buildSubmission(form, "x", true).get("onlinetext_editor[format]")).toBe("4");
+  expect(p.get("onlinetext_editor[text]")).toBe("<p># t</p><p>- a&lt;</p>");
+  // 元が Markdown でもチェックを外せば HTML で送る
+  const md = { ...form, markdown: true, fields: [...form.fields.filter(([k]) => k !== "onlinetext_editor[format]"), ["onlinetext_editor[format]", "4"]] as [string, string][], text: "# t" };
+  expect(buildSubmission(md, "# t").get("onlinetext_editor[format]")).toBe("1");
+  expect(buildSubmission(md, "# t").get("onlinetext_editor[text]")).toBe("<p># t</p>");
+});
+
 test("submit: ログイン画面に転送されたら失敗(書きかけを消さない)", async () => {
   reply("https://lms/login/index.php", "<form id='login'></form>");
-  await expect(submit(form, "a", () => {})).rejects.toThrow("ログインが切れていた");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("ログインが切れていた");
 });
 
 const reply = (url: string, html: string, status = 200, redirected = true) => {
@@ -48,25 +60,25 @@ const reply = (url: string, html: string, status = 200, redirected = true) => {
 test("submit: 成功は課題ページへ", async () => {
   reply("https://lms/mod/assign/view.php?id=55&action=view", "<div id='region-main'>ok</div>");
   let to = "";
-  await submit(form, "a", (u) => { to = u; });
+  await submit(form, "a", false, (u) => { to = u; });
   expect(to).toBe("/mod/assign/view.php?id=55");
   reply("https://lms/mod/assign/view.php?id=55&action=grading", "ok");
-  await submit(form, "a", () => {});
+  await submit(form, "a", false, () => {});
   reply("https://lms/mod/assign/view.php?id=55", "ok");
-  await submit(form, "a", () => {});
+  await submit(form, "a", false, () => {});
 });
 
 test("submit: 課題の画面へ転送されなければ、エラーが無くても失敗", async () => {
   reply("https://lms/mod/assign/view.php", "<div id='region-main'>ok</div>", 200, false);
-  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("提出できませんでした");
   reply("https://lms/my/", "ok");
-  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("提出できませんでした");
 });
 
 test("submit: 送った中身は POST の urlencoded", async () => {
   let init: RequestInit | undefined;
   globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return { ok: true, url: "https://lms/mod/assign/view.php?id=55&action=view", redirected: true, text: async () => "" }; }) as unknown as typeof fetch;
-  await submit(form, "a", () => {});
+  await submit(form, "a", false, () => {});
   expect(init?.method).toBe("POST");
   expect(init?.credentials).toBe("include");
   expect((init?.body as URLSearchParams).get("action")).toBe("savesubmission");
@@ -74,11 +86,11 @@ test("submit: 送った中身は POST の urlencoded", async () => {
 
 test("submit: URL が editsubmission のまま・フォームが残る・HTTP エラーは失敗(理由つき)", async () => {
   reply("https://lms/mod/assign/view.php?id=55&action=editsubmission", "<div class='alert-danger'> 保存できません </div>");
-  await expect(submit(form, "a", () => {})).rejects.toThrow("保存できません");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("保存できません");
   reply("https://lms/mod/assign/view.php", '<form class="mform"><input name="_qf__mod_assign_submission_form" value="1"></form><span class="error">必須です</span>');
-  await expect(submit(form, "a", () => {})).rejects.toThrow("必須です");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("必須です");
   reply("https://lms/mod/assign/view.php?id=55", "x", 500);
-  await expect(submit(form, "a", () => {})).rejects.toThrow("提出できませんでした");
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("提出できませんでした");
 });
 
 const PAGE = `<title>2026_5300100047: 中間課題 | MU-LMS</title>
@@ -138,7 +150,9 @@ test("readSubmitForm: hidden・本文・ファイル欄・ボタン", () => {
     <script>M.form_filemanager.init(Y, {"itemid":88,"client_id":"c1","maxbytes":"100","maxfiles":"2","context":{"id":5},"author":"A"});"sesskey":"k"</script></body>`;
   const f = readSubmitForm(document)!;
   expect(f.fields).toEqual([["id", "55"], ["sesskey", "k"], ["onlinetext_editor[itemid]", "77"], ["files_filemanager", "88"]]);
-  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", files: { itemid: 88, clientId: "c1" }, submitValue: "変更を保存する" });
+  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", markdown: false, files: { itemid: 88, clientId: "c1" }, submitValue: "変更を保存する" });
+  document.body.innerHTML = `<form class="mform"><textarea name="onlinetext_editor[text]"># t</textarea><select name="onlinetext_editor[format]"><option value="1">HTML</option><option value="4" selected>Markdown</option></select></form>`;
+  expect(readSubmitForm(document)).toMatchObject({ text: "# t", markdown: true });
   document.body.innerHTML = "";
   expect(readSubmitForm(document)).toBeNull();
 });

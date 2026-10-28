@@ -1,9 +1,36 @@
 import { useEffect, useRef, useState } from "react";
+import { type CmdKey, defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, rootCtx, serializerCtx } from "@milkdown/kit/core";
+import { history, redoCommand, undoCommand } from "@milkdown/kit/plugin/history";
+import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
+import { commonmark, toggleLinkCommand, createCodeBlockCommand, insertHrCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from "@milkdown/kit/preset/commonmark";
+import type { Node } from "@milkdown/kit/prose/model";
+import { callCommand } from "@milkdown/kit/utils";
+import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, type Icon } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
 import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
+import { isPlainDoc, plainDocJson, plainText } from "./mdEditor";
 import { Box } from "./parts";
+
+// 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
+const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+// 書式ボタン。[見出し, アイコン, コマンド, 引数, 押下中と見なす mark/node の名前]
+const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?, string?][] = [
+  ["太字", IconBold, toggleStrongCommand, undefined, "strong"],
+  ["斜体", IconItalic, toggleEmphasisCommand, undefined, "emphasis"],
+  ["コード", IconCode, toggleInlineCodeCommand, undefined, "inlineCode"],
+  ["リンク", IconLink, toggleLinkCommand, undefined, "link"],
+  ["見出し", IconH2, wrapInHeadingCommand, 2, "heading"],
+  ["箇条書き", IconList, wrapInBulletListCommand, undefined, "bullet_list"],
+  ["番号付きリスト", IconListNumbers, wrapInOrderedListCommand, undefined, "ordered_list"],
+  ["引用", IconBlockquote, wrapInBlockquoteCommand, undefined, "blockquote"],
+  ["コードブロック", IconSourceCode, createCodeBlockCommand, undefined, "code_block"],
+  ["区切り線", IconSeparatorHorizontal, insertHrCommand],
+  ["元に戻す", IconArrowBackUp, undoCommand],
+  ["やり直す", IconArrowForwardUp, redoCommand],
+];
+const count = (s: string) => Array.from(s.replace(/\s/g, "")).length;
 
 type FileRow = { id: number; name: string; size: number | null; pct?: number; error?: string; removing?: boolean };
 
@@ -80,26 +107,92 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
 
 // 利用者ごとに分ける(同じタブで別の人がログインし直しても前の人の書きかけが出ない)
 let user = "";
-const key = (id: number | null) => `mu-lms-draft-${user}-${id}`;
-const load = (id: number | null): string | null => { try { return sessionStorage.getItem(key(id)); } catch { return null; } };
-const save = (id: number | null, v: string | null): void => {
+const key = (id: number | string | null) => `mu-lms-draft-${user}-${id}`;
+const load = (id: number | string | null): string | null => { try { return sessionStorage.getItem(key(id)); } catch { return null; } };
+const save = (id: number | string | null, v: string | null): void => {
   try { if (v === null) sessionStorage.removeItem(key(id)); else sessionStorage.setItem(key(id), v); } catch { /* 保存できなくても書ける */ }
 };
 
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
   user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
-  const [text, setText] = useState(() => load(page.id) ?? htmlToText(form.text ?? ""));
+  // 書きかけは doc の JSON で `${id}-doc` に持つ(平文か Markdown かを読み戻しで変えないため)。古い版の書きかけは id に文字で
+  const [draft] = useState((): { json: unknown } | { text: string; md: boolean } | null => {
+    try { const j = load(`${page.id}-doc`); if (j !== null) return { json: JSON.parse(j) }; } catch { /* 壊れていたら古い方へ */ }
+    const p = load(page.id);
+    return p === null ? null : { text: p, md: (load(`${page.id}-md`) ?? (form.markdown ? "1" : "0")) === "1" }; // -md はチェックがあった版の印
+  });
+  const [chars, setChars] = useState(() => count(draft && "text" in draft ? draft.text : form.markdown ? form.text ?? "" : htmlToText(form.text ?? "")));
   const [busy, setBusy] = useState(false);
+  const host = useRef<HTMLDivElement>(null);
+  const editor = useRef<Editor | null>(null);
+  const busyRef = useRef(false);
+  // 最初の doc。listener は 200ms 遅れるので、編集したかは送る時にこれと比べる
+  const initial = useRef<Node | null>(null);
+  const ready = useRef(false); // 初期化の間の更新は書きかけに数えない
+  busyRef.current = busy;
+  // カーソル位置にかかっている mark と、囲んでいる node の名前(ボタンの押下表示用)
+  const [active, setActive] = useState<Set<string>>(new Set());
+  const [link, setLink] = useState<{ text: string; href: string } | null>(null); // リンクの小ウィンドウ。null で閉じている
+  const refresh = () => editor.current?.action((ctx) => {
+    const { storedMarks, selection: { $from } } = ctx.get(editorViewCtx).state;
+    const names = new Set((storedMarks ?? $from.marks()).map((m) => m.type.name));
+    for (let d = $from.depth; d > 0; d--) names.add($from.node(d).type.name);
+    setActive(names);
+  });
+
+  useEffect(() => {
+    if (!host.current) return;
+    const original = form.markdown ? form.text ?? "" : htmlToText(form.text ?? "");
+    // 元の本文に戻したら書きかけは消す(書きかけから始めたときは最初の doc も書きかけなので残す)
+    const keep = (doc: Node) => {
+      if (draft === null && doc.eq(initial.current!)) return save(`${page.id}-doc`, null);
+      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
+      save(page.id, null);
+    };
+    const ed = Editor.make()
+      .config((ctx) => {
+        ctx.set(rootCtx, host.current);
+        // 元が HTML なら Markdown として parse せず、段落と改行だけの doc にする
+        if (draft && "json" in draft) ctx.set(defaultValueCtx, { type: "json", value: draft.json as Record<string, never> });
+        else {
+          const [init, md] = draft ? [draft.text, draft.md] : [original, form.markdown];
+          ctx.set(defaultValueCtx, md ? init : { type: "json", value: plainDocJson(init) });
+        }
+        ctx.update(editorViewOptionsCtx, (o) => ({ ...o, editable: () => !busyRef.current, attributes: { "aria-label": "本文", class: EDITOR } }));
+        ctx.get(listenerCtx).updated((_, doc) => { if (ready.current) { setChars(count(doc.textContent)); keep(doc); } });
+      })
+      .use(commonmark)
+      .use(history)
+      .use(listener);
+    ed.create().then(() => {
+      initial.current = ed.action((ctx) => ctx.get(editorViewCtx).state.doc);
+      setChars(count(initial.current.textContent));
+      editor.current = ed; ready.current = true;
+    });
+    // 200ms 以内に離れても書きかけを残す
+    const flush = () => { if (ready.current) keep(ed.action((ctx) => ctx.get(editorViewCtx).state.doc)); };
+    addEventListener("pagehide", flush);
+    return () => { removeEventListener("pagehide", flush); flush(); editor.current = null; ready.current = false; void ed.destroy(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { editor.current?.action((ctx) => ctx.get(editorViewCtx).setProps({ editable: () => !busy })); }, [busy]);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<StatusRow[] | null | "loading" | undefined>(undefined);
   const back = `/mod/assign/view.php?id=${page.id}`;
 
   const send = () => {
+    if (form.text !== null && !editor.current) return; // エディタの準備前
     setBusy(true);
     setError(null);
     setStatus(undefined);
-    submit(form, text).then(() => save(page.id, null), (e: unknown) => {
+    // 未編集なら元の本文・書式のまま。記法を使っていなければ平文(HTML の段落)、使っていれば Markdown で送る
+    const edited = editor.current?.action((ctx) => {
+      const doc = ctx.get(editorViewCtx).state.doc;
+      if (draft === null && doc.eq(initial.current!)) return null;
+      return isPlainDoc(doc) ? [plainText(doc), false] as const : [ctx.get(serializerCtx)(doc), true] as const;
+    });
+    const [body, md] = edited ?? [form.markdown ? form.text! : htmlToText(form.text ?? ""), form.markdown] as const;
+    submit(form, body, md).then(() => { save(page.id, null); save(`${page.id}-doc`, null); save(`${page.id}-md`, null); }, (e: unknown) => {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
@@ -117,16 +210,73 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
           {form.text !== null
             ? (
               <div className="flex flex-col gap-1">
-                <textarea
-                  aria-label="本文"
-                  rows={12}
-                  value={text}
-                  disabled={busy}
-                  onChange={(e) => { setText(e.target.value); save(page.id, e.target.value); }}
-                  className="w-full resize-y rounded-[4px] border border-border bg-card p-3 text-[13.5px]"
-                />
-                <span className="self-end text-[12px] text-muted-foreground">{`${Array.from(text.replace(/\s/g, "")).length} 字`}</span>
-                {/<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
+                <div role="toolbar" aria-label="書式" className="relative flex flex-wrap gap-0.5">
+                  {TOOLS.map(([label, I, cmd, arg, name]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      title={label}
+                      aria-label={label}
+                      aria-pressed={name ? active.has(name) : undefined}
+                      disabled={busy}
+                      onMouseDown={(e) => e.preventDefault()} // 本文の選択を保つ
+                      onClick={() => {
+                        // リンクは外すとき以外 URL を聞く。toggleLink は文字を選んでいないと何もしない
+                        if (cmd === toggleLinkCommand && !active.has("link")) return setLink(link === null ? { text: editor.current?.action((ctx) => { const { doc, selection: s } = ctx.get(editorViewCtx).state; return doc.textBetween(s.from, s.to, " "); }) ?? "", href: "" } : null);
+                        editor.current?.action(callCommand(cmd.key, arg));
+                        refresh();
+                      }}
+                      className="rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:bg-muted aria-pressed:text-foreground"
+                    ><I size={16} /></button>
+                  ))}
+                {link !== null ? (
+                  <form
+                    role="dialog"
+                    aria-label="リンクを付ける"
+                    className="absolute left-0 top-full z-40 mt-1 flex w-[min(26rem,100%)] flex-col gap-2 rounded-[4px] border border-border bg-card p-3 shadow-md"
+                    onKeyDown={(e) => e.key === "Escape" && setLink(null)}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const href = link.href.trim();
+                      const text = link.text || href;
+                      if (!/^https?:\/\/\S/i.test(href)) return; // javascript: などは入れない
+                      // 選んでいた範囲を、表示する文字にリンクを付けたものに置き換える(未選択ならカーソル位置に入れる)
+                      editor.current?.action((ctx) => {
+                        const view = ctx.get(editorViewCtx);
+                        const { schema, tr, doc, selection: s } = view.state;
+                        const mark = schema.marks.link!.create({ href });
+                        // 文字を変えていなければ今の太字などを残したままリンクだけ足す
+                        if (!s.empty && doc.textBetween(s.from, s.to, " ") === text) view.dispatch(tr.addMark(s.from, s.to, mark));
+                        else view.dispatch(tr.replaceSelectionWith(schema.text(text, mark.addToSet(s.$from.marks())), false));
+                        view.focus();
+                      });
+                      setLink(null);
+                      refresh();
+                    }}
+                  >
+                    {[["表示する文字", "text", "リンクの文字"], ["URL", "href", "https://"]].map(([label, key, ph]) => (
+                      <label key={key} className="flex flex-col gap-1 text-[12px] text-muted-foreground">
+                        {label}
+                        <input
+                          autoFocus={key === (link.text ? "href" : "text")}
+                          type={key === "href" ? "url" : "text"}
+                          placeholder={ph}
+                          value={link[key as "text" | "href"]}
+                          onChange={(e) => setLink({ ...link, [key!]: e.target.value })}
+                          className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm text-foreground"
+                        />
+                      </label>
+                    ))}
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
+                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.href.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
+                    </div>
+                  </form>
+                ) : null}
+                </div>
+                <div ref={host} onKeyUp={refresh} onMouseUp={refresh} />
+                <span className="self-end text-[12px] text-muted-foreground">{`${chars} 字`}</span>
+                {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
               </div>
             )
             : null}

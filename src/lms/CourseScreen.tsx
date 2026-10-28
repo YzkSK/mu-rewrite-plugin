@@ -7,12 +7,11 @@ import { isLate, loadCourse, shortStatus, termLabel, type CoursePage, type Item,
 import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 import { PdfViewer } from "./PdfViewer";
-import { openOriginal } from "./route";
 
 const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ" };
 const PURPLE = new Set(["assign", "quiz"]);
 // ラベルの本文は外部由来の HTML(sanitize 済み)。見た目だけ最低限そろえる
-const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5";
+const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
 
 
 function ItemRow({ it, now }: { it: Item; now: number }) {
@@ -138,9 +137,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
       <div className="min-w-0">
         {sub ? <p className="m-0 text-[12px] text-muted-foreground">{sub}</p> : null}
         <h1 className="m-0 text-lg font-semibold [overflow-wrap:anywhere]">{courseName(page.name)}</h1>
-      </div>
-      <button type="button" className="flex-none whitespace-nowrap text-[12.5px] text-primary hover:underline" onClick={openOriginal}>元の LMS で開く</button>
-    </div>
+      </div>    </div>
   );
 
   if (failed) return <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="コースの内容を取得できませんでした。" onRetry={page.id === null ? undefined : load} /></div>;

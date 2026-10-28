@@ -20,7 +20,7 @@ const sections: Section[] = [
 const h = renderToString(<CourseScreen page={page} initial={sections} now={NOW} />);
 
 test("見出し・目次・空の行・先生", () => {
-  for (const t of ["3学期 水曜 3限、deploy3", "専門デプロイメントコースⅢ", "元の LMS で開く", "空: 最初のページ・第2回・第3回", "碧海 寿広", 'href="/message/index.php?id=7"', "説明文", "課題", "PDF"]) expect(h).toContain(t);
+  for (const t of ["3学期 水曜 3限、deploy3", "専門デプロイメントコースⅢ","空: 最初のページ・第2回・第3回", "碧海 寿広", 'href="/message/index.php?id=7"', "説明文", "課題", "PDF"]) expect(h).toContain(t);
   expect(h).not.toContain("333 専門");
 });
 
