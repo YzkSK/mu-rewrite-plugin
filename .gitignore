@@ -7,3 +7,6 @@ extension/dist/
 .vscode/
 docs/superpowers/
 CLAUDE.md
+
+.claude/
+release-notes/
