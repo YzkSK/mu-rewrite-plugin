@@ -18,6 +18,7 @@ test("htmlToText: <p>/<br> は改行、ほかのタグは外す", () => {
 const form: SubmitForm = {
   action: "/mod/assign/view.php",
   fields: [["lastmodified", "1"], ["id", "55"], ["userid", "9"], ["action", "savesubmission"], ["sesskey", "k"], ["_qf__mod_assign_submission_form", "1"], ["onlinetext_editor[format]", "1"], ["onlinetext_editor[itemid]", "77"]],
+  markdown: false,
   text: "<p>old</p>",
   files: null,
   submitName: "submitbutton",
@@ -38,9 +39,13 @@ test("buildSubmission: 書き換えていなければ元の HTML のまま送る
 
 test("buildSubmission: markdown なら本文はそのまま・format は 4", () => {
   const p = buildSubmission(form, "# t\n\n- a<");
-  expect(buildSubmission(form, " # t\n\n- a< ", true).get("onlinetext_editor[text]")).toBe("# t\n\n- a<");
+  expect(buildSubmission(form, "    code\n\n- a< ", true).get("onlinetext_editor[text]")).toBe("    code\n\n- a< ");
   expect(buildSubmission(form, "x", true).get("onlinetext_editor[format]")).toBe("4");
   expect(p.get("onlinetext_editor[text]")).toBe("<p># t</p><p>- a&lt;</p>");
+  // 元が Markdown でもチェックを外せば HTML で送る
+  const md = { ...form, markdown: true, fields: [...form.fields.filter(([k]) => k !== "onlinetext_editor[format]"), ["onlinetext_editor[format]", "4"]] as [string, string][], text: "# t" };
+  expect(buildSubmission(md, "# t").get("onlinetext_editor[format]")).toBe("1");
+  expect(buildSubmission(md, "# t").get("onlinetext_editor[text]")).toBe("<p># t</p>");
 });
 
 test("submit: ログイン画面に転送されたら失敗(書きかけを消さない)", async () => {
@@ -145,7 +150,9 @@ test("readSubmitForm: hidden・本文・ファイル欄・ボタン", () => {
     <script>M.form_filemanager.init(Y, {"itemid":88,"client_id":"c1","maxbytes":"100","maxfiles":"2","context":{"id":5},"author":"A"});"sesskey":"k"</script></body>`;
   const f = readSubmitForm(document)!;
   expect(f.fields).toEqual([["id", "55"], ["sesskey", "k"], ["onlinetext_editor[itemid]", "77"], ["files_filemanager", "88"]]);
-  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", files: { itemid: 88, clientId: "c1" }, submitValue: "変更を保存する" });
+  expect(f).toMatchObject({ action: "/mod/assign/view.php", text: "<p>old</p>", markdown: false, files: { itemid: 88, clientId: "c1" }, submitValue: "変更を保存する" });
+  document.body.innerHTML = `<form class="mform"><textarea name="onlinetext_editor[text]"># t</textarea><select name="onlinetext_editor[format]"><option value="1">HTML</option><option value="4" selected>Markdown</option></select></form>`;
+  expect(readSubmitForm(document)).toMatchObject({ text: "# t", markdown: true });
   document.body.innerHTML = "";
   expect(readSubmitForm(document)).toBeNull();
 });

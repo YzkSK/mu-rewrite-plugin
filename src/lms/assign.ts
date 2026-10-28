@@ -23,6 +23,8 @@ export type SubmitForm = {
   action: string;
   /** 本文・ボタン以外の hidden を全部(順番どおり) */
   fields: [string, string][];
+  /** 今の本文が Markdown 書式か */
+  markdown: boolean;
   /** 本文の既存の HTML。入力欄が無い課題は null */
   text: string | null;
   /** ファイル欄の設定。ファイル欄が無い課題は null */
@@ -80,6 +82,8 @@ export function readSubmitForm(doc: Document): SubmitForm | null {
     action: form.getAttribute("action") || "/mod/assign/view.php",
     fields,
     text: form.querySelector<HTMLTextAreaElement>(`textarea[name="${TEXT_NAME}"]`)?.value ?? null,
+    // 書式は hidden のことも select のこともある。4 = FORMAT_MARKDOWN なら本文は Markdown のまま入っている
+    markdown: form.querySelector<HTMLInputElement | HTMLSelectElement>('[name="onlinetext_editor[format]"]')?.value === "4",
     files: form.querySelector('[name="files_filemanager"]') ? readFileArea(doc) : null,
     submitName: "submitbutton",
     submitValue: btn?.value ?? "",
@@ -105,8 +109,11 @@ export function htmlToText(html: string): string {
 export function buildSubmission(form: SubmitForm, text: string, markdown = false): URLSearchParams {
   const p = new URLSearchParams(form.fields);
   // 書き換えていなければ元の HTML のまま送る(平文に直すと書式・リンク・画像が消える)
-  if (form.text !== null && markdown) { p.set(TEXT_NAME, text.trim()); p.set("onlinetext_editor[format]", "4"); } // 4 = FORMAT_MARKDOWN。表示時に Moodle が HTML へ変換する
-  else if (form.text !== null) p.set(TEXT_NAME, text === htmlToText(form.text) ? form.text : textToHtml(text));
+  if (form.text !== null && markdown) { p.set(TEXT_NAME, text); p.set("onlinetext_editor[format]", "4"); } // 4 = FORMAT_MARKDOWN。表示時に Moodle が HTML へ変換する
+  else if (form.text !== null) {
+    if (!form.markdown && text === htmlToText(form.text)) p.set(TEXT_NAME, form.text);
+    else { p.set(TEXT_NAME, textToHtml(text)); p.set("onlinetext_editor[format]", "1"); }
+  }
   p.set(form.submitName, form.submitValue);
   return p;
 }

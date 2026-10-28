@@ -37,7 +37,7 @@ test("課題ページ: 未提出なら「提出する」と「まだ提出され
   expect(h).toContain("まだ提出されていません");
 });
 
-const form: SubmitForm = { action: "/mod/assign/view.php", fields: [], text: "<p>a</p><p>b</p>", files: { itemid: 88, clientId: "c1", ctxId: 5, author: "A", maxbytes: 52428800, maxfiles: 20, license: "allrightsreserved", repoId: 3, sesskey: "k" }, submitName: "submitbutton", submitValue: "x" };
+const form: SubmitForm = { action: "/mod/assign/view.php", fields: [], markdown: false, text: "<p>a</p><p>b</p>", files: { itemid: 88, clientId: "c1", ctxId: 5, author: "A", maxbytes: 52428800, maxfiles: 20, license: "allrightsreserved", repoId: 3, sesskey: "k" }, submitName: "submitbutton", submitValue: "x" };
 
 test("提出画面: 題名・字数・ファイル欄・上限・選ぶボタン・やめる", () => {
   const h = renderToString(<SubmitScreen page={page} form={form} />);

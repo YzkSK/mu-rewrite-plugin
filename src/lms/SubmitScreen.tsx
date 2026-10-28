@@ -81,16 +81,16 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
 
 // 利用者ごとに分ける(同じタブで別の人がログインし直しても前の人の書きかけが出ない)
 let user = "";
-const key = (id: number | null) => `mu-lms-draft-${user}-${id}`;
-const load = (id: number | null): string | null => { try { return sessionStorage.getItem(key(id)); } catch { return null; } };
-const save = (id: number | null, v: string | null): void => {
+const key = (id: number | string | null) => `mu-lms-draft-${user}-${id}`;
+const load = (id: number | string | null): string | null => { try { return sessionStorage.getItem(key(id)); } catch { return null; } };
+const save = (id: number | string | null, v: string | null): void => {
   try { if (v === null) sessionStorage.removeItem(key(id)); else sessionStorage.setItem(key(id), v); } catch { /* 保存できなくても書ける */ }
 };
 
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
   user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
-  const [text, setText] = useState(() => load(page.id) ?? htmlToText(form.text ?? ""));
-  const [markdown, setMarkdown] = useState(false);
+  const [text, setText] = useState(() => load(page.id) ?? (form.markdown ? form.text ?? "" : htmlToText(form.text ?? "")));
+  const [markdown, setMarkdown] = useState(() => { const m = load(`${page.id}-md`); return m === null ? form.markdown : m === "1"; });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -101,7 +101,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     setBusy(true);
     setError(null);
     setStatus(undefined);
-    submit(form, text, markdown).then(() => save(page.id, null), (e: unknown) => {
+    submit(form, text, markdown).then(() => { save(page.id, null); save(`${page.id}-md`, null); }, (e: unknown) => {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
@@ -128,8 +128,8 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                   className="w-full resize-y rounded-[4px] border border-border bg-card p-3 text-[13.5px]"
                 />
                 <span className="self-end text-[12px] text-muted-foreground">{`${Array.from(text.replace(/\s/g, "")).length} 字`}</span>
-                <div className="text-[12px]"><Checkbox label="Markdown で書く" checked={markdown} onChange={setMarkdown} disabled={busy} /></div>
-                {/<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
+                <div className="text-[12px]"><Checkbox label="Markdown で書く" checked={markdown} onChange={(v) => { setMarkdown(v); save(`${page.id}-md`, v ? "1" : "0"); }} disabled={busy} /></div>
+                {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
               </div>
             )
             : null}
