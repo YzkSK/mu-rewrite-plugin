@@ -3,6 +3,7 @@ import type { InfoItem, InfoList } from "../api";
 import type { TopData } from "../data";
 import { fmtDue, fmtWhen, type CalEvent } from "../lib/lib";
 import { courseName, dueName, type LmsDue, type LmsResult } from "../lib/lms";
+import { errorToast } from "@/ui/Toast";
 import { sanitize } from "../lib/sanitize";
 import { navigate, NOTICES_URL } from "../route";
 import { AcademicCalendar } from "./AcademicCalendar";
@@ -56,6 +57,10 @@ function LmsBox({ lms: given }: { lms: LmsResult | Promise<LmsResult> }) {
       alive = false;
     };
   }, [given]);
+  // ログインが切れていて黙って入り直せなかったときは、ログインへ案内する(描画中ではなくここで出す)
+  useEffect(() => {
+    if (lms && "login" in lms && !lms.login) errorToast("MU LMS にログインしてください", "ログインが切れているため、提出期限を読み込めませんでした。", { label: "MU LMS にログイン", href: "https://musashino-u.myopenlms.net/login/index.php" });
+  }, [lms]);
   const all = lms && "login" in lms && lms.login ? [...lms.events].sort((a, b) => a.due - b.due) : [];
   // 締め切られた(もう出せない)期限切れは並べず、件数の 1 行に畳む
   const events = all.filter((e) => !e.closed);

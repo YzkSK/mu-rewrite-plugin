@@ -3,6 +3,7 @@ import { AccountDialog } from "./AccountDialog";
 import { App } from "@/muscat/shell/App";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
+import { ErrorToast } from "@/ui/Toast";
 import { fetchCalendar } from "./api";
 import { loadTop, TOP, type PortalData, type TopData } from "./data";
 import { PortalSidebar } from "./PortalSidebar";
@@ -66,6 +67,7 @@ export function PortalApp({ data }: { data: PortalData }) {
     </div>
     {account ? <AccountDialog userName={data.shell.userName ?? ""} onClose={closeAccount} /> : null}
     {signOut ? <SignOutDialog onClose={closeSignOut} /> : null}
+    <ErrorToast />
     </>
   );
 }

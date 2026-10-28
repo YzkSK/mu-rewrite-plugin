@@ -49,7 +49,7 @@ type Props = { initial?: MyCourse[]; now?: Date; initialSlots?: SlotMap | null }
 /** マイコース。学期を選ぶと、月〜土 × 1〜7 限の表にコースを置く。MUSCAT の対応表は後から届いて描き直す */
 export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props) {
   const slots = useSlots(initialSlots);
-  const miss = useSlotsMiss();
+  const { miss, login: missLogin } = useSlotsMiss();
   const [courses, setCourses] = useState<MyCourse[] | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const [day, setDay] = useState(now.getDay() || 1); // 日曜は月
@@ -60,7 +60,12 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
     loadCourses().then(setCourses, (e) => { if (e instanceof LoginRequiredError) location.reload(); else { console.error("[mu-lms]", e); setFailed(true); } });
   }, []);
   useEffect(() => { if (!initial) load(); }, [initial, load]);
-  useEffect(() => { if (miss) errorToast("MUSCAT の時間割を使えませんでした", `${miss}曜日・時限はコース名から推測しています(2 コマ続きの授業などはずれることがあります)。`); }, [miss]);
+  useEffect(() => {
+    if (!miss) return;
+    const msg = `${miss}曜日・時限はコース名から推測しています(2 コマ続きの授業などはずれることがあります)。`;
+    if (missLogin) errorToast("MUSCAT にログインしてください", msg, { label: "MUSCAT にログイン", href: "https://unipa.m-muscat.musashino-u.ac.jp/uprx/ShibbolethAuthServlet" });
+    else errorToast("MUSCAT の時間割を使えませんでした", msg);
+  }, [miss, missLogin]);
 
   if (failed) return <div className="p-4"><ErrorNotice title="読み込めませんでした" message="コースの一覧を取得できませんでした。" onRetry={load} /></div>;
   if (!courses) return <PageLoading title="マイコース" />;

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { HomeScreen } from "./HomeScreen";
+import { HomeScreen, TodayMiss } from "./HomeScreen";
 import type { HomeData } from "./home";
 
 const NOW = new Date(2026, 9, 27, 12, 0);
@@ -27,6 +27,14 @@ test("提出期限: 札・小見出し・状態・種類名", () => {
 test("アナウンスと最近のコース", () => {
   const h = html(data);
   for (const t of ["件名A", "碧海 寿広、9/24", "英語基礎C", 'href="/my/courses.php"', "マイコース"]) expect(h).toContain(t);
+});
+
+test("今日の授業: MUSCAT の時間割を取れないときも欄を出す(未ログインなら入口)", () => {
+  const login = renderToString(<TodayMiss login />);
+  for (const t of ["今日の授業", "MUSCAT にログインすると表示されます", "ShibbolethAuthServlet", 'target="_blank"']) expect(login).toContain(t);
+  const fail = renderToString(<TodayMiss login={false} />);
+  expect(fail).toContain("読み込めなかったため表示できません");
+  expect(fail).not.toContain("ShibbolethAuthServlet");
 });
 
 test("空・欄ごとの失敗・全部失敗", () => {
