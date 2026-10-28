@@ -1,4 +1,3 @@
-import type { Ref } from "react";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { Select } from "@/ui/Select";
@@ -15,15 +14,17 @@ type ToolbarProps = {
   draft: string; onDraft: (v: string) => void; onCommit: () => void;
   cats: FlatCategory[]; category: string; onCategory: (v: string) => void;
   filter: Filter; onFilter: (f: Filter) => void; unread: number | null; count: number | null;
-  armed: boolean; allFail: boolean; onAll: () => void; allRef: Ref<HTMLButtonElement>;
+  onAll: () => void;
 };
+
+/** すべて既読の対象。検索・未読のみは対象外(元のポータルと同じ) */
+export const allScope = (category: string, filter: Filter): string => (category ? "このカテゴリ" : filter === "pinned" ? "ピン留め" : "全カテゴリ");
 
 export function NoticesToolbar(p: ToolbarProps) {
   const options = [
     { value: "", label: "すべてのカテゴリ" },
     ...p.cats.map((c) => ({ value: c.uuid, label: "　".repeat(c.depth) + c.name + (typeof c.unread_count === "number" && c.unread_count > 0 ? `(${c.unread_count})` : "") })),
   ];
-  const scope = p.category ? "このカテゴリ" : p.filter === "pinned" ? "ピン留め" : "全カテゴリ"; // 検索・未読のみは対象外(元のポータルと同じ)
   return (
     <div className="flex flex-col gap-2.5 border-b border-border px-4 py-3">
       <div className="flex flex-wrap gap-2">
@@ -47,10 +48,7 @@ export function NoticesToolbar(p: ToolbarProps) {
         </div>
         {p.count != null ? <span className="text-[12.5px] text-muted-foreground">{`${p.count} 件`}</span> : null}
         <span className="flex-1" />
-        {p.allFail ? <span role="alert" className="text-[12.5px] text-error">失敗しました</span> : null}
-        <button ref={p.allRef} type="button" className={LINK} onClick={p.onAll}>
-          {p.armed ? `${scope}のお知らせを全部既読にします(もう一度押すと実行)` : "すべて既読にする"}
-        </button>
+        <button type="button" className={LINK} onClick={p.onAll}>すべて既読にする</button>
       </div>
     </div>
   );
