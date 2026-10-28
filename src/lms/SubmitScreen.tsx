@@ -132,7 +132,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   busyRef.current = busy;
   // カーソル位置にかかっている mark と、囲んでいる node の名前(ボタンの押下表示用)
   const [active, setActive] = useState<Set<string>>(new Set());
-  const [link, setLink] = useState<string | null>(null); // URL の入力欄。null で閉じている
+  const [link, setLink] = useState<{ text: string; href: string } | null>(null); // リンクの小ウィンドウ。null で閉じている
   const refresh = () => editor.current?.action((ctx) => {
     const { storedMarks, selection: { $from } } = ctx.get(editorViewCtx).state;
     const names = new Set((storedMarks ?? $from.marks()).map((m) => m.type.name));
@@ -222,7 +222,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       onMouseDown={(e) => e.preventDefault()} // 本文の選択を保つ
                       onClick={() => {
                         // リンクは外すとき以外 URL を聞く。toggleLink は文字を選んでいないと何もしない
-                        if (cmd === toggleLinkCommand && !active.has("link")) return setLink(link === null ? "" : null);
+                        if (cmd === toggleLinkCommand && !active.has("link")) return setLink(link === null ? { text: editor.current?.action((ctx) => { const { doc, selection: s } = ctx.get(editorViewCtx).state; return doc.textBetween(s.from, s.to, " "); }) ?? "", href: "" } : null);
                         editor.current?.action(callCommand(cmd.key, arg));
                         refresh();
                       }}
@@ -234,29 +234,42 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                     role="dialog"
                     aria-label="リンクを付ける"
                     className="absolute left-0 top-full z-40 mt-1 flex w-[min(26rem,100%)] flex-col gap-2 rounded-[4px] border border-border bg-card p-3 shadow-md"
+                    onKeyDown={(e) => e.key === "Escape" && setLink(null)}
                     onSubmit={(e) => {
                       e.preventDefault();
-                      const href = link.trim();
+                      const href = link.href.trim();
+                      const text = link.text || href;
                       if (!/^https?:\/\/\S/i.test(href)) return; // javascript: などは入れない
-                      editor.current?.action(callCommand(toggleLinkCommand.key, { href }));
-                      editor.current?.action((ctx) => ctx.get(editorViewCtx).focus());
+                      // 選んでいた範囲を、表示する文字にリンクを付けたものに置き換える(未選択ならカーソル位置に入れる)
+                      editor.current?.action((ctx) => {
+                        const view = ctx.get(editorViewCtx);
+                        const { schema, tr, doc, selection: s } = view.state;
+                        const mark = schema.marks.link!.create({ href });
+                        // 文字を変えていなければ今の太字などを残したままリンクだけ足す
+                        if (!s.empty && doc.textBetween(s.from, s.to, " ") === text) view.dispatch(tr.addMark(s.from, s.to, mark));
+                        else view.dispatch(tr.replaceSelectionWith(schema.text(text, mark.addToSet(s.$from.marks())), false));
+                        view.focus();
+                      });
                       setLink(null);
                       refresh();
                     }}
                   >
-                    <input
-                      autoFocus
-                      type="url"
-                      aria-label="リンク先の URL"
-                      placeholder="https://"
-                      value={link}
-                      onChange={(e) => setLink(e.target.value)}
-                      onKeyDown={(e) => e.key === "Escape" && setLink(null)}
-                      className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm"
-                    />
+                    {[["表示する文字", "text", "リンクの文字"], ["URL", "href", "https://"]].map(([label, key, ph]) => (
+                      <label key={key} className="flex flex-col gap-1 text-[12px] text-muted-foreground">
+                        {label}
+                        <input
+                          autoFocus={key === (link.text ? "href" : "text")}
+                          type={key === "href" ? "url" : "text"}
+                          placeholder={ph}
+                          value={link[key as "text" | "href"]}
+                          onChange={(e) => setLink({ ...link, [key!]: e.target.value })}
+                          className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm text-foreground"
+                        />
+                      </label>
+                    ))}
                     <div className="flex justify-end gap-2">
                       <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
-                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
+                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.href.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
                     </div>
                   </form>
                 ) : null}
