@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { App } from "@/muscat/shell/App";
 import { courseName } from "@/portal/lib/lms";
 import type { AssignPage, SubmitForm } from "./assign";
@@ -75,7 +75,9 @@ function Screen({ view, userId }: { view: View | null; userId: number | null }) 
 }
 
 /** 枠(上の段 + サイドバー)にホーム/コース/課題を入れる。上の段だけ LMS の色。view が無ければホーム */
-export function LmsApp({ userName, userId, view }: { userName: string | null; userId: number | null; view: View | null }) {
+export function LmsApp({ userName: namePromise, userId, view }: { userName: Promise<string | null>; userId: number | null; view: View | null }) {
+  const [userName, setUserName] = useState<string | null>(null);
+  useEffect(() => { void namePromise.then(setUserName); }, [namePromise]);
   const [logout, setLogout] = useState(false);
   const closeLogout = useCallback(() => setLogout(false), []);
   return (

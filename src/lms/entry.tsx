@@ -76,7 +76,8 @@ if (window === window.top) {
       try {
         setSesskey(readSesskey(document) ?? "");
         const id = readUserId(document);
-        const name = id === null ? null : await fetchUserName(id).catch((e) => { console.error("[mu-lms]", e); return null; });
+        // 名前は右上に出すだけなので待たずに描き、届いたら差し込む
+        const name = id === null ? Promise.resolve(null) : fetchUserName(id).catch((e) => { console.error("[mu-lms]", e); return null; });
         if (state !== "loading") return;
         // ページを読むのはここだけ(画面には渡す)。mount より前に読む
         const route = routeOf(location.pathname, location.search);
@@ -119,7 +120,7 @@ if (window === window.top) {
           view = { kind: "profile", page: readProfile(document) };
         }
         if (view && ["forum", "discussion", "messages", "lti", "search", "profile"].includes(view.kind)) heading = titleOf(view);
-        mountLms(name || null, id, view);
+        mountLms(name.then((n) => n || null), id, view);
         document.title = `${heading} | MU-LMS`;
         state = "on";
         release();
