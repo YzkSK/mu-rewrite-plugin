@@ -1,32 +1,4 @@
 import { formOf, menuIdOf, samlFormOf } from "./muscatTimetable.js";
-import { isNewer } from "./version.js";
-
-// 新版の通知。GitHub の最新リリースが今の版より新しければ、バッジとポップアップで知らせる
-async function checkUpdate() {
-  try {
-    const res = await fetch("https://api.github.com/repos/YzkSK/mu-rewrite-plugin/releases/latest");
-    if (!res.ok) return; // リリース無し(404)・レート制限などは何もしない
-    const { tag_name, html_url, assets } = await res.json();
-    const version = String(tag_name).replace(/^v/, "");
-    if (isNewer(version, chrome.runtime.getManifest().version)) {
-      // 添付の zip があればその直リンク(開くとダウンロードされる)。無ければ Releases のページ
-      const zip = (assets || []).find((a) => a.name.endsWith(".zip"));
-      await chrome.storage.local.set({ "mu-update": { version, url: zip ? zip.browser_download_url : html_url } });
-      await chrome.action.setBadgeText({ text: "NEW" });
-      await chrome.action.setBadgeBackgroundColor({ color: "#541b86" });
-    } else {
-      await chrome.storage.local.remove("mu-update");
-      await chrome.action.setBadgeText({ text: "" });
-    }
-  } catch {}
-}
-chrome.runtime.onStartup.addListener(checkUpdate);
-chrome.runtime.onInstalled.addListener(checkUpdate);
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (!msg || msg.type !== "mu-check-update") return;
-  checkUpdate().then(() => sendResponse({}));
-  return true;
-});
 
 // MU LMS の提出期限。content script からは別オリジンなので SW が Cookie 付きで取る
 const LMS = "https://musashino-u.myopenlms.net";
