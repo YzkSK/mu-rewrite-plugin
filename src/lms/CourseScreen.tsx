@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { courseName } from "@/portal/lib/lms";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
@@ -109,6 +109,33 @@ function useClosed(courseId: number | null) {
   };
 }
 
+/** 実際にスクロールする親(Shadow DOM 内の SidebarInset。window は固定ホストなので動かない) */
+const scroller = (el: HTMLElement): HTMLElement | null => {
+  for (let p = el.parentElement; p; p = p.parentElement) if (/auto|scroll/.test(getComputedStyle(p).overflowY)) return p;
+  return null;
+};
+
+/** コースごとの位置を覚え、戻る・進むで開き直したときだけ、節が描かれた後に 1 回戻す(リンクから新規に開いたときは先頭のまま) */
+function useKeepScroll(courseId: number | null, ready: boolean, ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current && scroller(ref.current);
+    if (!ready || !el) return;
+    let key = `mu-lms-course-scroll:${courseId}`;
+    try {
+      // 同じコースが履歴に何度も並ぶので、履歴の 1 件ごとに覚える(印は戻る・進むでも残る)
+      let entry = (history.state as { muScroll?: string } | null)?.muScroll;
+      if (!entry) { entry = Math.random().toString(36).slice(2); history.replaceState({ ...history.state, muScroll: entry }, ""); }
+      key += `:${entry}`;
+      const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+      const y = Number(sessionStorage.getItem(key));
+      if (nav?.type === "back_forward" && y) requestAnimationFrame(() => { el.scrollTop = y; });
+    } catch { /* 戻せなくても読める */ }
+    const save = () => { try { sessionStorage.setItem(key, String(el.scrollTop)); } catch { /* 覚えられなくても読める */ } };
+    el.addEventListener("scroll", save, { passive: true });
+    return () => el.removeEventListener("scroll", save);
+  }, [courseId, ready, ref]);
+}
+
 type Props = { page: CoursePage; initial?: Section[]; now?: Date; initialSlots?: SlotMap | null };
 
 /** コースの画面。左に目次、中央に全部の節、右に先生(狭い幅では目次を出さず、中央→先生の順に縦積み)。見出しの学期・曜日・時限は MUSCAT の対応表が届いたら描き直す */
@@ -125,6 +152,8 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
   useEffect(() => { if (!initial) load(); }, [initial, load]);
   const refs = useRef<Record<number, HTMLElement | null>>({});
   const fold = useClosed(page.id);
+  const top = useRef<HTMLDivElement>(null);
+  useKeepScroll(page.id, !!sections, top);
 
   const code = codeOf(page.shortname);
   const found = code ? slots?.get(code) : undefined;
@@ -149,7 +178,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
   const go = (id: number) => { fold.open(id); refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" }); };
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-start gap-4 p-4">
+    <div ref={top} className="mx-auto flex w-full max-w-[1280px] flex-wrap items-start gap-4 p-4">
       {head}
       <nav aria-label="目次" className="sticky top-4 hidden w-[180px] flex-none min-[1000px]:block">
         <ul className="m-0 flex list-none flex-col gap-0.5 p-0">

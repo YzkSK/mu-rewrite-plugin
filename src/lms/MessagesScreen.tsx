@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { isHttp } from "@/portal/lib/sanitize";
@@ -62,6 +62,9 @@ function Chat({ userId, otherId, initial }: { userId: number; otherId: number; i
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const composer = useRef<HTMLDivElement>(null);
+  // 読み込み・送信のあと(messages が替わる)に、送る欄を下端に合わせる(最新の発言はそのすぐ上に見える)
+  useEffect(() => { composer.current?.scrollIntoView({ block: "end" }); }, [t.data?.messages]);
   if (t.failed) return <ErrorNotice title="読み込めませんでした" message="会話を取得できませんでした。" onRetry={t.reload} />;
   if (!t.data) return <PageLoading title="メッセージ" />;
 
@@ -82,7 +85,7 @@ function Chat({ userId, otherId, initial }: { userId: number; otherId: number; i
   };
 
   return (
-    <Box title={`${t.data.name || "先生"} さん`}>
+    <Box title={`${t.data.name || "先生"} さん`} actions={<a className="text-[12.5px] text-primary hover:underline" href="/message/index.php">‹ 会話一覧</a>}>
       {!t.data.messages.length ? <Note>まだメッセージはありません</Note> : (
         <ul className="m-0 flex list-none flex-col gap-2 p-4">
           {t.data.messages.map((m) => (
@@ -93,9 +96,9 @@ function Chat({ userId, otherId, initial }: { userId: number; otherId: number; i
           ))}
         </ul>
       )}
-      <div className="flex flex-col gap-2 border-t border-border p-4">
+      <div ref={composer} className="flex flex-col gap-2 border-t border-border p-4">
         <label className="text-[12.5px] text-muted-foreground" htmlFor="mu-msg-body">先生に送る</label>
-        <textarea id="mu-msg-body" value={text} rows={4} onChange={(e) => setText(e.target.value)} className="w-full rounded-[4px] border border-border bg-card p-2 text-[13.5px]" />
+        <textarea id="mu-msg-body" value={text} rows={4} disabled={sending} onChange={(e) => setText(e.target.value)} className="w-full rounded-[4px] border border-border bg-card p-2 text-[13.5px]" />
         {error ? <p role="alert" className="m-0 text-[13px] text-error">{error}</p> : null}
         <div><button type="button" className={BTN} disabled={sending || !text.trim()} onClick={() => void send()}>{sending ? "送っています" : "送る"}</button></div>
       </div>
