@@ -134,9 +134,10 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
   const { miss, login: missLogin, done: slotsDone } = useSlotsMissToast();
   const [courses, setCourses] = useState<MyCourse[] | null>(initialCourses ?? null);
   const [coursesFail, setCoursesFail] = useState(false);
+  // 時間割を待たずに並行して取る(待つと今日の授業が出るまでが延びる)
   useEffect(() => {
-    if (slots && !initialCourses) loadCourses().then(setCourses, () => setCoursesFail(true));
-  }, [slots, initialCourses]);
+    if (!initialCourses) loadCourses().then(setCourses, () => setCoursesFail(true));
+  }, [initialCourses]);
   // 時間割かコース一覧をまだ待っている間だけ。失敗・拡張の外では止まらず理由に変わる
   const todayLoading = slots ? !courses && !coursesFail : !slotsDone;
   const [data, setData] = useState<HomeData | null>(initial ?? null);
