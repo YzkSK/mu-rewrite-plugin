@@ -15,7 +15,7 @@ const KIND: Record<string, string> = { assign: "課題", quiz: "小テスト", f
 
 
 function DueRow({ e, now }: { e: Due; now: number }) {
-  const state = e.overdue ? (e.canSubmit ? "まだ出せる" : "締切") : remain(e.due, now);
+  const state = e.overdue ? (e.canSubmit ? "提出受付中" : "締切") : remain(e.due, now);
   return (
     <Row>
       <span className={`w-24 flex-none text-[12.5px] ${e.overdue ? "text-error" : "text-muted-foreground"}`}>{fmtDue(e.due)}</span>
@@ -33,7 +33,7 @@ function DueBox({ due, now }: { due: Due[] | null; now: number }) {
   // 締め切られた(もう出せない)期限切れは並べず、件数の 1 行に畳む。並べるのはまだ出せるものだけ
   const open = g?.overdue.filter((e) => e.canSubmit) ?? [];
   const closed = g?.overdue.filter((e) => !e.canSubmit) ?? [];
-  const groups = g ? ([["期限切れ・まだ出せる", open], ["今週", g.week], ["それより先", g.later]] as const).filter(([, l]) => l.length) : [];
+  const groups = g ? ([["期限切れ・提出受付中", open], ["今週", g.week], ["それより先", g.later]] as const).filter(([, l]) => l.length) : [];
   return (
     <Box title="提出期限" actions={open.length ? <span className="rounded-[3px] bg-error px-1.5 text-[11px] font-semibold leading-[17px] text-error-foreground">{`期限切れ ${open.length}`}</span> : null}>
       {!due ? <Note>読み込めませんでした</Note>
