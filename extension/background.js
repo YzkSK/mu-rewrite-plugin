@@ -123,10 +123,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 // MUSCAT の時間割の HTML を fetch だけで取る(中継ページ → autoLogin → メニューの「学生時間割表」)。
-// サーバー側の「今の画面」が変わり、開いている MUSCAT のタブの操作が壊れるので、タブがあれば取らない
+// サーバー側の「今の画面」が変わるが、裏の MUSCAT のタブはずれた応答を見て入り直すので取る。
+// 前面のタブは入力の途中かもしれない(入り直すと入力が消える)ので、そのときだけ取らない
 async function muscatTimetable() {
   try {
-    if ((await chrome.tabs.query({ url: MUSCAT + "*" })).length) return { busy: true };
+    if ((await chrome.tabs.query({ url: MUSCAT + "*", active: true })).length) return { busy: true };
     const post = (url, fields, extra) => {
       const body = new URLSearchParams(fields);
       for (const [k, v] of extra) body.set(k, v);

@@ -80,7 +80,7 @@ async function load(): Promise<SlotMap | null> {
   } catch { /* 保存が読めなければ取り直す */ }
   const r = await ask();
   if (!r?.html) { // busy・未ログイン・失敗は保存しない(3 桁の読みのまま)。なぜ使えなかったかだけ残す
-    miss = r?.busy ? "MUSCAT のタブが開いているため読み込んでいません。タブを閉じてから開き直すと読み込みます。"
+    miss = r?.busy ? "MUSCAT のタブを表示しているため読み込んでいません。別のタブに切り替えてから開き直すと読み込みます。"
       : r?.login === false ? "MUSCAT にログインしていないため読み込めませんでした。"
       : "読み込みに失敗しました" + (r?.error ? `(${r.error})` : "") + "。";
     if (!api()?.runtime?.sendMessage) miss = null; // 拡張の外(開発・テスト)では出さない
