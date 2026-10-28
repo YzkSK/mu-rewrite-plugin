@@ -1,10 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { Checkbox } from "@/ui/Checkbox";
+import { defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, rootCtx, serializerCtx } from "@milkdown/kit/core";
+import { history } from "@milkdown/kit/plugin/history";
+import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
+import { commonmark } from "@milkdown/kit/preset/commonmark";
+import type { Node } from "@milkdown/kit/prose/model";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
 import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
+import { isPlainDoc, plainDocJson, plainText } from "./mdEditor";
 import { Box } from "./parts";
+
+// 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
+const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+const count = (s: string) => Array.from(s.replace(/\s/g, "")).length;
 
 type FileRow = { id: number; name: string; size: number | null; pct?: number; error?: string; removing?: boolean };
 
@@ -89,19 +98,75 @@ const save = (id: number | string | null, v: string | null): void => {
 
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
   user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
-  const [text, setText] = useState(() => load(page.id) ?? (form.markdown ? form.text ?? "" : htmlToText(form.text ?? "")));
-  const [markdown, setMarkdown] = useState(() => { const m = load(`${page.id}-md`); return m === null ? form.markdown : m === "1"; });
+  // 書きかけは doc の JSON で `${id}-doc` に持つ(平文か Markdown かを読み戻しで変えないため)。古い版の書きかけは id に文字で
+  const [draft] = useState((): { json: unknown } | { text: string; md: boolean } | null => {
+    try { const j = load(`${page.id}-doc`); if (j !== null) return { json: JSON.parse(j) }; } catch { /* 壊れていたら古い方へ */ }
+    const p = load(page.id);
+    return p === null ? null : { text: p, md: (load(`${page.id}-md`) ?? (form.markdown ? "1" : "0")) === "1" }; // -md はチェックがあった版の印
+  });
+  const [chars, setChars] = useState(() => count(draft && "text" in draft ? draft.text : form.markdown ? form.text ?? "" : htmlToText(form.text ?? "")));
   const [busy, setBusy] = useState(false);
+  const host = useRef<HTMLDivElement>(null);
+  const editor = useRef<Editor | null>(null);
+  const busyRef = useRef(false);
+  // 最初の doc。listener は 200ms 遅れるので、編集したかは送る時にこれと比べる
+  const initial = useRef<Node | null>(null);
+  const ready = useRef(false); // 初期化の間の更新は書きかけに数えない
+  busyRef.current = busy;
+
+  useEffect(() => {
+    if (!host.current) return;
+    const original = form.markdown ? form.text ?? "" : htmlToText(form.text ?? "");
+    // 元の本文に戻したら書きかけは消す(書きかけから始めたときは最初の doc も書きかけなので残す)
+    const keep = (doc: Node) => {
+      if (draft === null && doc.eq(initial.current!)) return save(`${page.id}-doc`, null);
+      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
+      save(page.id, null);
+    };
+    const ed = Editor.make()
+      .config((ctx) => {
+        ctx.set(rootCtx, host.current);
+        // 元が HTML なら Markdown として parse せず、段落と改行だけの doc にする
+        if (draft && "json" in draft) ctx.set(defaultValueCtx, { type: "json", value: draft.json as Record<string, never> });
+        else {
+          const [init, md] = draft ? [draft.text, draft.md] : [original, form.markdown];
+          ctx.set(defaultValueCtx, md ? init : { type: "json", value: plainDocJson(init) });
+        }
+        ctx.update(editorViewOptionsCtx, (o) => ({ ...o, editable: () => !busyRef.current, attributes: { "aria-label": "本文", class: EDITOR } }));
+        ctx.get(listenerCtx).updated((_, doc) => { if (ready.current) { setChars(count(doc.textContent)); keep(doc); } });
+      })
+      .use(commonmark)
+      .use(history)
+      .use(listener);
+    ed.create().then(() => {
+      initial.current = ed.action((ctx) => ctx.get(editorViewCtx).state.doc);
+      setChars(count(initial.current.textContent));
+      editor.current = ed; ready.current = true;
+    });
+    // 200ms 以内に離れても書きかけを残す
+    const flush = () => { if (ready.current) keep(ed.action((ctx) => ctx.get(editorViewCtx).state.doc)); };
+    addEventListener("pagehide", flush);
+    return () => { removeEventListener("pagehide", flush); flush(); editor.current = null; ready.current = false; void ed.destroy(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { editor.current?.action((ctx) => ctx.get(editorViewCtx).setProps({ editable: () => !busy })); }, [busy]);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<StatusRow[] | null | "loading" | undefined>(undefined);
   const back = `/mod/assign/view.php?id=${page.id}`;
 
   const send = () => {
+    if (form.text !== null && !editor.current) return; // エディタの準備前
     setBusy(true);
     setError(null);
     setStatus(undefined);
-    submit(form, text, markdown).then(() => { save(page.id, null); save(`${page.id}-md`, null); }, (e: unknown) => {
+    // 未編集なら元の本文・書式のまま。記法を使っていなければ平文(HTML の段落)、使っていれば Markdown で送る
+    const edited = editor.current?.action((ctx) => {
+      const doc = ctx.get(editorViewCtx).state.doc;
+      if (draft === null && doc.eq(initial.current!)) return null;
+      return isPlainDoc(doc) ? [plainText(doc), false] as const : [ctx.get(serializerCtx)(doc), true] as const;
+    });
+    const [body, md] = edited ?? [form.markdown ? form.text! : htmlToText(form.text ?? ""), form.markdown] as const;
+    submit(form, body, md).then(() => { save(page.id, null); save(`${page.id}-doc`, null); save(`${page.id}-md`, null); }, (e: unknown) => {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
@@ -119,16 +184,8 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
           {form.text !== null
             ? (
               <div className="flex flex-col gap-1">
-                <textarea
-                  aria-label="本文"
-                  rows={12}
-                  value={text}
-                  disabled={busy}
-                  onChange={(e) => { setText(e.target.value); save(page.id, e.target.value); }}
-                  className="w-full resize-y rounded-[4px] border border-border bg-card p-3 text-[13.5px]"
-                />
-                <span className="self-end text-[12px] text-muted-foreground">{`${Array.from(text.replace(/\s/g, "")).length} 字`}</span>
-                <div className="text-[12px]"><Checkbox label="Markdown で書く" checked={markdown} onChange={(v) => { setMarkdown(v); save(`${page.id}-md`, v ? "1" : "0"); }} disabled={busy} /></div>
+                <div ref={host} />
+                <span className="self-end text-[12px] text-muted-foreground">{`${chars} 字`}</span>
                 {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
               </div>
             )

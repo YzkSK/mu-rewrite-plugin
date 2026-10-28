@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@milkdown/kit": "^7.23.0",
     "@starwind-ui/react": "^1.4.0",
     "@tabler/icons-react": "^3.49.0",
     "@tailwindcss/forms": "^0.5.11",
