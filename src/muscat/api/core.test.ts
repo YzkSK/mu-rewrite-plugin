@@ -219,6 +219,52 @@ test("runLive の drive: ViewRoot の応答は新しい画面として取り込�
   expect(await core.runLive(async (l) => l.doc)).toBe(core.shown().doc);
 });
 
+const errPage = `<partial-response><changes><update id="jakarta.faces.ViewRoot"><![CDATA[<html><title>Error Page</title></html>]]></update></changes></partial-response>`;
+const okPartial = `<partial-response><changes><update id="jakarta.faces.ViewState"><![CDATA[vs2]]></update></changes></partial-response>`;
+const btnPage = (vs: string) => withVs(vs, `<button id="funcForm:b" type="button" onclick="PrimeFaces.ab({s:'funcForm:b',f:'funcForm'});">x</button>`);
+const clickOp = (n = 1) => (l: import("./core").LiveCtx) => {
+  l.doc.getElementById("funcForm:b")!.setAttribute("data-mu-ref", "c1");
+  return l.drive(Array.from({ length: n }, () => ({ kind: "click" as const, ref: "c1" })));
+};
+
+test("runLive: 最初の通信が状態喪失なら、ホームとメニューを取り直して画面は作り直さずやり直す", async () => {
+  const { f, calls } = scripted([btnPage("v1"), errPage, relay, shell(""), btnPage("v2"), okPartial]);
+  const core = make2(f);
+  await core.navigate("出席確認");
+  const before = core.shown();
+  let notified = 0;
+  core.subscribe(() => notified++);
+  expect(await core.runLive(clickOp())).toBe("done");
+  expect(calls).toHaveLength(6); // メニュー → 喪失 → 中継 → autoLogin → メニュー → やり直し
+  expect(calls[4]!.body.get("menuForm:mainMenu_menuid")).toBe("A|1");
+  expect(core.shown().seq).toBe(before.seq);
+  expect(core.shown().doc).not.toBe(before.doc);
+  expect(notified).toBe(1);
+});
+
+test("runLive: 見せている画面が不明(navigate 前)なら、状態喪失はそのまま投げてやり直さない", async () => {
+  const { f, calls } = scripted([errPage]);
+  const core = createCore({ fetch: f, doc: new DOMParser().parseFromString(btnPage("v1"), "text/html"), ids: {}, now });
+  await expect(core.runLive(clickOp())).rejects.toThrow(MuscatDownError);
+  expect(calls).toHaveLength(1);
+});
+
+test("runLive: 受け付けられたか分からない喪失(空の応答)はやり直さない", async () => {
+  const { f, calls } = scripted([btnPage("v1"), ""]);
+  const core = make2(f);
+  await core.navigate("出席確認");
+  await expect(core.runLive(clickOp())).rejects.toThrow(MuscatDownError);
+  expect(calls).toHaveLength(2);
+});
+
+test("runLive: 2 通信目の喪失はやり直さない(二重送信を避ける)", async () => {
+  const { f, calls } = scripted([btnPage("v1"), okPartial, errPage]);
+  const core = make2(f);
+  await core.navigate("出席確認");
+  await expect(core.runLive(clickOp(2))).rejects.toThrow(MuscatDownError);
+  expect(calls).toHaveLength(3);
+});
+
 test("navigate: 応答の URL がその画面の基準 URL(相対の action・予定の取得もそれに対して解決する)", async () => {
   const page = shell(`<form id="funcForm" action="Bsa01101.xhtml" method="post"><input type="hidden" name="jakarta.faces.ViewState" value="v"><div id="funcForm:s" class="kyoinSchedule"></div></form>`);
   const calls: string[] = [];

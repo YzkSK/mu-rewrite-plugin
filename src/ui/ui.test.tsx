@@ -7,7 +7,7 @@ import { Chip } from "./Chip";
 import { EmptyState } from "./EmptyState";
 import { ErrorNotice } from "./ErrorNotice";
 import { Panel } from "./Panel";
-import { useToast } from "./Toast";
+import { ErrorToast, errorToast, useToast } from "./Toast";
 
 test("Button renders a button and reflects disabled", () => {
   const html = renderToString(<Button onClick={() => {}}>OK</Button>);
@@ -57,3 +57,18 @@ test("useToast は toast() で role=status を出し、3 秒で消える", async
   await act(async () => root.unmount());
 }, 15_000); // 本物の時計で 3 秒待つので、全部を並べて流して重いときに既定の 5 秒を超えることがあった
 
+
+test("errorToast に action を渡すと、新しいタブで開くリンクが出て、押すと閉じる", async () => {
+  const el = document.createElement("div");
+  const root = createRoot(el);
+  await act(async () => root.render(<ErrorToast />));
+  await act(async () => errorToast("ログインしてください", "切れています", { label: "ログイン", href: "https://example.com/login" }));
+  const a = el.querySelector("a");
+  expect(a?.getAttribute("href")).toBe("https://example.com/login");
+  expect(a?.getAttribute("target")).toBe("_blank");
+  expect(a?.textContent).toBe("ログイン");
+  el.addEventListener("click", (e) => e.preventDefault()); // テストで本当に移動しない
+  await act(async () => void a?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })));
+  expect(el.querySelector('[role="alert"]')).toBeNull();
+  await act(async () => root.unmount());
+});

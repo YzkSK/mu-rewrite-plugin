@@ -18,7 +18,8 @@ export type TopData = {
   news: InfoList | null;
   newsUnread: number | null; // お知らせの未読の総数。null は取れなかった
   calendar: CalendarData | null; // null はブロックなし。first が null なら失敗
-  lms: LmsResult;
+  /** 裏で LMS に入り直すと数秒かかるので、トップは待たずに出し、欄だけ後から埋める */
+  lms: LmsResult | Promise<LmsResult>;
 };
 export type Shell = { tree: PageNode[]; userName: string };
 export type PortalData = { shell: Shell; top: TopData | null }; // top は開始が一覧のとき null(トップへ移るとき取る)
@@ -38,9 +39,9 @@ export function linkRows(data: Record<string, any>): LinkRow[] {
 
 const safe = <T,>(p: Promise<T>): Promise<T | null> => p.catch((e) => { console.error("[mu-portal]", e); return null; });
 
-/** LMS は遅いことがあるので 5 秒で見切る */
+/** LMS は遅いことがあるので 15 秒で見切る(ログインが切れていると裏で SSO を通って入り直すので、5 秒では足りなかった。実機で確認) */
 const lmsCapped = (): Promise<LmsResult> =>
-  Promise.race([fetchLmsDue(), new Promise<LmsResult>((r) => setTimeout(() => r({ error: "timeout" }), 5000))]);
+  Promise.race([fetchLmsDue(), new Promise<LmsResult>((r) => setTimeout(() => r({ error: "timeout" }), 15000))]);
 
 const once = <T,>(f: () => Promise<T>): (() => Promise<T>) => {
   let p: Promise<T> | undefined;
@@ -77,7 +78,7 @@ export const loadTop = once(async (): Promise<TopData> => {
     news,
     newsUnread: newsUnread?.count ?? null,
     calendar: cal ? { header: cal.header || "学年暦", sources: cal.sources ?? [], addOutLook: !!cal.addOutLook, first } : null,
-    lms: await lms,
+    lms,
   };
 });
 

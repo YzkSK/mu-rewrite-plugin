@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 // 操作の失敗はどの画面からでも出せるよう、ひとつの入れ物に持つ(画面を移っても消えない)
-let errorShown: { id: number; title: string; message: string } | null = null;
+let errorShown: { id: number; title: string; message: string; action?: { label: string; href: string } } | null = null;
 const listeners = new Set<() => void>();
 const setError = (v: typeof errorShown) => { errorShown = v; listeners.forEach((l) => l()); };
 const subscribe = (l: () => void) => { listeners.add(l); return () => listeners.delete(l); };
 
 /** 失敗を右下に出す。読む時間が要るので 8 秒、✕でも閉じられる */
-export function errorToast(title: string, message = ""): void {
-  setError({ id: (errorShown?.id ?? 0) + 1, title, message });
+export function errorToast(title: string, message = "", action?: { label: string; href: string }): void {
+  setError({ id: (errorShown?.id ?? 0) + 1, title, message, action });
 }
 
 export function ErrorToast() {
@@ -24,6 +24,9 @@ export function ErrorToast() {
       <div className="flex min-w-0 flex-col gap-1">
         <p className="m-0 text-sm font-semibold text-[#8c1d17]">{shown.title}</p>
         {shown.message && <p className="m-0 text-[13px] text-foreground">{shown.message}</p>}
+        {shown.action && (
+          <a href={shown.action.href} target="_blank" rel="noopener noreferrer" onClick={() => setError(null)} className="text-[13px] font-semibold text-[#8c1d17] underline">{shown.action.label}</a>
+        )}
       </div>
       <button type="button" aria-label="閉じる" onClick={() => setError(null)} className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-[#8c1d17]">✕</button>
     </div>

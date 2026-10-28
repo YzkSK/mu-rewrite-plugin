@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { parseTimetable } from "@/muscat/api/parse/timetable";
+import { errorToast } from "@/ui/Toast";
 import type { Timetable } from "@/muscat/api/types";
 
 export type Placement = { term: number; day: string; periods: number[] };
@@ -80,14 +81,16 @@ async function load(): Promise<SlotMap | null> {
   } catch { /* 保存が読めなければ取り直す */ }
   const r = await ask();
   if (!r?.html) { // busy・未ログイン・失敗は保存しない(3 桁の読みのまま)。なぜ使えなかったかだけ残す
-    miss = r?.busy ? "MUSCAT のタブが開いているため読み込んでいません。タブを閉じてから開き直すと読み込みます。"
+    miss = r?.busy ? "MUSCAT のタブを表示しているため読み込んでいません。別のタブに切り替えてから開き直すと読み込みます。"
       : r?.login === false ? "MUSCAT にログインしていないため読み込めませんでした。"
       : "読み込みに失敗しました" + (r?.error ? `(${r.error})` : "") + "。";
+    missLogin = r?.login === false;
     if (!api()?.runtime?.sendMessage) miss = null; // 拡張の外(開発・テスト)では出さない
     console.info("[mu-lms] MUSCAT の時間割を使わない:", miss);
     return null;
   }
   miss = null;
+  missLogin = false;
   try {
     const map = buildSlots(parseTimetable(new DOMParser().parseFromString(r.html, "text/html")));
     await api()?.storage?.local.set({ [KEY]: { at: Date.now(), map: [...map] } }).catch(() => {});
@@ -101,11 +104,26 @@ async function load(): Promise<SlotMap | null> {
 
 let inflight: Promise<SlotMap | null> | null = null;
 let miss: string | null = null;
+let missLogin = false; // miss の理由が MUSCAT 未ログインのとき
 
-/** 対応表を取れなかった理由(取れた・保存を使った・まだ取っていないときは null) */
-export function useSlotsMiss(): string | null {
-  const [m, setM] = useState<string | null>(null);
-  useEffect(() => { void getSlots().then(() => setM(miss)); }, []);
+type Miss = { miss: string | null; login: boolean; done: boolean };
+
+/** 対応表を取れなかった理由(取れた・保存を使った・まだ取っていないときは null)と、未ログインが理由か。done は取得が終わったか */
+export function useSlotsMiss(): Miss {
+  const [m, setM] = useState<Miss>({ miss: null, login: false, done: false });
+  useEffect(() => { void getSlots().then(() => setM({ miss, login: missLogin, done: true })); }, []);
+  return m;
+}
+
+/** 対応表を取れなかったら理由をトーストで出す(未ログインならログインへのリンク付き)。理由と未ログインかを返す。画面に ErrorToast を置くこと */
+export function useSlotsMissToast(): Miss {
+  const m = useSlotsMiss();
+  useEffect(() => {
+    if (!m.miss) return;
+    const msg = `${m.miss}曜日・時限はコース名から推測しています(2 コマ続きの授業などはずれることがあります)。`;
+    if (m.login) errorToast("MUSCAT にログインしてください", msg, { label: "MUSCAT にログイン", href: "https://unipa.m-muscat.musashino-u.ac.jp/uprx/ShibbolethAuthServlet" });
+    else errorToast("MUSCAT の時間割を使えませんでした", msg);
+  }, [m]);
   return m;
 }
 

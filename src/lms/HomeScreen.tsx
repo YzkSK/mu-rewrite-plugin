@@ -6,7 +6,8 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { groupDue, loadHome, remain, type Due, type HomeData, type News, type Recent } from "./home";
 import { loadCourses, termOfMonth, todayClasses, type MyCourse } from "./courses";
-import { useSlots, type SlotMap } from "./muscatSlots";
+import { useSlots, useSlotsMissToast, type SlotMap } from "./muscatSlots";
+import { ErrorToast } from "@/ui/Toast";
 import { Box, Note, Row } from "./parts";
 
 const LINK = "text-[12.5px] text-primary hover:underline";
@@ -116,15 +117,29 @@ function TodayBox({ list }: { list: ReturnType<typeof todayClasses> }) {
   );
 }
 
+/** MUSCAT の時間割を取れなかったとき。欄は隠さず、理由と(未ログインなら)入口を出す */
+export function TodayMiss({ login }: { login: boolean }) {
+  return (
+    <Box title="今日の授業" actions={login ? <a className={LINK} href="https://unipa.m-muscat.musashino-u.ac.jp/uprx/ShibbolethAuthServlet" target="_blank" rel="noopener noreferrer">MUSCAT にログイン</a> : null}>
+      <Note>{login ? "MUSCAT にログインすると表示されます" : "MUSCAT の時間割を読み込めなかったため表示できません"}</Note>
+    </Box>
+  );
+}
+
 type Props = { userId: number | null; initial?: HomeData; now?: Date; initialSlots?: SlotMap | null; initialCourses?: MyCourse[] };
 
 /** MU-LMS のホーム。左に提出期限、右に今日の授業・アナウンス・最近のコース(狭い幅では縦に積む)。今日の授業は MUSCAT の対応表が届いたら出す */
 export function HomeScreen({ userId, initial, now = new Date(), initialSlots, initialCourses }: Props) {
   const slots = useSlots(initialSlots);
+  const { miss, login: missLogin, done: slotsDone } = useSlotsMissToast();
   const [courses, setCourses] = useState<MyCourse[] | null>(initialCourses ?? null);
+  const [coursesFail, setCoursesFail] = useState(false);
+  // 時間割を待たずに並行して取る(待つと今日の授業が出るまでが延びる)
   useEffect(() => {
-    if (slots && !initialCourses) loadCourses().then(setCourses, () => {});
-  }, [slots, initialCourses]);
+    if (!initialCourses) loadCourses().then(setCourses, () => setCoursesFail(true));
+  }, [initialCourses]);
+  // 時間割かコース一覧をまだ待っている間だけ。失敗・拡張の外では止まらず理由に変わる
+  const todayLoading = slots ? !courses && !coursesFail : !slotsDone;
   const [data, setData] = useState<HomeData | null>(initial ?? null);
   const load = useCallback(() => {
     setData(null);
@@ -140,10 +155,15 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
         <DueBox due={data.due} now={Math.floor(now.getTime() / 1000)} />
       </div>
       <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-4">
-        {slots && courses ? <TodayBox list={todayClasses(courses, slots, termOfMonth(now.getMonth() + 1), now.getDay())} /> : null}
+        {slots && courses ? <TodayBox list={todayClasses(courses, slots, termOfMonth(now.getMonth() + 1), now.getDay())} />
+          : miss ? <TodayMiss login={missLogin} />
+          : todayLoading ? <Box title="今日の授業"><Note>読み込み中…</Note></Box>
+          : coursesFail ? <Box title="今日の授業"><Note>コース一覧を読み込めなかったため表示できません</Note></Box>
+          : <TodayMiss login={false} />}
         <NewsBox news={data.news} />
         <RecentBox recent={data.recent} />
       </div>
+      <ErrorToast />
     </div>
   );
 }
