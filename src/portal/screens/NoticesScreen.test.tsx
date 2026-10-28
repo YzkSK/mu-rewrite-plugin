@@ -56,7 +56,7 @@ test("最後のページなら「さらに表示」は出ない", async () => {
   expect(host.textContent).not.toContain("さらに表示");
 });
 
-test("既読にする: PUT して未読の数が減り、ボタンが替わる。すべて既読は 2 度押し", async () => {
+test("既読にする: PUT して未読の数が減り、ボタンが替わる。すべて既読は確認してから", async () => {
   mount();
   await flush();
   const btn = [...host.querySelectorAll("article button")].find((b) => b.textContent === "既読にする") as HTMLElement;
@@ -68,6 +68,11 @@ test("既読にする: PUT して未読の数が減り、ボタンが替わる�
   const all = [...host.querySelectorAll("button")].find((b) => b.textContent === "すべて既読にする") as HTMLElement;
   all.click();
   await flush();
-  expect(host.textContent).toContain("全カテゴリのお知らせを全部既読にします(もう一度押すと実行)");
+  const dialog = host.querySelector('[role="dialog"]')!;
+  expect(dialog.textContent).toContain("全カテゴリのお知らせを、すべて既読にしますか?");
   expect(calls.some((c) => c.includes("set-read-all"))).toBe(false);
+  ([...dialog.querySelectorAll("button")].find((b) => b.textContent === "既読にする") as HTMLElement).click();
+  await flush();
+  expect(calls.some((c) => c.includes("set-read-all"))).toBe(true);
+  expect(host.querySelector('[role="dialog"]')).toBeNull();
 });
