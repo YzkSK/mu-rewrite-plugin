@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Checkbox } from "@/ui/Checkbox";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
@@ -89,6 +90,7 @@ const save = (id: number | null, v: string | null): void => {
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
   user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
   const [text, setText] = useState(() => load(page.id) ?? htmlToText(form.text ?? ""));
+  const [markdown, setMarkdown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -99,7 +101,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     setBusy(true);
     setError(null);
     setStatus(undefined);
-    submit(form, text).then(() => save(page.id, null), (e: unknown) => {
+    submit(form, text, markdown).then(() => save(page.id, null), (e: unknown) => {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
@@ -126,6 +128,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                   className="w-full resize-y rounded-[4px] border border-border bg-card p-3 text-[13.5px]"
                 />
                 <span className="self-end text-[12px] text-muted-foreground">{`${Array.from(text.replace(/\s/g, "")).length} 字`}</span>
+                <div className="text-[12px]"><Checkbox label="Markdown で書く" checked={markdown} onChange={setMarkdown} disabled={busy} /></div>
                 {/<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
               </div>
             )

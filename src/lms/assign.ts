@@ -102,10 +102,11 @@ export function htmlToText(html: string): string {
 }
 
 /** 提出の POST の中身 */
-export function buildSubmission(form: SubmitForm, text: string): URLSearchParams {
+export function buildSubmission(form: SubmitForm, text: string, markdown = false): URLSearchParams {
   const p = new URLSearchParams(form.fields);
   // 書き換えていなければ元の HTML のまま送る(平文に直すと書式・リンク・画像が消える)
-  if (form.text !== null) p.set(TEXT_NAME, text === htmlToText(form.text) ? form.text : textToHtml(text));
+  if (form.text !== null && markdown) { p.set(TEXT_NAME, text.trim()); p.set("onlinetext_editor[format]", "4"); } // 4 = FORMAT_MARKDOWN。表示時に Moodle が HTML へ変換する
+  else if (form.text !== null) p.set(TEXT_NAME, text === htmlToText(form.text) ? form.text : textToHtml(text));
   p.set(form.submitName, form.submitValue);
   return p;
 }
@@ -126,12 +127,12 @@ export async function fetchStatus(id: number): Promise<StatusRow[] | null> {
 }
 
 /** 送る。成功したら課題ページへ移る。失敗は理由つきの Error */
-export async function submit(form: SubmitForm, text: string, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
+export async function submit(form: SubmitForm, text: string, markdown = false, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
   const r = await fetch(new URL(form.action, location.href), {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: buildSubmission(form, text),
+    body: buildSubmission(form, text, markdown),
   });
   const html = await r.text();
   // ログインが切れていると、ログイン画面への転送を追って 200 が返る。成功と見なすと書きかけを消してしまう
