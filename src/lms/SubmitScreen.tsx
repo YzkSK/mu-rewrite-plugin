@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { type CmdKey, defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, rootCtx, serializerCtx } from "@milkdown/kit/core";
 import { history, redoCommand, undoCommand } from "@milkdown/kit/plugin/history";
 import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
-import { commonmark, createCodeBlockCommand, insertHrCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from "@milkdown/kit/preset/commonmark";
+import { commonmark, toggleLinkCommand, createCodeBlockCommand, insertHrCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from "@milkdown/kit/preset/commonmark";
 import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
-import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconH2, IconItalic, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, type Icon } from "@tabler/icons-react";
+import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, type Icon } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
@@ -15,16 +15,17 @@ import { Box } from "./parts";
 
 // 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
 const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
-// 書式ボタン。[見出し, アイコン, コマンド, 引数]
-const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?][] = [
-  ["太字", IconBold, toggleStrongCommand],
-  ["斜体", IconItalic, toggleEmphasisCommand],
-  ["コード", IconCode, toggleInlineCodeCommand],
-  ["見出し", IconH2, wrapInHeadingCommand, 2],
-  ["箇条書き", IconList, wrapInBulletListCommand],
-  ["番号付きリスト", IconListNumbers, wrapInOrderedListCommand],
-  ["引用", IconBlockquote, wrapInBlockquoteCommand],
-  ["コードブロック", IconSourceCode, createCodeBlockCommand],
+// 書式ボタン。[見出し, アイコン, コマンド, 引数, 押下中と見なす mark/node の名前]
+const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?, string?][] = [
+  ["太字", IconBold, toggleStrongCommand, undefined, "strong"],
+  ["斜体", IconItalic, toggleEmphasisCommand, undefined, "emphasis"],
+  ["コード", IconCode, toggleInlineCodeCommand, undefined, "inlineCode"],
+  ["リンク", IconLink, toggleLinkCommand, undefined, "link"],
+  ["見出し", IconH2, wrapInHeadingCommand, 2, "heading"],
+  ["箇条書き", IconList, wrapInBulletListCommand, undefined, "bullet_list"],
+  ["番号付きリスト", IconListNumbers, wrapInOrderedListCommand, undefined, "ordered_list"],
+  ["引用", IconBlockquote, wrapInBlockquoteCommand, undefined, "blockquote"],
+  ["コードブロック", IconSourceCode, createCodeBlockCommand, undefined, "code_block"],
   ["区切り線", IconSeparatorHorizontal, insertHrCommand],
   ["元に戻す", IconArrowBackUp, undoCommand],
   ["やり直す", IconArrowForwardUp, redoCommand],
@@ -129,6 +130,14 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   const initial = useRef<Node | null>(null);
   const ready = useRef(false); // 初期化の間の更新は書きかけに数えない
   busyRef.current = busy;
+  // カーソル位置にかかっている mark と、囲んでいる node の名前(ボタンの押下表示用)
+  const [active, setActive] = useState<Set<string>>(new Set());
+  const refresh = () => editor.current?.action((ctx) => {
+    const { storedMarks, selection: { $from } } = ctx.get(editorViewCtx).state;
+    const names = new Set((storedMarks ?? $from.marks()).map((m) => m.type.name));
+    for (let d = $from.depth; d > 0; d--) names.add($from.node(d).type.name);
+    setActive(names);
+  });
 
   useEffect(() => {
     if (!host.current) return;
@@ -201,20 +210,30 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
             ? (
               <div className="flex flex-col gap-1">
                 <div role="toolbar" aria-label="書式" className="flex flex-wrap gap-0.5">
-                  {TOOLS.map(([label, I, cmd, arg]) => (
+                  {TOOLS.map(([label, I, cmd, arg, name]) => (
                     <button
                       key={label}
                       type="button"
                       title={label}
                       aria-label={label}
+                      aria-pressed={name ? active.has(name) : undefined}
                       disabled={busy}
                       onMouseDown={(e) => e.preventDefault()} // 本文の選択を保つ
-                      onClick={() => editor.current?.action(callCommand(cmd.key, arg))}
-                      className="rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      onClick={() => {
+                        // リンクは外すとき以外 URL を聞く。toggleLink は文字を選んでいないと何もしない
+                        if (cmd === toggleLinkCommand && !active.has("link")) {
+                          const href = prompt("リンク先の URL")?.trim();
+                          if (!href || !/^https?:\/\//i.test(href)) return; // javascript: などは入れない
+                          arg = { href };
+                        }
+                        editor.current?.action(callCommand(cmd.key, arg));
+                        refresh();
+                      }}
+                      className="rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:bg-muted aria-pressed:text-foreground"
                     ><I size={16} /></button>
                   ))}
                 </div>
-                <div ref={host} />
+                <div ref={host} onKeyUp={refresh} onMouseUp={refresh} />
                 <span className="self-end text-[12px] text-muted-foreground">{`${chars} 字`}</span>
                 {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
               </div>
