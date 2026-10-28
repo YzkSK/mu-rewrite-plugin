@@ -1,8 +1,8 @@
 import { track } from "./busy";
 import type { WaitResult } from "./driver/busy";
 import type { DriveStep } from "./driver/drive";
-import { MuscatDownError, SupersededError } from "./errors";
-import { isStateLost, type ResponseKind } from "./expired";
+import { MuscatDownError, StateLostError, SupersededError } from "./errors";
+import { isRejected, isStateLost, type ResponseKind } from "./expired";
 import { HOME_LABEL, LOGOUT_URL, SETTING_LABEL } from "./labels";
 import { applyPartialResponse, buildPartialRequest } from "./partial";
 import { createQueue } from "./queue";
@@ -81,7 +81,12 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
   let moving = 0;
   let newest = 0; // 最後に頼んだ画面の移動の番号
   let shown: Shown = { doc: session.doc, seq: 0 };
+  // いま見せている画面のメニュー名。最初のページはホームのときだけ分かる
+  let shownLabel: string | null = session.doc.getElementById("portalCont") ? HOME_LABEL : null;
   const listeners = new Set<() => void>();
+
+  const requestFor = (label: string) =>
+    label === HOME_LABEL ? session.headerRequest("headerForm:logo") : label === SETTING_LABEL ? session.headerRequest("headerForm:setting") : session.menuRequest(label as MenuLabel);
 
   const stamp = () => (moving > 0 ? -1 : epoch);
   const publish = (doc: Document) => {
@@ -93,6 +98,7 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
     if (e !== epoch) throw new SupersededError("別の画面へ移りました");
   };
 
+  let lastRejected = false; // 最後の POST が Error Page(受け付けられていない)だったか。キューで直列なので失敗した POST のもの
   /** POST して本文と最後の応答の URL を返す。状態喪失なら text は null。 */
   async function postRaw(kind: ResponseKind, req: Req): Promise<{ text: string | null; url: string }> {
     devLog(req);
@@ -103,6 +109,7 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
       credentials: "include",
     });
     const text = await res.text();
+    lastRejected = isRejected(text);
     return { text: isStateLost(kind, res.status, text) ? null : text, url: res.url || req.url };
   }
   const post = async (kind: ResponseKind, req: Req): Promise<string | null> => (await postRaw(kind, req)).text;
@@ -171,26 +178,51 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
     runLive: (op) => {
       const e = stamp();
       return track(() =>
-        queue(() => {
+        queue(async () => {
           live(e);
-          const doc = session.doc;
-          return op({
-            doc,
-            drive: (steps) =>
-              vdrive(doc, steps, {
-                post,
-                // 応答が画面ごとの置き換え(ViewRoot)なら、新しい画面として取り込んで見せる
-                replace: (next) => {
-                  session.adopt(next);
-                  publish(next);
-                },
-                page: async (req) => {
-                  const next = await loadPage(req);
-                  if (!next) throw new MuscatDownError("MUSCAT が応答しません");
-                  publish(next);
-                },
-              }),
-          });
+          let sentCount = 0; // この操作が送った通信の数(送る前に数える)
+          const attempt = () => {
+            const doc = session.doc;
+            return op({
+              doc,
+              drive: (steps) =>
+                vdrive(doc, steps, {
+                  post: (kind, req) => (sentCount++, post(kind, req)),
+                  // 応答が画面ごとの置き換え(ViewRoot)なら、新しい画面として取り込んで見せる
+                  // 移った先はメニューから開き直せない画面かもしれないので、メニュー名は忘れる(入り直さない)
+                  replace: (next) => {
+                    session.adopt(next);
+                    shownLabel = null;
+                    publish(next);
+                  },
+                  page: async (req) => {
+                    sentCount++;
+                    const next = await loadPage(req);
+                    if (!next) throw new StateLostError("MUSCAT が応答しません");
+                    shownLabel = null;
+                    publish(next);
+                  },
+                }),
+            });
+          };
+          try {
+            return await attempt();
+          } catch (err) {
+            // 最初の通信が状態喪失(別タブなどでサーバーの「今の画面」がずれた)なら、画面は作り直さずに入り直して一度だけやり直す。
+            // 2 通信目以降の喪失と、受け付けられたか分からない喪失(5xx・空)は、二重送信を避けて投げる
+            const label = shownLabel;
+            if (!(err instanceof StateLostError) || sentCount !== 1 || !lastRejected || label === null) throw err;
+            const keep = session.doc;
+            session.adopt(await fetchHome(deps.fetch));
+            if (label !== HOME_LABEL && !(await loadPage(requestFor(label)))) {
+              session.adopt(keep); // 見せている画面と食い違わないよう戻す
+              throw err;
+            }
+            shown = { doc: session.doc, seq: shown.seq }; // seq を変えないので、画面は作り直されず入力も残る
+            listeners.forEach((l) => l());
+            sentCount = 0;
+            return attempt();
+          }
         }),
       );
     },
@@ -236,8 +268,7 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
         queue(async () => {
           try {
             if (n !== newest) return; // もっと新しい移動が積まれた
-            const request = () =>
-              label === HOME_LABEL ? session.headerRequest("headerForm:logo") : label === SETTING_LABEL ? session.headerRequest("headerForm:setting") : session.menuRequest(label as MenuLabel);
+            const request = () => requestFor(label);
             // 別の画面を読むだけの操作(aside)のあと、見せている画面の ViewState は古いことがある。喪失なら、制限のある recover ではなく
             // ホームを取り直して(回数の制限なし)、そこからもう一度送る
             let doc = await loadPage(request());
@@ -248,6 +279,7 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
             }
             if (n !== newest) return; // 待つ間に新しい移動が来たら、この結果は見せない(session には取り込み済み)
             settle(); // 新しい画面が最初に積む操作は捨てない
+            shownLabel = label;
             publish(doc);
           } finally {
             settle();

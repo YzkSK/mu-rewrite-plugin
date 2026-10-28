@@ -1,7 +1,7 @@
 import type { WaitResult } from "../driver/busy";
 import type { DriveStep } from "../driver/drive";
 import { resolveRef } from "../driver/locator";
-import { MuscatDownError, NoticeError } from "../errors";
+import { NoticeError, StateLostError } from "../errors";
 import type { ResponseKind } from "../expired";
 import { buildAbRequest, parseAb, type AbConfig, type AbExt } from "./ab";
 import { Reader } from "./js";
@@ -170,7 +170,7 @@ export async function vdrive(doc: Document, steps: DriveStep[], io: { post: Post
   async function sendAb(cfg: AbConfig, src: Element, ext?: AbExt) {
     const req = buildAbRequest(doc, cfg, src, ext);
     const text = await io.post("partial", req);
-    if (text === null) throw new MuscatDownError("MUSCAT が応答しません");
+    if (text === null) throw new StateLostError("MUSCAT が応答しません");
     sent = true;
     applyResponse(doc, text, cfg.onco, ext?.table, (next) => {
       setBase(next, req.url); // 元のブラウザもこの URL で新しい画面になる。相対の action はここが基準

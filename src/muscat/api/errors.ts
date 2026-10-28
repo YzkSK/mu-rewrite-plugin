@@ -7,6 +7,9 @@ export class SsoRequiredError extends Error {}
 /** MUSCAT が応答しない(5xx、状態喪失が続く、復帰の間隔制限)。 */
 export class MuscatDownError extends Error {}
 
+/** サーバー側の画面がずれて応答が状態喪失だった。入り直してやり直せる。 */
+export class StateLostError extends MuscatDownError {}
+
 /** 元のページが出した警告など、文をそのまま見せる失敗。 */
 export class NoticeError extends Error {}
 
