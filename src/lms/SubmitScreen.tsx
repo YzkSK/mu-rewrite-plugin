@@ -132,6 +132,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   busyRef.current = busy;
   // カーソル位置にかかっている mark と、囲んでいる node の名前(ボタンの押下表示用)
   const [active, setActive] = useState<Set<string>>(new Set());
+  const [link, setLink] = useState<string | null>(null); // URL の入力欄。null で閉じている
   const refresh = () => editor.current?.action((ctx) => {
     const { storedMarks, selection: { $from } } = ctx.get(editorViewCtx).state;
     const names = new Set((storedMarks ?? $from.marks()).map((m) => m.type.name));
@@ -221,11 +222,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       onMouseDown={(e) => e.preventDefault()} // 本文の選択を保つ
                       onClick={() => {
                         // リンクは外すとき以外 URL を聞く。toggleLink は文字を選んでいないと何もしない
-                        if (cmd === toggleLinkCommand && !active.has("link")) {
-                          const href = prompt("リンク先の URL")?.trim();
-                          if (!href || !/^https?:\/\//i.test(href)) return; // javascript: などは入れない
-                          arg = { href };
-                        }
+                        if (cmd === toggleLinkCommand && !active.has("link")) return setLink(link === null ? "" : null);
                         editor.current?.action(callCommand(cmd.key, arg));
                         refresh();
                       }}
@@ -233,6 +230,33 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                     ><I size={16} /></button>
                   ))}
                 </div>
+                {link !== null ? (
+                  <form
+                    className="flex items-center gap-2"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const href = link.trim();
+                      if (!/^https?:\/\/\S/i.test(href)) return; // javascript: などは入れない
+                      editor.current?.action(callCommand(toggleLinkCommand.key, { href }));
+                      editor.current?.action((ctx) => ctx.get(editorViewCtx).focus());
+                      setLink(null);
+                      refresh();
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      type="url"
+                      aria-label="リンク先の URL"
+                      placeholder="https://"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      onKeyDown={(e) => e.key === "Escape" && setLink(null)}
+                      className="h-8 min-w-0 flex-1 rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm"
+                    />
+                    <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
+                    <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
+                  </form>
+                ) : null}
                 <div ref={host} onKeyUp={refresh} onMouseUp={refresh} />
                 <span className="self-end text-[12px] text-muted-foreground">{`${chars} 字`}</span>
                 {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
