@@ -143,7 +143,7 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
   const [data, setData] = useState<HomeData | null>(initial ?? null);
   const load = useCallback(() => {
     setData(null);
-    void loadHome(userId ?? 0, Math.floor(Date.now() / 1000)).then(setData);
+    loadHome(userId ?? 0, Math.floor(Date.now() / 1000)).then(setData, () => setData({ due: null, news: null, recent: null })); // 失敗は全部取れなかった扱い(再読み込みを出す)
   }, [userId]);
   useEffect(() => { if (!initial) load(); }, [initial, load]);
 

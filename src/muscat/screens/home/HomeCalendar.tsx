@@ -60,6 +60,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedOnce = useRef(false);
+  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
   const [shown, setShown] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -81,7 +82,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
     return () => {
       live = false;
     };
-  }, [client, month]);
+  }, [client, month, tries]);
   const grid = useMemo(() => monthGrid(month, today), [month, today]);
   const byDate = useMemo(() => groupEvents(events), [events]);
   const move = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
@@ -107,7 +108,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
           <Legend swatch="bg-muted" text="授業・予定" />
         </span>
       </div>
-      {error && <div className="px-4 pb-3"><ErrorNotice title="予定を読み込めませんでした" message={error} /></div>}
+      {error && <div className="px-4 pb-3"><ErrorNotice title="予定を読み込めませんでした" message={error} onRetry={() => setTries((n) => n + 1)} /></div>}
       <BusyOverlay busy={loading}>
         <div className="grid grid-cols-7 border-t border-border">
           {WEEK.map((d, i) => (

@@ -8,6 +8,7 @@ export type GradesState = { status: "loading" | "ready" | "error"; grades?: Grad
 /** initial はテスト用(effect が動かない描画で状態を固定する)。filter が undefined の間は、今の画面の条件のまま読む。 */
 export function useGrades(client: MuscatClient, initial?: GradesState) {
   const [filter, setFilter] = useState<GradeFilter | undefined>(undefined);
+  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
   const [state, setState] = useState<GradesState>(initial ?? { status: "loading" });
 
   useEffect(() => {
@@ -16,12 +17,15 @@ export function useGrades(client: MuscatClient, initial?: GradesState) {
     setState((s) => ({ status: "loading", grades: s.grades }));
     client.getGrades(filter).then(
       (grades) => alive && setState({ status: "ready", grades }),
-      (e) => alive && setState((s) => ({ status: "error", grades: s.grades, error: errorMessage(e) })),
+      (e) => {
+        const error = errorMessage(e);
+        if (alive && error) setState((s) => ({ status: "error", grades: s.grades, error })); // "" は画面を離れた印なので何も出さない
+      },
     );
     return () => {
       alive = false;
     };
-  }, [client, filter]);
+  }, [client, filter, tries]);
 
-  return { ...state, setFilter };
+  return { ...state, setFilter, retry: () => setTries((n) => n + 1) };
 }

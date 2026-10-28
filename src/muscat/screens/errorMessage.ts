@@ -16,5 +16,6 @@ export function errorMessage(e: unknown): string {
   if (e instanceof ParseError) return "読み取れませんでした";
   if (e instanceof SsoRequiredError) return "ログインが切れました。MUSCAT にログインし直してください";
   if (e instanceof MuscatDownError) return "MUSCAT が応答しません。しばらくして再読み込みしてください";
+  if (e instanceof TypeError) return "MUSCAT と通信できませんでした。接続を確認してください"; // fetch の通信失敗
   return "読み取れませんでした";
 }

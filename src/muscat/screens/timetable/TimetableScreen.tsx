@@ -4,6 +4,8 @@ import { Button } from "@/ui/Button";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
+import { errorToast } from "@/ui/Toast";
+import { errorMessage } from "../errorMessage";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
 import { TimetableGrid } from "./TimetableGrid";
@@ -25,7 +27,7 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
   // 自分で選ぶまでは今の学期に付いていく(開いたまま学期の境目を越えても)
   const [picked, setTerm] = useState<number | null>(term0 ?? null);
   const [course, setCourse] = useState<CourseKey | null>(null);
-  const { status, timetable, error, blocked = [], setYear } = useTimetable(client, year, initial);
+  const { status, timetable, error, blocked = [], setYear, retry } = useTimetable(client, year, initial);
   const moving = status === "loading";
   const [dir, setDir] = useState<-1 | 1 | 0>(0); // どちらのボタンを押したか(スピナーを出す側)。初回読み込みはどちらでもない
   const go = (d: -1 | 1) => {
@@ -69,9 +71,8 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
         <span className="text-sm text-muted-foreground">{`合計 ${credits.toFixed(1)} 単位`}</span>
         {(noPrev || noNext) && <span className="text-sm text-muted-foreground">{noPrev ? "これより前の年度はありません" : "これより後の年度はありません"}</span>}
       </div>
-      {status === "error" ? (
-        <ErrorNotice title="時間割を読み込めませんでした" message={error ?? ""} />
-      ) : (
+      {status === "error" && <ErrorNotice title="時間割を読み込めませんでした" message={error ?? ""} onRetry={retry} />}
+      {(status !== "error" || timetable) && ( // 読み直しに失敗しても、前の時間割は残す
         <BusyOverlay busy={moving && !!timetable}>
           {status === "loading" && !timetable ? (
             <PageLoading />
@@ -96,7 +97,7 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
           onClose={() => setCourse(null)}
           onNav={(label) => {
             setCourse(null);
-            void client.navigate(label).catch(() => {});
+            void client.navigate(label).catch((e) => { const m = errorMessage(e); if (m) errorToast("画面を開けませんでした", m); });
           }}
         />
       )}

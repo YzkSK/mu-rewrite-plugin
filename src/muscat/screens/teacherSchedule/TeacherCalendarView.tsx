@@ -52,6 +52,7 @@ export function TeacherCalendarView({ page, client, busy, onBack }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loadedOnce = useRef(false);
+  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
   const [shown, setShown] = useState<string | null>(null);
   const hasSchedule = !!page.scheduleId;
   useEffect(() => {
@@ -75,7 +76,7 @@ export function TeacherCalendarView({ page, client, busy, onBack }: Props) {
     return () => {
       live = false;
     };
-  }, [client, hasSchedule, month]);
+  }, [client, hasSchedule, month, tries]);
   const grid = useMemo(() => monthGrid(month, today), [month, today]);
   const byDate = useMemo(() => groupEvents(events), [events]);
   if (!hasSchedule) return null;
@@ -92,7 +93,7 @@ export function TeacherCalendarView({ page, client, busy, onBack }: Props) {
         <h2 className="m-0 text-[18px] font-bold">{`${page.teacher} の予定`}</h2>
         <span className="text-[12.5px] text-muted-foreground">見るだけ。変更はできません</span>
       </div>
-      {error && <ErrorNotice title="予定を読み込めませんでした" message={error} />}
+      {error && <ErrorNotice title="予定を読み込めませんでした" message={error} onRetry={() => setTries((n) => n + 1)} />}
       <section className="overflow-hidden rounded-[4px] border border-border bg-card">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3.5 py-2.5">
           <Button variant="secondary" label="前の月" disabled={loading} onClick={() => move(-1)}>‹</Button>

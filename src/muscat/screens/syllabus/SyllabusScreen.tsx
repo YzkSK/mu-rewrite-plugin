@@ -17,7 +17,7 @@ type Op = (c: MuscatClient) => Promise<unknown>;
 
 /** シラバス検索。条件は画面で持ち、「検索」で元の画面に入れて押す。通信中は押したボタンが回り、結果は薄くなる。科目を開くと右から詳細が出る */
 export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient; doc: Document; initial?: LiveState<SyllabusPage> }) {
-  const { status, page, error, busy = false, run } = useLiveScreen(client, read, initial);
+  const { status, page, error, busy = false, run, retry } = useLiveScreen(client, read, initial);
   const [act, setAct] = useState<string | null>(null);
   // 最初の検索は、通信が終わってから元のページを読み直して表が出るまで間がある(実機で約 0.85 秒)。表が出るまで読み込み中を出す
   const [searched, setSearched] = useState(false);
@@ -56,7 +56,7 @@ export function SyllabusScreen({ client, doc, initial }: { client: MuscatClient;
   if (page && !page.searchRef && !page.detail) return <GenericScreen client={client} doc={doc} />;
   return (
     <div className="flex flex-col gap-3 p-4">
-      {status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={error ?? ""} />}
+      {status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={error ?? ""} onRetry={() => void retry()} />}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>
