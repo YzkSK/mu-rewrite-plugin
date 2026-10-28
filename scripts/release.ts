@@ -2,7 +2,7 @@ import { isNewer } from "../extension/version.js";
 
 const version = Bun.argv[2] ?? "";
 if (!/^\d+\.\d+\.\d+$/.test(version)) {
-  console.error("使い方: bun run release <version>  (例: bun run release 0.8.0)");
+  console.error("使い方: bun run release <version> [notes.md]  (例: bun run release 0.8.0 /tmp/notes.md)");
   process.exit(1);
 }
 
@@ -11,6 +11,10 @@ const fail = (msg: string): never => {
   process.exit(1);
 };
 
+// 指定がなければ GitHub の自動生成。push 後に気付かないよう最初に確かめる
+const notesPath = Bun.argv[3];
+if (notesPath && !(await Bun.file(notesPath).exists())) fail(`${notesPath} が見つかりません`);
+const notes = notesPath ? ["--notes-file", notesPath] : ["--generate-notes"];
 if ((await Bun.$`git status --porcelain`.text()).trim()) fail("作業ツリーが汚れています");
 if ((await Bun.$`git branch --show-current`.text()).trim() !== "main") fail("main ブランチで実行してください");
 
@@ -33,6 +37,6 @@ await Bun.$`git tag -a ${tag} -m ${tag}`;
 await Bun.$`git push origin main --follow-tags`;
 
 // push 済みなので再実行はできない。失敗したら手で作れるよう zip を残してコマンドを出す
-const created = await Bun.$`gh release create ${tag} ${zip} --title ${tag} --generate-notes`.nothrow();
-if (created.exitCode) fail(`Release の作成に失敗しました。手で実行してください: gh release create ${tag} ${zip} --title ${tag} --generate-notes`);
+const created = await Bun.$`gh release create ${tag} ${zip} --title ${tag} ${notes}`.nothrow();
+if (created.exitCode) fail(`Release の作成に失敗しました。手で実行してください: gh release create ${tag} ${zip} --title ${tag} ${notesPath ? `--notes-file '${notesPath}'` : "--generate-notes"}`);
 await Bun.$`rm ${zip}`;
