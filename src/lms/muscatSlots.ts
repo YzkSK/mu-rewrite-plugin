@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { parseTimetable } from "@/muscat/api/parse/timetable";
+import { errorToast } from "@/ui/Toast";
 import type { Timetable } from "@/muscat/api/types";
 
 export type Placement = { term: number; day: string; periods: number[] };
@@ -109,6 +110,18 @@ let missLogin = false; // miss の理由が MUSCAT 未ログインのとき
 export function useSlotsMiss(): { miss: string | null; login: boolean } {
   const [m, setM] = useState<{ miss: string | null; login: boolean }>({ miss: null, login: false });
   useEffect(() => { void getSlots().then(() => setM({ miss, login: missLogin })); }, []);
+  return m;
+}
+
+/** 対応表を取れなかったら理由をトーストで出す(未ログインならログインへのリンク付き)。理由と未ログインかを返す。画面に ErrorToast を置くこと */
+export function useSlotsMissToast(): { miss: string | null; login: boolean } {
+  const m = useSlotsMiss();
+  useEffect(() => {
+    if (!m.miss) return;
+    const msg = `${m.miss}曜日・時限はコース名から推測しています(2 コマ続きの授業などはずれることがあります)。`;
+    if (m.login) errorToast("MUSCAT にログインしてください", msg, { label: "MUSCAT にログイン", href: "https://unipa.m-muscat.musashino-u.ac.jp/uprx/ShibbolethAuthServlet" });
+    else errorToast("MUSCAT の時間割を使えませんでした", msg);
+  }, [m]);
   return m;
 }
 

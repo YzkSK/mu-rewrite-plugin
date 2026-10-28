@@ -6,7 +6,8 @@ import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { groupDue, loadHome, remain, type Due, type HomeData, type News, type Recent } from "./home";
 import { loadCourses, termOfMonth, todayClasses, type MyCourse } from "./courses";
-import { useSlots, useSlotsMiss, type SlotMap } from "./muscatSlots";
+import { useSlots, useSlotsMissToast, type SlotMap } from "./muscatSlots";
+import { ErrorToast } from "@/ui/Toast";
 import { Box, Note, Row } from "./parts";
 
 const LINK = "text-[12.5px] text-primary hover:underline";
@@ -130,7 +131,7 @@ type Props = { userId: number | null; initial?: HomeData; now?: Date; initialSlo
 /** MU-LMS のホーム。左に提出期限、右に今日の授業・アナウンス・最近のコース(狭い幅では縦に積む)。今日の授業は MUSCAT の対応表が届いたら出す */
 export function HomeScreen({ userId, initial, now = new Date(), initialSlots, initialCourses }: Props) {
   const slots = useSlots(initialSlots);
-  const { miss, login: missLogin } = useSlotsMiss();
+  const { miss, login: missLogin } = useSlotsMissToast();
   const [courses, setCourses] = useState<MyCourse[] | null>(initialCourses ?? null);
   useEffect(() => {
     if (slots && !initialCourses) loadCourses().then(setCourses, () => {});
@@ -155,6 +156,7 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
         <NewsBox news={data.news} />
         <RecentBox recent={data.recent} />
       </div>
+      <ErrorToast />
     </div>
   );
 }
