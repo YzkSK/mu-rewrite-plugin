@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- 書体はページと同じ IBM Plex Sans JP Bold。PNG はヘッドレス Chrome で Google Fonts を読んで書き出す -->
+  <rect x="2" y="2" width="124" height="124" rx="7" fill="#fff" stroke="#d9d3e2" stroke-width="4"/>
+  <text x="64" y="66" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Sans JP',sans-serif" font-weight="700" font-size="66" letter-spacing="-2" fill="#541b86">MU</text>
+</svg>
