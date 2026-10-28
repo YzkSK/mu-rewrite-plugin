@@ -210,7 +210,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
           {form.text !== null
             ? (
               <div className="flex flex-col gap-1">
-                <div role="toolbar" aria-label="書式" className="flex flex-wrap gap-0.5">
+                <div role="toolbar" aria-label="書式" className="relative flex flex-wrap gap-0.5">
                   {TOOLS.map(([label, I, cmd, arg, name]) => (
                     <button
                       key={label}
@@ -229,10 +229,11 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       className="rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:bg-muted aria-pressed:text-foreground"
                     ><I size={16} /></button>
                   ))}
-                </div>
                 {link !== null ? (
                   <form
-                    className="flex items-center gap-2"
+                    role="dialog"
+                    aria-label="リンクを付ける"
+                    className="absolute left-0 top-full z-40 mt-1 flex w-[min(26rem,100%)] flex-col gap-2 rounded-[4px] border border-border bg-card p-3 shadow-md"
                     onSubmit={(e) => {
                       e.preventDefault();
                       const href = link.trim();
@@ -251,12 +252,15 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       value={link}
                       onChange={(e) => setLink(e.target.value)}
                       onKeyDown={(e) => e.key === "Escape" && setLink(null)}
-                      className="h-8 min-w-0 flex-1 rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm"
+                      className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm"
                     />
-                    <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
-                    <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
+                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
+                    </div>
                   </form>
                 ) : null}
+                </div>
                 <div ref={host} onKeyUp={refresh} onMouseUp={refresh} />
                 <span className="self-end text-[12px] text-muted-foreground">{`${chars} 字`}</span>
                 {!form.markdown && /<(?!\/?(p|br)\b)[a-z]/i.test(form.text) ? <span className="text-[12px] text-error">今の本文には書式・リンク・画像があります。書き換えて提出すると外れます(書き換えなければそのまま)</span> : null}
