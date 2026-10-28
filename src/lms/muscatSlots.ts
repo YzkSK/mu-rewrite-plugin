@@ -106,15 +106,17 @@ let inflight: Promise<SlotMap | null> | null = null;
 let miss: string | null = null;
 let missLogin = false; // miss の理由が MUSCAT 未ログインのとき
 
-/** 対応表を取れなかった理由(取れた・保存を使った・まだ取っていないときは null)と、未ログインが理由か */
-export function useSlotsMiss(): { miss: string | null; login: boolean } {
-  const [m, setM] = useState<{ miss: string | null; login: boolean }>({ miss: null, login: false });
-  useEffect(() => { void getSlots().then(() => setM({ miss, login: missLogin })); }, []);
+type Miss = { miss: string | null; login: boolean; done: boolean };
+
+/** 対応表を取れなかった理由(取れた・保存を使った・まだ取っていないときは null)と、未ログインが理由か。done は取得が終わったか */
+export function useSlotsMiss(): Miss {
+  const [m, setM] = useState<Miss>({ miss: null, login: false, done: false });
+  useEffect(() => { void getSlots().then(() => setM({ miss, login: missLogin, done: true })); }, []);
   return m;
 }
 
 /** 対応表を取れなかったら理由をトーストで出す(未ログインならログインへのリンク付き)。理由と未ログインかを返す。画面に ErrorToast を置くこと */
-export function useSlotsMissToast(): { miss: string | null; login: boolean } {
+export function useSlotsMissToast(): Miss {
   const m = useSlotsMiss();
   useEffect(() => {
     if (!m.miss) return;

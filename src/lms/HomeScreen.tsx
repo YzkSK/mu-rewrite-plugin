@@ -131,11 +131,14 @@ type Props = { userId: number | null; initial?: HomeData; now?: Date; initialSlo
 /** MU-LMS のホーム。左に提出期限、右に今日の授業・アナウンス・最近のコース(狭い幅では縦に積む)。今日の授業は MUSCAT の対応表が届いたら出す */
 export function HomeScreen({ userId, initial, now = new Date(), initialSlots, initialCourses }: Props) {
   const slots = useSlots(initialSlots);
-  const { miss, login: missLogin } = useSlotsMissToast();
+  const { miss, login: missLogin, done: slotsDone } = useSlotsMissToast();
   const [courses, setCourses] = useState<MyCourse[] | null>(initialCourses ?? null);
+  const [coursesFail, setCoursesFail] = useState(false);
   useEffect(() => {
-    if (slots && !initialCourses) loadCourses().then(setCourses, () => {});
+    if (slots && !initialCourses) loadCourses().then(setCourses, () => setCoursesFail(true));
   }, [slots, initialCourses]);
+  // 時間割かコース一覧をまだ待っている間だけ。失敗・拡張の外では止まらず理由に変わる
+  const todayLoading = slots ? !courses && !coursesFail : !slotsDone;
   const [data, setData] = useState<HomeData | null>(initial ?? null);
   const load = useCallback(() => {
     setData(null);
@@ -152,7 +155,10 @@ export function HomeScreen({ userId, initial, now = new Date(), initialSlots, in
       </div>
       <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-4">
         {slots && courses ? <TodayBox list={todayClasses(courses, slots, termOfMonth(now.getMonth() + 1), now.getDay())} />
-          : miss ? <TodayMiss login={missLogin} /> : null}
+          : miss ? <TodayMiss login={missLogin} />
+          : todayLoading ? <Box title="今日の授業"><Note>読み込み中…</Note></Box>
+          : coursesFail ? <Box title="今日の授業"><Note>コース一覧を読み込めなかったため表示できません</Note></Box>
+          : <TodayMiss login={false} />}
         <NewsBox news={data.news} />
         <RecentBox recent={data.recent} />
       </div>

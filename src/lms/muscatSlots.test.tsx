@@ -65,5 +65,5 @@ test("画面: 表の rowSpan・見出し・今日の授業", () => {
   const wed = home(new Date(2026, 9, 28));
   for (const s of ["今日の授業", "3・4限 13:10-16:40", "二コマ"]) expect(wed).toContain(s);
   expect(home(new Date(2026, 9, 25))).toContain("今日は授業がありません");
-  expect(renderToString(<HomeScreen userId={1} initial={{ due: [], news: [], recent: [] }} initialSlots={null} initialCourses={courses} />)).not.toContain("今日の授業");
+  expect(renderToString(<HomeScreen userId={1} initial={{ due: [], news: [], recent: [] }} initialSlots={null} initialCourses={courses} />)).toContain("読み込み中…");
 });
