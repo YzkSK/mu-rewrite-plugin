@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { boot } from "./boot";
-import { NATIVE_ENTRY, NATIVE_KEY, muscatMode, openNative } from "./native";
+import { NATIVE_ENTRY, NATIVE_KEY, closeNative, muscatMode, openNative } from "./native";
 
 const memory = () => {
   const m = new Map<string, string>();
@@ -64,4 +64,14 @@ test("印の消し方: 入口の読み込みで、10 秒以内に付けた印は
 test("sessionStorage が使えなければ印は無いものとして扱う", () => {
   const broken = { getItem: () => { throw new Error("x"); }, setItem: () => {}, removeItem: () => {} };
   expect(muscatMode(APP, broken, 1)).toBe("app");
+});
+
+test("closeNative: 印を消して入口へ移る(消せなくても移る)", () => {
+  const s = memory();
+  s.setItem(NATIVE_KEY, "1");
+  const to: string[] = [];
+  closeNative(s, (u) => to.push(u));
+  expect(s.getItem(NATIVE_KEY)).toBeNull();
+  closeNative({ getItem: () => null, setItem: () => {}, removeItem: () => { throw new Error("x"); } }, (u) => to.push(u));
+  expect(to).toEqual([NATIVE_ENTRY, NATIVE_ENTRY]);
 });

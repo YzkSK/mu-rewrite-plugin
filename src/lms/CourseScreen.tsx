@@ -7,7 +7,6 @@ import { isLate, loadCourse, shortStatus, termLabel, type CoursePage, type Item,
 import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 import { PdfViewer } from "./PdfViewer";
-import { openOriginal } from "./route";
 
 const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ" };
 const PURPLE = new Set(["assign", "quiz"]);
@@ -138,9 +137,7 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
       <div className="min-w-0">
         {sub ? <p className="m-0 text-[12px] text-muted-foreground">{sub}</p> : null}
         <h1 className="m-0 text-lg font-semibold [overflow-wrap:anywhere]">{courseName(page.name)}</h1>
-      </div>
-      <button type="button" className="flex-none whitespace-nowrap text-[12.5px] text-primary hover:underline" onClick={openOriginal}>元の LMS で開く</button>
-    </div>
+      </div>    </div>
   );
 
   if (failed) return <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">{head}<ErrorNotice title="読み込めませんでした" message="コースの内容を取得できませんでした。" onRetry={page.id === null ? undefined : load} /></div>;

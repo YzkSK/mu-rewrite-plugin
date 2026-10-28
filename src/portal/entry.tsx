@@ -2,7 +2,8 @@ import { installPreHide, preEpoch, releasePreHide } from "@/muscat/shell/pre";
 import { loadShell, loadTop } from "./data";
 import { blockNativeScripts } from "@/ui/block";
 import { mountPortal, mountPortalError, unmountPortal } from "./host";
-import { isAppPath, isTargetPath, isTopPath } from "./route";
+import { addBackButton } from "@/ui/backButton";
+import { closeOriginal, isAppPath, isSkippedPath, isTargetPath, isTopPath, slugOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 const TRIED = "mu-portal-login-tried";
@@ -88,7 +89,11 @@ if (window === window.top && isTargetPath(location.pathname)) {
   };
 
   // 元のアプリは止めてある。元の画面で開くと決めたページへ移るときは、読み込み直して元のアプリを動かす
+  let back: HTMLElement | undefined; // 「拡張の画面に戻る」。元のアプリの中で移るたびに、そのページに印があるかで出し入れする
   const check = () => {
+    const skip = isSkippedPath(location.pathname);
+    if (skip && !back) back = addBackButton(document, () => closeOriginal(slugOf(location.pathname)));
+    if (back) back.style.display = skip ? "" : "none";
     const app = isAppPath(location);
     if (app && state === "off") void show();
     else if (!app && state !== "off") location.reload();

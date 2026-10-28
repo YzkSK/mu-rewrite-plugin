@@ -20,11 +20,12 @@ export function drawerItems(nav: NavActions, groups: MenuGroup[], title: string)
     home: { label: HOME_LABEL, active: title === HOME_LABEL, onSelect: () => nav.go(HOME_LABEL) },
     groups: groups.map((g) => ({ title: g.title, items: g.labels.map(leaf) })),
     footer: [
-      { ...leaf(SETTING_LABEL) },
+      // 並びはポータル・LMS とそろえる(外部 → 設定 → 元の画面 → ログアウト)
       { label: "MU ポータルへ", href: PORTAL_URL },
       { label: "MU-LMS へ", href: LMS_URL },
-      { label: "ログアウト", onSelect: nav.logout },
+      { ...leaf(SETTING_LABEL) },
       { label: NATIVE_LABEL, onSelect: nav.openNative },
+      { label: "ログアウト", onSelect: nav.logout },
     ],
   };
 }

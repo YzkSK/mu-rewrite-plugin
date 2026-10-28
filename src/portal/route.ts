@@ -38,6 +38,15 @@ export function openOriginal(slug: string): void {
   location.reload();
 }
 
+/** 元の画面で開く印を消して読み込み直す(拡張の画面に戻る) */
+export function closeOriginal(slug: string): void {
+  try { sessionStorage.removeItem(SKIP + slug); } catch { /* 消せなければ読み直しても同じ画面になるだけ */ }
+  location.reload();
+}
+
+/** 元の画面で開くと決めたページか */
+export const isSkippedPath = (pathname: string): boolean => isTargetPath(pathname) && skipped(slugOf(pathname));
+
 /** 拡張が描く画面か(/dashboard 以下のページ全部。元の画面で開くと決めたページは除く) */
 export const isAppPath = (l: { pathname: string; search: string }): boolean => isTargetPath(l.pathname) && !skipped(slugOf(l.pathname));
 

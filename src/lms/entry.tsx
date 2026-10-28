@@ -11,7 +11,8 @@ import { titleOf, type View } from "./LmsApp";
 import { readDiscussionPage, readForumList } from "./forum";
 import { readLtiPage } from "./lti";
 import { readProfile } from "./profile";
-import { isAppPath, openOriginal, routeOf } from "./route";
+import { showBackButton } from "@/ui/backButton";
+import { closeOriginal, isAppPath, isSkipped, openOriginal, routeOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 
@@ -26,6 +27,8 @@ if (window === window.top) {
   watchLogout(document);
 
   // document_start で動く。ホームだけ描く。元のアプリの script は止める(「元の LMS で開く」で外れ、止めない)
+  if (!isAppPath(location) && isSkipped(location)) showBackButton(document, closeOriginal);
+
   if (isAppPath(location)) {
     type State = "loading" | "on" | "failed";
     let state: State = "loading";

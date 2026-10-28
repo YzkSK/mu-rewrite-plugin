@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { isAppPath, isTargetPath, routeOf } from "./route";
+import { isAppPath, isSkipped, isTargetPath, routeOf } from "./route";
 
 test("対象のパス", () => {
   expect(["/", "/index.php", "/my/", "/login/index.php", "/course/view.php", "/course/edit.php"].map(isTargetPath)).toEqual([true, true, false, false, true, false]);
@@ -35,4 +35,11 @@ test("マイコース・カレンダー・成績", () => {
   const ps = ["/my/courses.php", "/calendar/view.php", "/grade/report/overview/index.php", "/grade/report/user/index.php"];
   expect(ps.map(isTargetPath)).toEqual([true, true, true, true]);
   expect(ps.map((p) => routeOf(p))).toEqual(["courses", "calendar", "grades", "grades"]);
+});
+
+test("isSkipped: 印のあるページ(パス+search)だけ true", () => {
+  sessionStorage.setItem("mu-lms-skip:/course/view.php?id=1", "1");
+  expect(isSkipped({ pathname: "/course/view.php", search: "?id=1" })).toBe(true);
+  expect(isSkipped({ pathname: "/course/view.php", search: "?id=2" })).toBe(false);
+  expect(isSkipped({ pathname: "/login/index.php", search: "" })).toBe(false);
 });
