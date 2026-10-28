@@ -7,6 +7,22 @@ import { useLiveScreen } from "./useLiveScreen";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+test("読み込みに失敗したら error になり、retry で読み込み中を経て読み直す", async () => {
+  let n = 0;
+  const read = () => (n++ === 0 ? Promise.reject(new Error("失敗")) : Promise.resolve("page"));
+  const client = fakeClient({});
+  let live!: ReturnType<typeof useLiveScreen<string>>;
+  const Probe = () => {
+    live = useLiveScreen(client, read);
+    return null;
+  };
+  await act(async () => createRoot(document.createElement("div")).render(<Probe />));
+  expect(live.status).toBe("error");
+  await act(async () => void (await live.retry()));
+  expect(live.status).toBe("ready");
+  expect(live.page).toBe("page");
+});
+
 test("画面が出ているときの操作の失敗は、渡した題でトーストに出る", async () => {
   const client = fakeClient({ press: () => Promise.reject(new Error("通信できません")) });
   const read = async () => "page";

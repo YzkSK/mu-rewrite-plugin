@@ -8,6 +8,8 @@ import { EmptyState } from "@/ui/EmptyState";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { Select } from "@/ui/Select";
+import { errorToast } from "@/ui/Toast";
+import { errorMessage } from "../errorMessage";
 import { CourseDrawer } from "../course/CourseDrawer";
 import type { CourseKey } from "../course/useCourse";
 import { exportFile } from "../exportFile";
@@ -143,7 +145,7 @@ function Content({ attendance, onOpen }: { attendance: Attendance; onOpen: (c: A
 }
 
 export function AttendanceScreen({ client, initial }: Props) {
-  const { status, attendance, error, setTermKey, setBaseDate } = useAttendance(client, initial);
+  const { status, attendance, error, setTermKey, setBaseDate, retry } = useAttendance(client, initial);
   const [course, setCourse] = useState<CourseKey | null>(null);
   const loading = status === "loading";
   const options = attendance ? termOptions(attendance) : [];
@@ -171,9 +173,9 @@ export function AttendanceScreen({ client, initial }: Props) {
           </div>
         </div>
       )}
-      {status === "error" && <ErrorNotice title="出席を読み込めませんでした" message={error ?? ""} />}
+      {status === "error" && <ErrorNotice title="出席を読み込めませんでした" message={error ?? ""} onRetry={retry} />}
       {loading && !attendance && <PageLoading />}
-      {status !== "error" && attendance && (
+      {attendance && ( // 読み直しに失敗しても、前の表は残す
         <BusyOverlay busy={loading}>
           <Content attendance={attendance} onOpen={open} />
         </BusyOverlay>
@@ -186,7 +188,7 @@ export function AttendanceScreen({ client, initial }: Props) {
           onClose={() => setCourse(null)}
           onNav={(label) => {
             setCourse(null);
-            void client.navigate(label).catch(() => {});
+            void client.navigate(label).catch((e) => { const m = errorMessage(e); if (m) errorToast("画面を開けませんでした", m); });
           }}
         />
       )}

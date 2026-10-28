@@ -14,7 +14,7 @@ import { useHome, type HomeState } from "./useHome";
 
 /** ホーム。操作は元の画面の部品を press する。now・initial はテスト用 */
 export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient; doc: Document; initial?: HomeState; now?: Date }) {
-  const { status, page, error, busy = false, run, read } = useHome(client, initial);
+  const { status, page, error, busy = false, run, read, retry } = useHome(client, initial);
   const [course, setCourse] = useState<string | null>(null);
   const [month, setMonth] = useState(false); // 月のカレンダーを出しているか
   const click = (ref: string) => {
@@ -37,7 +37,7 @@ export function HomeScreen({ client, doc, initial, now }: { client: MuscatClient
   const items = (name: string) => page?.notices.find((t) => t.name === name)?.items ?? [];
   return (
     <div className="flex flex-col gap-3 p-4">
-      {status === "error" && <ErrorNotice title="ホームを読み込めませんでした" message={error ?? ""} />}
+      {status === "error" && <ErrorNotice title="ホームを読み込めませんでした" message={error ?? ""} onRetry={() => void retry()} />}
       {status === "loading" && !page && <PageLoading />}
       {page && month && <HomeCalendar client={client} today={now} onBack={() => setMonth(false)} />}
       {page && !month && (

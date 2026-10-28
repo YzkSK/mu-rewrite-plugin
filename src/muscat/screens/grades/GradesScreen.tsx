@@ -54,7 +54,7 @@ function Settings({ filter, busy, cols, onCols, onApply }: { filter: GradeFilter
 }
 
 export function GradesScreen({ client, initial, initialView = "category", initialOpen = false, initialCols = { gpa: true, gpaYear: true } }: Props) {
-  const { status, grades, error, setFilter } = useGrades(client, initial);
+  const { status, grades, error, setFilter, retry } = useGrades(client, initial);
   const [view, setView] = useState<GradeView>(initialView);
   const [open, setOpen] = useState(initialOpen);
   const [cols, setCols] = useState(initialCols);
@@ -90,7 +90,7 @@ export function GradesScreen({ client, initial, initialView = "category", initia
           {open && <Settings key={JSON.stringify(grades.filter)} filter={grades.filter} busy={loading} cols={cols} onCols={setCols} onApply={setFilter} />}
         </>
       )}
-      {status === "error" && <ErrorNotice title="成績を読み込めませんでした" message={error ?? ""} />}
+      {status === "error" && <ErrorNotice title="成績を読み込めませんでした" message={error ?? ""} onRetry={retry} />}
       {loading && !grades && <PageLoading />}
       {grades && ( // 読み直しに失敗しても、前の結果は残す
         <BusyOverlay busy={loading}>

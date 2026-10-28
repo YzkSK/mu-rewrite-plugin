@@ -18,7 +18,7 @@ const MORE = "__more__";
 
 /** 掲示板。操作は元の画面の部品を click / set する(通信を起こすものは ajax: true) */
 export function NewsScreen({ client, initial, initialOpened = "", initialReading = false }: { client: MuscatClient; doc?: Document; initial?: NewsState; initialOpened?: string; initialReading?: boolean }) {
-  const { status, page, error, busy = false, run } = useNews(client, initial);
+  const { status, page, error, busy = false, run, retry } = useNews(client, initial);
   const { toast, node } = useToast();
   const click = (ref: string, fail = "掲示を開けませんでした") => void run((c) => c.press(ref), undefined, fail);
   // 元のページに未読の総数は無いので、覚えた数を操作に合わせて減らす。開いても一覧はすぐ既読にならないので、同じ掲示は 1 回だけ数える
@@ -138,7 +138,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
   };
   return (
     <div className="flex flex-col gap-3 p-4">
-      {status === "error" && <ErrorNotice title="掲示板を読み込めませんでした" message={error ?? ""} />}
+      {status === "error" && <ErrorNotice title="掲示板を読み込めませんでした" message={error ?? ""} onRetry={() => void retry()} />}
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>

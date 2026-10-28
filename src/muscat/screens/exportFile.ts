@@ -1,6 +1,8 @@
 import type { MuscatClient } from "@/muscat/api/client";
 import type { ExportKind, ExportRequest } from "@/muscat/api/exportForm";
 import type { MenuLabel } from "@/muscat/api/session";
+import { errorToast } from "@/ui/Toast";
+import { errorMessage } from "./errorMessage";
 
 /** 元のボタンが送る POST を、新しいタブへふつうのフォーム送信で送る(ダウンロードの応答はそのタブが受ける。元の画面の script は使わない) */
 export function postToNewTab(req: ExportRequest, doc: Document = document): void {
@@ -22,4 +24,4 @@ export function postToNewTab(req: ExportRequest, doc: Document = document): void
 }
 
 /** 出席・成績の出力。label のメニューを開いて、PDF / Excel のボタンと同じ POST を新しいタブへ送る */
-export const exportFile = (client: MuscatClient, label: MenuLabel, text: ExportKind): Promise<void> => client.exportRequest(label, text).then((r) => postToNewTab(r)).catch(() => {});
+export const exportFile = (client: MuscatClient, label: MenuLabel, text: ExportKind): Promise<void> => client.exportRequest(label, text).then((r) => postToNewTab(r)).catch((e) => { const m = errorMessage(e); if (m) errorToast("出力できませんでした", m); });

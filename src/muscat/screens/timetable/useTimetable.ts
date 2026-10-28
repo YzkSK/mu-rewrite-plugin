@@ -9,6 +9,7 @@ export type TimetableState = { status: "loading" | "ready" | "error"; timetable?
 /** initial はテスト用(effect が動かない描画で状態を固定する)。 */
 export function useTimetable(client: MuscatClient, year0: number, initial?: TimetableState) {
   const [year, setYear] = useState(year0);
+  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
   const [state, setState] = useState<TimetableState>(initial ?? { status: "loading" });
 
   useEffect(() => {
@@ -23,12 +24,15 @@ export function useTimetable(client: MuscatClient, year0: number, initial?: Time
         setState((s) => ({ status: "ready", timetable, blocked: outOfRange ? [...(s.blocked ?? []), year] : s.blocked }));
         if (outOfRange) setYear(timetable.year);
       },
-      (e) => alive && setState((s) => ({ status: "error", error: errorMessage(e), blocked: s.blocked })),
+      (e) => {
+        const error = errorMessage(e);
+        if (alive && error) setState((s) => ({ status: "error", timetable: s.timetable, error, blocked: s.blocked })); // "" は画面を離れた印なので何も出さない
+      },
     );
     return () => {
       alive = false;
     };
-  }, [client, year]);
+  }, [client, year, tries]);
 
-  return { ...state, setYear };
+  return { ...state, setYear, retry: () => setTries((n) => n + 1) };
 }

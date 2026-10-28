@@ -18,10 +18,17 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
     () =>
       read(client).then(
         (page) => setState((s) => ({ status: "ready", page, busy: s.busy })),
-        (e) => setState((s) => ({ ...s, status: "error", error: errorMessage(e) })),
+        (e) => {
+          const error = errorMessage(e);
+          if (error) setState((s) => ({ ...s, status: "error", error })); // "" は画面を離れた印なので何も出さない
+        },
       ),
     [client, read],
   );
+  const retry = useCallback(() => {
+    setState((s) => ({ ...s, status: "loading" }));
+    return load();
+  }, [load]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -37,8 +44,9 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
         const page = await read(client).catch(() => undefined);
         // 画面が出ていれば中身は残してトーストで知らせる。何も出ていないときだけ画面にエラーを出す
         const p = page ?? latest.current.page;
-        if (p) errorToast(fail, errorMessage(e));
-        setState((s) => (p ? { ...s, page: p, status: "ready", busy: false } : { ...s, status: "error", error: errorMessage(e), busy: false }));
+        const msg = errorMessage(e);
+        if (p && msg) errorToast(fail, msg);
+        setState((s) => (p ? { ...s, page: p, status: "ready", busy: false } : msg ? { ...s, status: "error", error: msg, busy: false } : { ...s, busy: false }));
         return false;
       }
       await load();
@@ -47,5 +55,5 @@ export function useLiveScreen<T>(client: MuscatClient, read: (c: MuscatClient) =
     },
     [client, read, load],
   );
-  return { ...state, run, load };
+  return { ...state, run, load, retry };
 }

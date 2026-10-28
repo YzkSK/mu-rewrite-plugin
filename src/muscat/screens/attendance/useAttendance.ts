@@ -9,6 +9,7 @@ export type AttendanceState = { status: "loading" | "ready" | "error"; attendanc
 export function useAttendance(client: MuscatClient, initial?: AttendanceState) {
   const [termKey, setTermKey] = useState<string | undefined>(initial?.attendance?.termKey);
   const [baseDate, setBaseDate] = useState<string | undefined>();
+  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
   const [state, setState] = useState<AttendanceState>(initial ?? { status: "loading" });
 
   useEffect(() => {
@@ -17,12 +18,15 @@ export function useAttendance(client: MuscatClient, initial?: AttendanceState) {
     setState((s) => ({ status: "loading", attendance: s.attendance }));
     client.getAttendance(termKey, baseDate).then(
       (attendance) => alive && setState({ status: "ready", attendance }),
-      (e) => alive && setState((s) => ({ status: "error", attendance: s.attendance, error: errorMessage(e) })),
+      (e) => {
+        const error = errorMessage(e);
+        if (alive && error) setState((s) => ({ status: "error", attendance: s.attendance, error })); // "" は画面を離れた印なので何も出さない
+      },
     );
     return () => {
       alive = false;
     };
-  }, [client, termKey, baseDate]);
+  }, [client, termKey, baseDate, tries]);
 
-  return { ...state, setTermKey, setBaseDate };
+  return { ...state, setTermKey, setBaseDate, retry: () => setTries((n) => n + 1) };
 }

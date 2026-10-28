@@ -75,8 +75,7 @@ if (window === window.top && isTargetPath(location.pathname)) {
     cover();
     try {
       // 取ったものは data.ts が覚えている。一覧から始めるときはトップを待たない
-      const shell = await loadShell();
-      const top = isTopPath(location.pathname) ? await loadTop() : null;
+      const [shell, top] = await Promise.all([loadShell(), isTopPath(location.pathname) ? loadTop() : null]);
       if (my !== token) return;
       mountPortal({ shell, top });
       state = "on";
