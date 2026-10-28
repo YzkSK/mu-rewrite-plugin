@@ -5,7 +5,7 @@ import { loadForumList, loadPosts, type ForumList, type Post } from "./forum";
 import { Box, Note } from "./parts";
 import { useLoad } from "./useLoad";
 
-const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5";
+const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
 
 type Props = {
   /** 一覧のページなら読んだ一覧。本文のページでは null で、listUrl から取る */
