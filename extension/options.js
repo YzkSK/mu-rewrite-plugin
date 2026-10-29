@@ -12,10 +12,11 @@ document.getElementById("zoom").addEventListener("change", (e) => {
 // ストアから入れると manifest に update_url が付く。channel.txt はリリースの zip にだけ入る
 const manifest = chrome.runtime.getManifest();
 const versionEl = document.getElementById("version");
-versionEl.textContent = `v${manifest.version}`; // 種類が分からなくても版は先に出す
+const shown = manifest.version_name ?? manifest.version; // プレリリースは version_name に 1.1.0-beta などが入る
+versionEl.textContent = `v${shown}`; // 種類が分からなくても版は先に出す
 const channel = "update_url" in manifest ? Promise.resolve("ストア版") : fetch("channel.txt").then((r) => (r.ok ? "GitHub 版" : "開発版"), () => "開発版");
 channel.then((c) => {
-  versionEl.textContent = `v${manifest.version}(${c})`;
+  versionEl.textContent = `v${shown}(${c})`;
   if (c !== "GitHub 版") return;
   showUpdate();
   chrome.runtime.sendMessage({ type: "mu-check-update" }).then(showUpdate, () => {});
