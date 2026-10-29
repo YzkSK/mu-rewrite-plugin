@@ -1,5 +1,5 @@
 import { MuscatDownError, NoticeError, ParseError } from "./errors";
-import { applyPartialResponse, buildPartialRequest } from "./partial";
+import { applyPartialResponse, buildPartialRequest, updateText } from "./partial";
 import { squash } from "./parse/genericControls";
 import { isRoomRow, parseRoomResult, parseRoomRows, roomNameOf, tableLayout } from "./parse/roomTimeline";
 import type { Fetch } from "./recover";
@@ -47,8 +47,8 @@ export function dialogMessages(xml: string): string {
 
 /** 応答の中の、ある id の update の HTML を別の Document として読む。無ければ null */
 function updateOf(xml: string, id: string): Document | null {
-  const html = [...xml.matchAll(/<update\s+id="([^"]*)"[^>]*>([\s\S]*?)<\/update>/g)].find((m) => m[1] === id)?.[2];
-  return html === undefined ? null : new DOMParser().parseFromString(html.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1"), "text/html");
+  const html = updateText(xml, id);
+  return html === undefined ? null : new DOMParser().parseFromString(html, "text/html");
 }
 
 /** 続きの行(1 回 40 行)を取る。応答の ViewState は生きたページに反映する(しないと次の通信が通らない) */

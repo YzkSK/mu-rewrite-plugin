@@ -1,5 +1,5 @@
 import { MuscatDownError, ParseError } from "./errors";
-import { applyPartialResponse, buildPartialRequest } from "./partial";
+import { applyPartialResponse, buildPartialRequest, updateText } from "./partial";
 import type { Fetch } from "./recover";
 import type { HomeEvent, TeacherEvent } from "./types";
 
@@ -25,10 +25,10 @@ async function fetchScheduleEvents(doc: Document, fetch: Fetch, marker: string, 
   if (!res.ok) throw new MuscatDownError(`予定を取れませんでした (${res.status})`);
   const xml = await res.text();
   applyPartialResponse(doc, xml, [id]); // 予定が読めなくても、ViewState は先に入れ替える(古いままだと次の通信が通らない)
-  const cdata = [...xml.matchAll(/<update\s+id="([^"]*)"[^>]*>([\s\S]*?)<\/update>/g)].find((m) => m[1] === id)?.[2];
-  if (cdata === undefined) throw new ParseError("予定が応答にありません");
+  const text = updateText(xml, id);
+  if (text === undefined) throw new ParseError("予定が応答にありません");
   try {
-    const raw = (JSON.parse(cdata.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")) as { events: RawEvent[] }).events;
+    const raw = (JSON.parse(text) as { events: RawEvent[] }).events;
     if (!Array.isArray(raw)) throw new Error();
     return raw;
   } catch {

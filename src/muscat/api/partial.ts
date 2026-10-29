@@ -54,13 +54,20 @@ function setViewState(doc: Document, value: string) {
   }
 }
 
+// DOMParser の XML は CDATA の扱いが環境で違うため、<update> を直接読む
+function* updates(xml: string): Generator<[id: string, content: string]> {
+  for (const m of xml.matchAll(/<update\s+id="([^"]*)"[^>]*>([\s\S]*?)<\/update>/g)) yield [m[1] ?? "", (m[2] ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")];
+}
+
+/** 応答の中の、ある id の update の中身(CDATA は外す)。無ければ undefined */
+export function updateText(xml: string, id: string): string | undefined {
+  for (const [i, content] of updates(xml)) if (i === id) return content;
+}
+
 /** 部分更新の XML を doc に反映する。rx-token は menuForm を含む全フォームに揃える。skip の id の update は適用しない。 */
 export function applyPartialResponse(doc: Document, xml: string, skip: string[] = []): void {
-  // DOMParser の XML は CDATA の扱いが環境で違うため、<update> を直接読む
-  for (const m of xml.matchAll(/<update\s+id="([^"]*)"[^>]*>([\s\S]*?)<\/update>/g)) {
-    const id = m[1] ?? "";
+  for (const [id, content] of updates(xml)) {
     if (skip.includes(id)) continue;
-    const content = (m[2] ?? "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1");
     if (id.includes("ViewState")) {
       setViewState(doc, content);
       continue;
