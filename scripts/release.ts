@@ -1,4 +1,4 @@
-import { isNewer } from "./version";
+import { isNewer } from "../extension/version.js";
 
 const version = Bun.argv[2] ?? "";
 if (!/^\d+\.\d+\.\d+$/.test(version)) {
