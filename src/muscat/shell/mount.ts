@@ -2,6 +2,9 @@ const HOST_ID = "mu-react-host";
 const HIDE_ID = "mu-react-hide";
 const FONT_ID = "mu-react-font";
 const PROPS_ID = "mu-react-props";
+declare const chrome: { runtime: { getURL(path: string): string } }; // @types/chrome は入れず、使う分だけ宣言
+/** 同梱した書体の CSS(拡張の中なので外部へ通信しない) */
+export const FONT_URL = () => chrome.runtime.getURL("fonts/ibm-plex-sans-jp.css");
 
 /** ホストと本文を隠す style を取り除く(@property と IBM Plex Sans JP の link は残す) */
 export function unmountShadowRoot(doc: Document): void {
@@ -47,7 +50,7 @@ export function mountShadowRoot(doc: Document, css = ""): ShadowRoot {
     const link = doc.createElement("link");
     link.id = FONT_ID;
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=block";
+    link.href = FONT_URL();
     doc.head.appendChild(link);
   }
   return root;

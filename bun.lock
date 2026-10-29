@@ -5,6 +5,7 @@
     "": {
       "name": "mu-rewrite-plugin",
       "dependencies": {
+        "@fontsource/ibm-plex-sans-jp": "^5.3.1",
         "@milkdown/kit": "^7.23.0",
         "@starwind-ui/react": "^1.4.0",
         "@tabler/icons-react": "^3.49.0",
@@ -52,6 +53,8 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
+
+    "@fontsource/ibm-plex-sans-jp": ["@fontsource/ibm-plex-sans-jp@5.3.1", "", {}, "sha512-lFejXBGcWN/htaffKJryghb/zd2WKwFKyJWJRTcRP57/HUAGEdjNHI0UtIUN8pv4A5F9hPBxZ0dY8oILd88xIA=="],
 
     "@happy-dom/global-registrator": ["@happy-dom/global-registrator@21.0.4", "", { "dependencies": { "@types/node": ">=20.0.0", "happy-dom": "^21.0.4" } }, "sha512-Bbr0hW9hhDhBf3Jp0EyDlkCbFgbr0z2jd3BMKYOYW+fOkPM4Nx195GMXyCtRCGEgoNn6i09FabXrSkNFm2ONzg=="],
 

@@ -72,9 +72,11 @@ chrome.webRequest.onCompleted.addListener((d) => {
   if (d.statusCode >= 500) bounce(d.tabId);
 }, { urls: [MUSCAT + "up/*"], types: ["main_frame"] });
 
-// 開発用: ポータルのページから拡張を読み込み直す(localStorage["mu-dev"]="1" のときだけ content script が送る)
+// 開発用: ポータルのページから拡張を読み込み直す(localStorage["mu-dev"]="1" のときだけ content script が送る)。
+// localStorage はページからも書けるので、開発版(ストアの update_url もリリース zip の channel.txt もない)だけで受ける
+const isDev = !("update_url" in chrome.runtime.getManifest()) && fetch("channel.txt").then((r) => !r.ok, () => true);
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && msg.type === "mu-dev-reload") chrome.runtime.reload();
+  if (msg && msg.type === "mu-dev-reload") Promise.resolve(isDev).then((dev) => dev && chrome.runtime.reload());
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

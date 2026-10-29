@@ -29,7 +29,12 @@ await Bun.$`rm -rf extension/dist`;
 await Bun.$`bun run build`;
 
 const zip = `mu-rewrite-v${version}.zip`;
-await Bun.$`cd extension && zip -r ../${zip} . -x "*.d.ts" -x "*.DS_Store"`;
+// ストアに手で上げる用。目印は入れない(ストアが付ける update_url で見分ける)
+const storeZip = `mu-rewrite-v${version}-store.zip`;
+await Bun.$`cd extension && zip -r ../${storeZip} . -x "*.d.ts" -x "*.DS_Store"`;
+// GitHub 版の zip にだけ目印を入れ、設定画面で開発版(リポジトリをそのまま読み込んだもの)と見分ける
+await Bun.write("extension/channel.txt", "github");
+await Bun.$`cd extension && zip -r ../${zip} . -x "*.d.ts" -x "*.DS_Store"`.finally(() => Bun.$`rm extension/channel.txt`);
 
 const tag = `v${version}`;
 await Bun.$`git commit -am ${"chore: release " + tag}`;
@@ -40,3 +45,4 @@ await Bun.$`git push origin main --follow-tags`;
 const created = await Bun.$`gh release create ${tag} ${zip} --title ${tag} ${notes}`.nothrow();
 if (created.exitCode) fail(`Release の作成に失敗しました。手で実行してください: gh release create ${tag} ${zip} --title ${tag} ${notesPath ? `--notes-file '${notesPath}'` : "--generate-notes"}`);
 await Bun.$`rm ${zip}`;
+console.log(`ストア用: ${storeZip} を Chrome ウェブストアのデベロッパー ダッシュボードから上げてください`);

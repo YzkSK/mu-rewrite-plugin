@@ -1,3 +1,4 @@
+import { FONT_URL } from "./mount";
 const ID = "mu-react-pre";
 
 // 描画までの間は元の画面を隠すだけにし、枠や文字は描かない。Chrome は次のページが文字などの中身を描くまで前のページを
@@ -20,7 +21,7 @@ export function installPreHide(doc: Document): void {
   doc.documentElement.classList.add("mu-pre");
   // 書体も先に読み始める(描いた瞬間に書体が替わらないように)。mount 側は同じ id があれば足さない
   if (!doc.getElementById("mu-react-font")) {
-    const link = Object.assign(doc.createElement("link"), { id: "mu-react-font", rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=block" });
+    const link = Object.assign(doc.createElement("link"), { id: "mu-react-font", rel: "stylesheet", href: FONT_URL() });
     (doc.head ?? doc.documentElement).append(link);
   }
 }

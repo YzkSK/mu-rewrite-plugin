@@ -9,4 +9,7 @@ document.getElementById("zoom").addEventListener("change", (e) => {
   chrome.storage.sync.set({ [KEY]: Number(e.target.value) });
 });
 
-document.getElementById("version").textContent = `v${chrome.runtime.getManifest().version}`;
+// ストアから入れると manifest に update_url が付く。channel.txt はリリースの zip にだけ入る
+const manifest = chrome.runtime.getManifest();
+const channel = "update_url" in manifest ? Promise.resolve("ストア版") : fetch("channel.txt").then((r) => (r.ok ? "GitHub 版" : "開発版"), () => "開発版");
+channel.then((c) => (document.getElementById("version").textContent = `v${manifest.version}(${c})`));
