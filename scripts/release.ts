@@ -19,9 +19,14 @@ const notesPath = Bun.argv[3];
 if (notesPath && !(await Bun.file(notesPath).exists())) fail(`${notesPath} が見つかりません`);
 const notes = notesPath ? ["--notes-file", notesPath] : ["--generate-notes"];
 if ((await Bun.$`git status --porcelain`.text()).trim()) fail("作業ツリーが汚れています");
-if ((await Bun.$`git branch --show-current`.text()).trim() !== "main") fail("main ブランチで実行してください");
-await Bun.$`git fetch origin main`;
-if ((await Bun.$`git rev-list HEAD..origin/main --count`.text()).trim() !== "0") fail("origin/main より遅れています。pull してください");
+// main からは正式版だけ、1.0.7-alpha のようなブランチからはその版のプレリリースだけを出す
+const branch = (await Bun.$`git branch --show-current`.text()).trim();
+if (branch === "main") {
+  if (pre) fail("main からはプレリリースを出せません。1.0.7-alpha のようなブランチで実行してください");
+} else if (!/^\d+\.\d+\.\d+-(alpha|beta)$/.test(branch)) fail("main か 1.0.7-alpha のようなブランチで実行してください");
+else if (!pre || !version.startsWith(branch)) fail(`${branch} ブランチからは ${branch} または ${branch}.N だけを出せます`);
+await Bun.$`git fetch origin ${branch}`;
+if ((await Bun.$`git rev-list HEAD..origin/${branch} --count`.text()).trim() !== "0") fail(`origin/${branch} より遅れています。pull してください`);
 
 const manifestFile = Bun.file("extension/manifest.json");
 const manifest = JSON.parse(await manifestFile.text());
@@ -54,7 +59,7 @@ await Bun.$`cd extension && zip -r ../${zip} . -x "*.d.ts" -x "*.DS_Store"`.fina
 const tag = `v${version}`;
 await Bun.$`git commit -am ${"chore: release " + tag}`;
 await Bun.$`git tag -a ${tag} -m ${tag}`;
-await Bun.$`git push origin main --follow-tags`;
+await Bun.$`git push origin ${branch} --follow-tags`;
 
 // push 済みなので再実行はできない。失敗したら手で作れるよう zip を残してコマンドを出す
 // プレリリースは releases/latest に出ないので、GitHub 版の更新確認には正式版だけが届く
