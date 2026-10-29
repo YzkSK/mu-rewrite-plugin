@@ -7,7 +7,7 @@ export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 const MIN_INTERVAL_MS = 30_000;
 let lastAt = -Infinity;
 
-const toDoc = (text: string) => new DOMParser().parseFromString(text, "text/html");
+export const toDoc = (text: string) => new DOMParser().parseFromString(text, "text/html");
 
 /** fetch だけで MUSCAT のセッションを作り直す(中継ページ → autoLogin → ホーム)。30 秒に 1 回まで。 */
 export async function recover(fetchImpl: Fetch, now: () => number = Date.now): Promise<Document> {

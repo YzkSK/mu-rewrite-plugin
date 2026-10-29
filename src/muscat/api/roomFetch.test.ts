@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { ParseError } from "./errors";
+import { ParseError, StateLostError } from "./errors";
 import { dialogMessages, roomBooking, roomInfo, roomMore, roomSubmit } from "./roomFetch";
 
 const RC = "funcForm:j_id_rc";
@@ -133,6 +133,13 @@ test("roomMore: 0 行なら []、部品が無い・応答に SUB が無いなら
   expect(await roomMore(makeDoc(), reply(xml("")).f)).toEqual([]);
   await expect(roomMore(new DOMParser().parseFromString("<p>x</p>", "text/html"), reply(xml("")).f)).rejects.toThrow(ParseError);
   await expect(roomMore(makeDoc(), reply(`<partial-response><changes>${vs}</changes></partial-response>`).f)).rejects.toThrow(ParseError);
+});
+
+test("roomMore: 画面がずれて Error Page に差し替えられた応答は、ページに反映せず StateLostError", async () => {
+  const doc = makeDoc();
+  const lost = `<partial-response><changes><update id="jakarta.faces.ViewRoot"><![CDATA[<html><head><title>Error Page</title></head></html>]]></update>${vs}</changes></partial-response>`;
+  await expect(roomMore(doc, reply(lost).f)).rejects.toThrow(StateLostError);
+  expect((doc.querySelector('input[name="jakarta.faces.ViewState"]') as HTMLInputElement).value).toBe("vs1");
 });
 
 test("roomSubmit: dataList を反映し、<eval> は動かさない", async () => {

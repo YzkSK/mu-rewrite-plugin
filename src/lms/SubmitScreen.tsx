@@ -129,6 +129,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   // 最初の doc。listener は 200ms 遅れるので、編集したかは送る時にこれと比べる
   const initial = useRef<Node | null>(null);
   const ready = useRef(false); // 初期化の間の更新は書きかけに数えない
+  const done = useRef(false); // 提出が通ったあとの pagehide・unmount で書きかけを戻さない
   busyRef.current = busy;
   // カーソル位置にかかっている mark と、囲んでいる node の名前(ボタンの押下表示用)
   const [active, setActive] = useState<Set<string>>(new Set());
@@ -145,6 +146,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     const original = form.markdown ? form.text ?? "" : htmlToText(form.text ?? "");
     // 元の本文に戻したら書きかけは消す(書きかけから始めたときは最初の doc も書きかけなので残す)
     const keep = (doc: Node) => {
+      if (done.current) return;
       if (draft === null && doc.eq(initial.current!)) return save(`${page.id}-doc`, null);
       save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
       save(page.id, null);
@@ -170,7 +172,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
       editor.current = ed; ready.current = true;
     });
     // 200ms 以内に離れても書きかけを残す
-    const flush = () => { if (ready.current) keep(ed.action((ctx) => ctx.get(editorViewCtx).state.doc)); };
+    const flush = () => { if (ready.current && !done.current) keep(ed.action((ctx) => ctx.get(editorViewCtx).state.doc)); };
     addEventListener("pagehide", flush);
     return () => { removeEventListener("pagehide", flush); flush(); editor.current = null; ready.current = false; void ed.destroy(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -189,10 +191,15 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     const edited = editor.current?.action((ctx) => {
       const doc = ctx.get(editorViewCtx).state.doc;
       if (draft === null && doc.eq(initial.current!)) return null;
+      // 送っている間に離れても書きかけが残るよう、今の doc を保存しておく(このあと done で flush は止まる)
+      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
+      save(page.id, null);
       return isPlainDoc(doc) ? [plainText(doc), false] as const : [ctx.get(serializerCtx)(doc), true] as const;
     });
     const [body, md] = edited ?? [form.markdown ? form.text! : htmlToText(form.text ?? ""), form.markdown] as const;
+    done.current = true;
     submit(form, body, md).then(() => { save(page.id, null); save(`${page.id}-doc`, null); save(`${page.id}-md`, null); }, (e: unknown) => {
+      done.current = false;
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる

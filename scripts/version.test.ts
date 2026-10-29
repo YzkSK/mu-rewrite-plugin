@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { isNewer } from "../../extension/version.js";
+import { isNewer } from "./version";
 
 test("isNewer: ドット区切りを数値で比べる(1.10.0 は 1.9.0 より新しい)", () => {
   expect(isNewer("1.10.0", "1.9.0")).toBe(true);

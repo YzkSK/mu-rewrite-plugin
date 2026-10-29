@@ -10,3 +10,6 @@ CLAUDE.md
 
 .claude/
 release-notes/
+extension/fonts/
+extension/channel.txt
+*.zip

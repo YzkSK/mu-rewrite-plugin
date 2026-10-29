@@ -3,12 +3,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build && vite build --mode portal && vite build --mode lms && vite build --mode pdf",
+    "build": "bun scripts/copy-fonts.ts && vite build && vite build --mode portal && vite build --mode lms && vite build --mode pdf",
     "release": "bun scripts/release.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans-jp": "^5.3.1",
     "@milkdown/kit": "^7.23.0",
     "@starwind-ui/react": "^1.4.0",
     "@tabler/icons-react": "^3.49.0",

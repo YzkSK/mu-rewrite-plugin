@@ -49,6 +49,16 @@
       "matches": [
         "https://musashino-u.myopenlms.net/*"
       ]
+    },
+    {
+      "resources": [
+        "fonts/*"
+      ],
+      "matches": [
+        "https://portal.musashino-u.ac.jp/*",
+        "https://musashino-u.myopenlms.net/*",
+        "https://unipa.m-muscat.musashino-u.ac.jp/*"
+      ]
     }
   ],
   "icons": {
