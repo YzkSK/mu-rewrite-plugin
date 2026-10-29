@@ -11,7 +11,7 @@ import { ErrorToast } from "@/ui/Toast";
 import { Box, Note, Row } from "./parts";
 
 const LINK = "text-[12.5px] text-primary hover:underline";
-const KIND: Record<string, string> = { assign: "課題", quiz: "小テスト", forum: "フォーラム" };
+const KIND: Record<string, string> = { assign: "課題", quiz: "小テスト", forum: "フォーラム", questionnaire: "アンケート(α版)" }; // アンケートの回答済み・締切の判定は実機未確認
 
 
 function DueRow({ e, now }: { e: Due; now: number }) {

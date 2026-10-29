@@ -1,5 +1,6 @@
 import { formOf, menuIdOf, samlFormOf } from "./muscatTimetable.js";
 import { isNewer } from "./version.js";
+import { isClosed, pruneEvents } from "./lmsEvents.js";
 
 // ストアから入れると manifest に update_url が付く。channel.txt はリリースの GitHub 用 zip にだけ入る
 const channel = "update_url" in chrome.runtime.getManifest() ? Promise.resolve("store") : fetch("channel.txt").then((r) => (r.ok ? "github" : "dev"), () => "dev");
@@ -67,9 +68,13 @@ async function lmsDue() {
     const rs = await api.json();
     const r = Array.isArray(rs) ? rs.find((x) => x.error) ?? rs[0] : rs; // 呼び出し全体の失敗は配列でなく 1 つの例外で返る
     if (r.error || !Array.isArray(rs)) return (r.exception?.errorcode ?? r.errorcode) === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.message || r.error) };
+    const events = await pruneEvents(rs.flatMap((x) => x.data.events || []), async (url) => {
+      const res = await fetch(url, { credentials: "include" });
+      return res.ok ? res.text() : "";
+    });
     return {
       login: true,
-      events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, closed: !!e.overdue && !e.action?.actionable, url: e.url })),
+      events: events.map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, closed: isClosed(e), url: e.url, kind: e.modulename })),
     };
   } catch (e) {
     return { error: e.message };
