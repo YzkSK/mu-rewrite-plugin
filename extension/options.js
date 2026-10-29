@@ -17,16 +17,15 @@ const channel = "update_url" in manifest ? Promise.resolve("ストア版") : fet
 channel.then((c) => {
   versionEl.textContent = `v${manifest.version}(${c})`;
   if (c !== "GitHub 版") return;
-  document.getElementById("update-section").hidden = false;
   showUpdate();
   chrome.runtime.sendMessage({ type: "mu-check-update" }).then(showUpdate, () => {});
 });
 
-// 更新(GitHub 版だけ)。background の確認が終わってから、保存された新版の有無で表示する
+// 新版の有無(GitHub 版だけ)。background の確認が終わってから、保存された新版の有無で表示する
 const update = document.getElementById("update");
 async function showUpdate() {
   const u = (await chrome.storage.local.get("mu-update"))["mu-update"];
-  update.textContent = `v${manifest.version} / `;
+  update.textContent = " / ";
   if (!u) return update.append("最新です");
   const a = document.createElement("a");
   a.href = u.url;
