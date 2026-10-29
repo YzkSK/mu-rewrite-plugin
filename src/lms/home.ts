@@ -1,4 +1,5 @@
 import { courseName, dueName } from "@/portal/lib/lms";
+import { isClosed, pruneEvents } from "../../extension/lmsEvents.js";
 import { ajax, LoginRequiredError, shortName } from "./api";
 
 export type Due = { name: string; course: string; due: number; overdue: boolean; canSubmit: boolean; url: string; kind: string };
@@ -9,14 +10,14 @@ export type HomeData = { due: Due[] | null; news: News[] | null; recent: Recent[
 
 const DAY = 86400;
 
-type RawEvent = { name: string; timesort: number; overdue: boolean; url: string; course?: { fullname?: string }; modulename?: string; action?: { actionable?: boolean } };
+type RawEvent = { id?: number; eventtype?: string; name: string; timesort: number; overdue: boolean; url: string; course?: { fullname?: string }; modulename?: string; action?: { actionable?: boolean } };
 
 export const toDue = (e: RawEvent): Due => ({
   name: dueName(e.name),
   course: courseName(e.course?.fullname ?? ""),
   due: e.timesort,
   overdue: !!e.overdue,
-  canSubmit: !!e.action?.actionable,
+  canSubmit: !isClosed(e),
   url: e.url,
   kind: e.modulename ?? "",
 });
@@ -48,6 +49,9 @@ export function toNews(f: RawFeed): News {
 
 export const toRecent = (c: { id: number; fullname: string; viewurl: string }): Recent => ({ id: c.id, name: courseName(c.fullname), url: c.viewurl });
 
+/** アンケートの回答済み判定用。取れなければ "" */
+export const pageText = (url: string): Promise<string> => fetch(url, { credentials: "include" }).then((r) => (r.ok ? r.text() : "")).catch(() => "");
+
 /** 3 つを別々に取る。1 つ失敗しても他は出す。セッション切れなら読み直す(未ログイン判定でログインへ行く) */
 export async function loadHome(userId: number, now: number): Promise<HomeData> {
   // shortcut: 60 日で固定、学期の始めは MUSCAT 連携(後の PR)で取れたら替える
@@ -56,7 +60,7 @@ export async function loadHome(userId: number, now: number): Promise<HomeData> {
   const events = (from: number, to?: number) =>
     ajax<{ events: RawEvent[] }>("core_calendar_get_action_events_by_timesort", { timesortfrom: from, ...(to ? { timesortto: to } : {}), limitnum: 50, limittononsuspendedevents: true });
   const [due, news, recent] = await Promise.allSettled([
-    Promise.all([events(now - 60 * DAY, now - 1), events(now)]).then(([a, b]) => ({ events: [...a.events, ...b.events] })),
+    Promise.all([events(now - 60 * DAY, now - 1), events(now)]).then(([a, b]) => pruneEvents([...a.events, ...b.events], pageText).then((events) => ({ events }))),
     ajax<RawFeed[]>("theme_snap_feed", { feedid: "forumposts", page: 0, pagesize: 5, maxid: -1 }),
     ajax<{ id: number; fullname: string; viewurl: string }[]>("core_course_get_recent_courses", { userid: userId, limit: 5 }),
   ]);

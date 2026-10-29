@@ -41,7 +41,10 @@ function DueItem({ e }: { e: LmsDue }) {
       </span>
       <span className="min-w-0 flex-1">
         <a className="block text-[13.5px] font-semibold text-foreground hover:underline [overflow-wrap:anywhere]" href={e.url} target="_blank" rel="noopener noreferrer">{dueName(e.name)}</a>
-        {e.course ? <span className="block text-[12px] text-muted-foreground">{courseName(e.course)}</span> : null}
+        {e.course || e.kind === "questionnaire" ? (
+          // アンケートの回答済み・締切の判定は実機未確認
+          <span className="block text-[12px] text-muted-foreground">{[e.kind === "questionnaire" ? "アンケート(α版)" : "", courseName(e.course)].filter(Boolean).join("、")}</span>
+        ) : null}
       </span>
     </li>
   );
