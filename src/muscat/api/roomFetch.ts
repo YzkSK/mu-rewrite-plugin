@@ -1,4 +1,5 @@
-import { MuscatDownError, NoticeError, ParseError } from "./errors";
+import { MuscatDownError, NoticeError, ParseError, StateLostError } from "./errors";
+import { isStateLost } from "./expired";
 import { applyPartialResponse, buildPartialRequest, updateText } from "./partial";
 import { squash } from "./parse/genericControls";
 import { isRoomRow, parseRoomResult, parseRoomRows, roomNameOf, tableLayout } from "./parse/roomTimeline";
@@ -17,7 +18,10 @@ async function send(doc: Document, fetch: Fetch, source: string, extra: Record<s
   const req = buildPartialRequest(form, source, extra, render, execute);
   const res = await fetch(req.url, { method: "POST", headers: req.headers, body: req.body, credentials: "include" });
   if (!res.ok) throw new MuscatDownError(`教室の予約を取れませんでした (${res.status})`);
-  return res.text();
+  const text = await res.text();
+  // 別のタブなどで画面がずれた応答(Error Page への差し替え)は、生きたページに反映する前に止める
+  if (isStateLost("partial", res.status, text)) throw new StateLostError("MUSCAT が応答しません");
+  return text;
 }
 
 /**

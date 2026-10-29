@@ -1,4 +1,5 @@
-import { MuscatDownError, ParseError } from "./errors";
+import { MuscatDownError, ParseError, StateLostError } from "./errors";
+import { isStateLost } from "./expired";
 import { applyPartialResponse, buildPartialRequest, updateText } from "./partial";
 import type { Fetch } from "./recover";
 import type { HomeEvent, TeacherEvent } from "./types";
@@ -24,6 +25,8 @@ async function fetchScheduleEvents(doc: Document, fetch: Fetch, marker: string, 
   const res = await fetch(req.url, { method: "POST", headers: req.headers, body: req.body, credentials: "include" });
   if (!res.ok) throw new MuscatDownError(`予定を取れませんでした (${res.status})`);
   const xml = await res.text();
+  // 別のタブなどで画面がずれた応答(Error Page への差し替え)は、生きたページに反映する前に止める
+  if (isStateLost("partial", res.status, xml)) throw new StateLostError("MUSCAT が応答しません");
   applyPartialResponse(doc, xml, [id]); // 予定が読めなくても、ViewState は先に入れ替える(古いままだと次の通信が通らない)
   const text = updateText(xml, id);
   if (text === undefined) throw new ParseError("予定が応答にありません");

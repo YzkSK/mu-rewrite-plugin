@@ -33,8 +33,8 @@ async function lmsDue() {
       body: JSON.stringify(body),
     });
     const rs = await api.json();
-    const r = rs.find((x) => x.error) ?? rs[0];
-    if (r.error) return r.exception?.errorcode === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.error) };
+    const r = Array.isArray(rs) ? rs.find((x) => x.error) ?? rs[0] : rs; // 呼び出し全体の失敗は配列でなく 1 つの例外で返る
+    if (r.error || !Array.isArray(rs)) return (r.exception?.errorcode ?? r.errorcode) === "servicerequireslogin" ? { login: false } : { error: String(r.exception?.message || r.message || r.error) };
     return {
       login: true,
       events: rs.flatMap((x) => x.data.events || []).map((e) => ({ name: e.name, course: e.course?.fullname ?? "", due: e.timesort, overdue: !!e.overdue, closed: !!e.overdue && !e.action?.actionable, url: e.url })),
