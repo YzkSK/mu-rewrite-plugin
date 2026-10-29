@@ -11,5 +11,25 @@ document.getElementById("zoom").addEventListener("change", (e) => {
 
 // ストアから入れると manifest に update_url が付く。channel.txt はリリースの zip にだけ入る
 const manifest = chrome.runtime.getManifest();
+const versionEl = document.getElementById("version");
+versionEl.textContent = `v${manifest.version}`; // 種類が分からなくても版は先に出す
 const channel = "update_url" in manifest ? Promise.resolve("ストア版") : fetch("channel.txt").then((r) => (r.ok ? "GitHub 版" : "開発版"), () => "開発版");
-channel.then((c) => (document.getElementById("version").textContent = `v${manifest.version}(${c})`));
+channel.then((c) => {
+  versionEl.textContent = `v${manifest.version}(${c})`;
+  if (c !== "GitHub 版") return;
+  showUpdate();
+  chrome.runtime.sendMessage({ type: "mu-check-update" }).then(showUpdate, () => {});
+});
+
+// 新版の有無(GitHub 版だけ)。background の確認が終わってから、保存された新版の有無で表示する
+const update = document.getElementById("update");
+async function showUpdate() {
+  const u = (await chrome.storage.local.get("mu-update"))["mu-update"];
+  update.textContent = " / ";
+  if (!u) return update.append("最新です");
+  const a = document.createElement("a");
+  a.href = u.url;
+  a.target = "_blank";
+  a.textContent = `新しい版 v${u.version} をダウンロード`;
+  update.append(a, "。展開して今のフォルダに上書きし、chrome://extensions で再読み込みしてください");
+}
