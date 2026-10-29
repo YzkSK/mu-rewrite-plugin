@@ -6,7 +6,7 @@ import { isRejected, isStateLost, type ResponseKind } from "./expired";
 import { HOME_LABEL, LOGOUT_URL, SETTING_LABEL } from "./labels";
 import { applyPartialResponse, buildPartialRequest } from "./partial";
 import { createQueue } from "./queue";
-import { fetchHome, recover, type Fetch } from "./recover";
+import { fetchHome, recover, toDoc, type Fetch } from "./recover";
 import { createSession, type MenuIds, type MenuLabel } from "./session";
 import { buildAbRequest, parseAb } from "./virtual/ab";
 import { pageRequest, setBase, type Req } from "./virtual/req";
@@ -60,8 +60,6 @@ export type Core = {
   shown(): Shown;
   subscribe(listener: () => void): () => void;
 };
-
-const toDoc = (text: string) => new DOMParser().parseFromString(text, "text/html");
 
 /** 開発用: localStorage["mu-dev"]="1" のときだけ、送る POST の本文をコンソールに出す(元のページの通信と見比べる)。状態の札は伏せる */
 function devLog(req: { url: string; body: URLSearchParams; headers?: Record<string, string> }): void {
@@ -273,9 +271,13 @@ export function createCore(deps: { fetch: Fetch; doc: Document; ids: MenuIds; no
             // ホームを取り直して(回数の制限なし)、そこからもう一度送る
             let doc = await loadPage(request());
             if (!doc) {
+              const keep = session.doc;
               session.adopt(await fetchHome(deps.fetch));
               doc = await loadPage(request());
-              if (!doc) throw new MuscatDownError("MUSCAT が応答しません");
+              if (!doc) {
+                session.adopt(keep); // 見せている画面と食い違わないよう戻す
+                throw new MuscatDownError("MUSCAT が応答しません");
+              }
             }
             if (n !== newest) return; // 待つ間に新しい移動が来たら、この結果は見せない(session には取り込み済み)
             settle(); // 新しい画面が最初に積む操作は捨てない

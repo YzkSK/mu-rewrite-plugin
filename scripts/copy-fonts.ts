@@ -13,4 +13,6 @@ for (const w of [400, 500, 600, 700]) {
     .replace(/font-display:\s*swap/g, "font-display: block"); // 届くまで別の書体で描かない
 }
 await Bun.write(`${OUT}/ibm-plex-sans-jp.css`, css);
-for (const f of new Set(css.match(/files\/[^)]*\.woff2/g))) await copyFile(`${SRC}/${f}`, `${OUT}/${f}`);
+const files = new Set(css.match(/files\/[^)]*\.woff2/g));
+if (!files.size || css.includes(".woff)")) throw new Error("fontsource の CSS の形が変わった");
+for (const f of files) await copyFile(`${SRC}/${f}`, `${OUT}/${f}`);

@@ -23,6 +23,11 @@ test("extra の null はキーを本文から除く", () => {
   expect(b.get("a")).toBe("b");
 });
 
+test("同じ名前の値は全部送る", () => {
+  const doc = new DOMParser().parseFromString(`<form id="f" action="/f" method="post"><input type="checkbox" name="g" value="1" checked><input type="checkbox" name="g" value="2" checked><input type="checkbox" name="g" value="3"></form>`, "text/html");
+  expect(buildPartialRequest(doc.getElementById("f") as HTMLFormElement, "s").body.getAll("g")).toEqual(["1", "2"]);
+});
+
 test("request", () => {
   const form = makeDoc().getElementById("funcForm") as HTMLFormElement;
   const r = buildPartialRequest(form, "funcForm:search", { a: "b" });

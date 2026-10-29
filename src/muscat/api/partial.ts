@@ -9,7 +9,7 @@ export function buildPartialRequest(
   execute = "@all",
 ): { url: string; body: URLSearchParams; headers: Record<string, string> } {
   const body = new URLSearchParams();
-  for (const [k, v] of new FormData(form)) if (typeof v === "string") body.set(k, v);
+  for (const [k, v] of new FormData(form)) if (typeof v === "string") body.append(k, v); // チェックボックスの群は同じ名前で複数送る
   body.set("jakarta.faces.partial.ajax", "true");
   body.set("jakarta.faces.source", source);
   body.set("jakarta.faces.partial.execute", execute);

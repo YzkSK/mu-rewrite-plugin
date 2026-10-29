@@ -17,16 +17,19 @@ if (notesPath && !(await Bun.file(notesPath).exists())) fail(`${notesPath} が�
 const notes = notesPath ? ["--notes-file", notesPath] : ["--generate-notes"];
 if ((await Bun.$`git status --porcelain`.text()).trim()) fail("作業ツリーが汚れています");
 if ((await Bun.$`git branch --show-current`.text()).trim() !== "main") fail("main ブランチで実行してください");
+await Bun.$`git fetch origin main`;
+if ((await Bun.$`git rev-list HEAD..origin/main --count`.text()).trim() !== "0") fail("origin/main より遅れています。pull してください");
 
 const manifestFile = Bun.file("extension/manifest.json");
 const manifest = JSON.parse(await manifestFile.text());
 if (!isNewer(version, manifest.version)) fail(`${version} は現在の版 ${manifest.version} より新しくありません`);
-manifest.version = version;
-await Bun.write(manifestFile, JSON.stringify(manifest, null, 2) + "\n");
 
-// dist は git 管理外で上書きビルドなので、古いファイルが zip に混ざらないよう消してから作る
+// dist は git 管理外で上書きビルドなので、古いファイルが zip に混ざらないよう消してから作る。版を書く前に作り、失敗しても作業ツリーを汚さない
 await Bun.$`rm -rf extension/dist`;
 await Bun.$`bun run build`;
+
+manifest.version = version;
+await Bun.write(manifestFile, JSON.stringify(manifest, null, 2) + "\n");
 
 const zip = `mu-rewrite-v${version}.zip`;
 // ストアに手で上げる用。目印は入れない(ストアが付ける update_url で見分ける)
