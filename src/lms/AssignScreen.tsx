@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { AssignPage } from "./assign";
 import { Box, Note, Row } from "./parts";
 
-const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+export const PROSE ="px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_img[src*='/theme/image.php/']]:inline [&_img[src*='/theme/image.php/']]:size-4 [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
 const SHOWN = new Set(["提出ステータス", "評定ステータス", "残り時間", "オンラインテキスト", "ファイル提出"]);
 
 /** 上の「‹ コース名」と題名 */
@@ -20,7 +20,7 @@ export function AssignHead({ page, title }: { page: AssignPage; title: string })
   );
 }
 
-const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
+export const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="min-w-0 flex-1 basis-[180px] px-4 py-3">
     <p className="m-0 text-[12px] text-muted-foreground">{label}</p>
     <p className="m-0 mt-0.5 text-[13.5px] [overflow-wrap:anywhere]">{children}</p>

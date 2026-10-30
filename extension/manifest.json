@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
-  "version": "1.0.6",
+  "version": "1.0.6.2",
   "permissions": [
     "webRequest",
     "storage"
@@ -77,5 +77,6 @@
   "background": {
     "service_worker": "background.js",
     "type": "module"
-  }
+  },
+  "version_name": "1.0.7-beta"
 }

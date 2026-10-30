@@ -1,5 +1,7 @@
 import { courseName, dueName } from "@/portal/lib/lms";
+import { pruneEvents } from "../../extension/lmsEvents.js";
 import { ajax } from "./api";
+import { pageText } from "./home";
 
 export type CalEvent = { id: number; name: string; at: number; url: string; courseId: number | null; course: string; late: boolean; past: boolean };
 /** null は月初の前・月末の後の空き */
@@ -41,9 +43,11 @@ export async function loadMonth(year: number, month: number, now: number): Promi
   const [raw, late] = await Promise.all([
     ajax<RawMonth>("core_calendar_get_calendar_monthly_view", { year, month, courseid: 1, categoryid: 0, includenavigation: false, mini: false, day: 1 }),
     // 未提出の判定が取れなくても月は出す(期限切れは灰になる)
-    ajax<{ events: { id: number }[] }>("core_calendar_get_action_events_by_timesort", { timesortfrom: now - 60 * 86400, timesortto: now - 1, limitnum: 50, limittononsuspendedevents: true }).catch(() => ({ events: [] })),
+    ajax<{ events: { id: number; url: string; modulename?: string; eventtype?: string }[] }>("core_calendar_get_action_events_by_timesort", { timesortfrom: now - 60 * 86400, timesortto: now - 1, limitnum: 50, limittononsuspendedevents: true })
+      .then((r) => pruneEvents(r.events, pageText)) // 回答済みのアンケートは赤くしない
+      .catch(() => []),
   ]);
-  return toMonth(year, month, raw, new Set(late.events.map((e) => e.id)), now);
+  return toMonth(year, month, raw, new Set(late.map((e) => e.id)), now);
 }
 
 /** ?time=<秒> から年月。無い・変なら今の月 */

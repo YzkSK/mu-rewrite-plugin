@@ -10,6 +10,7 @@ import { OVERVIEW_URL, readGradeList } from "./grades";
 import { titleOf, type View } from "./LmsApp";
 import { readDiscussionPage, readForumList } from "./forum";
 import { readLtiPage } from "./lti";
+import { readQuestionnairePage } from "./questionnaire";
 import { readProfile } from "./profile";
 import { showBackButton } from "@/ui/backButton";
 import { closeOriginal, isAppPath, isSkipped, openOriginal, routeOf } from "./route";
@@ -112,6 +113,7 @@ if (window === window.top) {
         else if (route === "discussion") view = { kind: "discussion", page: readDiscussionPage(document, location.search) };
         else if (route === "messages") view = { kind: "messages", path: location.pathname, search: location.search };
         else if (route === "lti") view = { kind: "lti", page: readLtiPage(document, location.search) };
+        else if (route === "questionnaire") view = { kind: "questionnaire", page: readQuestionnairePage(document, location.search) };
         else if (route === "search") view = { kind: "search", search: location.search };
         else if (route === "profile") {
           // 自分以外のプロファイルは元の画面で見る(元の script は止めてあるので、印を付けて読み直す)
@@ -119,7 +121,7 @@ if (window === window.top) {
           if (other !== null && Number(other) !== id) { openOriginal(); return; }
           view = { kind: "profile", page: readProfile(document) };
         }
-        if (view && ["forum", "discussion", "messages", "lti", "search", "profile"].includes(view.kind)) heading = titleOf(view);
+        if (view && ["forum", "discussion", "messages", "lti", "questionnaire", "search", "profile"].includes(view.kind)) heading = titleOf(view);
         mountLms(name.then((n) => n || null), id, view);
         document.title = `${heading} | MU-LMS`;
         state = "on";

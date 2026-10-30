@@ -8,10 +8,10 @@ import { codeOf, slotLabel, useSlots, type SlotMap } from "./muscatSlots";
 import { Box, Note, Row } from "./parts";
 import { PdfViewer } from "./PdfViewer";
 
-const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ" };
+const TAG: Record<string, string> = { assign: "課題", quiz: "小テスト", resource: "ファイル", lti: "動画", url: "リンク", forum: "フォーラム", page: "ページ", folder: "フォルダ", questionnaire: "アンケート" };
 const PURPLE = new Set(["assign", "quiz"]);
 // ラベルの本文は外部由来の HTML(sanitize 済み)。見た目だけ最低限そろえる
-const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+const PROSE = "px-4 py-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_img[src*='/theme/image.php/']]:inline [&_img[src*='/theme/image.php/']]:size-4 [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
 
 
 function ItemRow({ it, now }: { it: Item; now: number }) {
@@ -65,6 +65,32 @@ const hasText = (html: string, videos: string[]): boolean => {
 };
 
 function SectionCard({ s, now, open, onToggle, refFn }: { s: Section; now: number; open: boolean; onToggle: () => void; refFn: (el: HTMLElement | null) => void }) {
+  // サブセクションは最初は閉じておく
+  const [subs, setSubs] = useState<Set<string>>(() => new Set());
+  const toggleSub = (id: string) => { const n = new Set(subs); if (!n.delete(id)) n.add(id); setSubs(n); };
+  const rows = (list: Item[]) => list.flatMap((it) => it.html !== null
+    ? [
+      ...(it.videos.length && !hasText(it.html, it.videos) ? [] : [<li key={it.id} className={`${PROSE} border-b border-border last:border-b-0`} dangerouslySetInnerHTML={{ __html: it.html }} />]),
+      ...it.videos.map((v) => <VideoRow key={`${it.id}-${v}`} src={v} />),
+    ]
+    : it.mod === "subsection"
+      ? [
+        <li key={it.id} className="border-b border-border last:border-b-0">
+          <button type="button" aria-expanded={subs.has(it.id)} onClick={() => toggleSub(it.id)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted">
+            <span className="h-fit w-[4.5rem] flex-none rounded-[3px] border border-border px-1 text-center text-[11px] leading-[18px] text-muted-foreground">セクション</span>
+            <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">{`${subs.has(it.id) ? "▾" : "▸"} ${it.name}`}</span>
+            <span className="flex-none text-[12px] text-muted-foreground">{`${s.items.filter((c) => c.parent === it.id).length} 件 `}<span className="text-primary">{subs.has(it.id) ? "閉じる" : "開く"}</span></span>
+          </button>
+          {/* 中身は字下げし、行の区切り線とつながらない独立した縦線で範囲を示す */}
+          {subs.has(it.id) ? (
+            <div className="relative mb-2 ml-8">
+              <span aria-hidden className="absolute top-1 bottom-1 left-0 w-0.5 rounded-full bg-primary/40" />
+              <ul className="m-0 ml-3 list-none p-0">{rows(s.items.filter((c) => c.parent === it.id))}</ul>
+            </div>
+          ) : null}
+        </li>,
+      ]
+      : [<ItemRow key={it.id} it={it} now={now} />]);
   return (
     <div ref={refFn} className="scroll-mt-4">
       <Box
@@ -78,14 +104,7 @@ function SectionCard({ s, now, open, onToggle, refFn }: { s: Section; now: numbe
       >
         {open ? <>
         {s.summary ? <div className={`${PROSE} border-b border-border`} dangerouslySetInnerHTML={{ __html: s.summary }} /> : null}
-        <ul className="m-0 list-none p-0">
-          {s.items.flatMap((it) => it.html !== null
-            ? [
-              ...(it.videos.length && !hasText(it.html, it.videos) ? [] : [<li key={it.id} className={`${PROSE} border-b border-border last:border-b-0`} dangerouslySetInnerHTML={{ __html: it.html }} />]),
-              ...it.videos.map((v) => <VideoRow key={`${it.id}-${v}`} src={v} />),
-            ]
-            : [<ItemRow key={it.id} it={it} now={now} />])}
-        </ul>
+        <ul className="m-0 list-none p-0">{rows(s.items.filter((it) => !it.parent))}</ul>
         </> : null}
       </Box>
     </div>
