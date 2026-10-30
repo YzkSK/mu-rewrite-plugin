@@ -18,7 +18,7 @@ export function GenericLine({ block, run }: { block: Extract<GBlock, { kind: "li
             {it.text}
           </span>
         ) : WIDE.has(it.kind) ? (
-          <span key={it.ref} className="inline-block w-48 max-w-full">
+          <span key={it.ref} className="inline-block w-48 max-w-full max-[767px]:w-full">
             <GenericControl control={it} run={run} />
           </span>
         ) : (

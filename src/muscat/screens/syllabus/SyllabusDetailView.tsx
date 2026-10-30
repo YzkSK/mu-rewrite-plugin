@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { IconBookmark, IconX } from "@tabler/icons-react";
 import type { SyllabusDetail, SyllabusDetailRow } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { SECTIONS, shapeSyllabus, type Book, type Shaped } from "./shapeSyllabus";
@@ -84,7 +85,7 @@ function BasicBody({ s, drawer }: Ctx) {
     <>
       <dl className={`m-0 grid border-t border-[#ece9ef] ${drawer ? "grid-cols-1" : "grid-cols-2 gap-x-6 max-[820px]:grid-cols-1"}`}>
         {items.map((it) => (
-          <div key={it.label} className={`grid grid-cols-[112px_minmax(0,1fr)] gap-2.5 border-b border-[#ece9ef] py-[7px]${it.value.length > 24 ? " col-span-full" : ""}`}>
+          <div key={it.label} className={`grid grid-cols-[112px_minmax(0,1fr)] gap-2.5 max-[767px]:grid-cols-1 max-[767px]:gap-0.5 border-b border-[#ece9ef] py-[7px]${it.value.length > 24 ? " col-span-full" : ""}`}>
             <dt className="text-[12.5px] text-muted-foreground">{it.label}</dt>
             <dd className="m-0 min-w-0 whitespace-pre-line break-words text-[13px]">{it.value}</dd>
           </div>
@@ -150,6 +151,8 @@ function WayBody({ s }: Ctx) {
 function GradeBody({ s }: Ctx) {
   const { items, zero, note } = s.grade;
   const cell = "border-b border-[#ece9ef] py-[7px] align-baseline";
+  // 狭い画面は固定幅の列をやめ、1 列に積む(罫線は行の最後のセルだけ)
+  const COL = "max-[767px]:block max-[767px]:w-auto max-[767px]:border-b-0 max-[767px]:py-0.5 max-[767px]:last:border-b max-[767px]:last:pb-[7px]";
   return (
     <>
       {items.length > 0 && (
@@ -162,20 +165,20 @@ function GradeBody({ s }: Ctx) {
           <tbody>
             {items.map((e, i) => (
               <tr key={i}>
-                <td className={`${cell} w-[9.5em] pr-2.5`}>
+                <td className={`${cell} ${COL} w-[9.5em] pr-2.5`}>
                   <i className={`mr-1.5 inline-block size-[9px] rounded-[2px] ${bar(i)}`} />
                   {e.name}
                 </td>
-                <td className={`${cell} w-[3.6em] pr-3.5 text-right font-bold tabular-nums`}>{e.percent}%</td>
-                <td className={`${cell} whitespace-pre-line text-[12.5px] text-muted-foreground`}>{e.detail}</td>
+                <td className={`${cell} ${COL} w-[3.6em] pr-3.5 text-right font-bold tabular-nums`}>{e.percent}%</td>
+                <td className={`${cell} ${COL} whitespace-pre-line text-[12.5px] text-muted-foreground`}>{e.detail}</td>
               </tr>
             ))}
             {/* 0% の項目は薄くして 1 行にまとめる */}
             {zero.length > 0 && (
               <tr className="text-[#a39cab]">
-                <td className={`${cell} w-[9.5em] whitespace-normal break-words pr-2.5`}>{zero.map((e) => e.name).join("・")}</td>
-                <td className={`${cell} w-[3.6em] pr-3.5 text-right tabular-nums`}>0%</td>
-                <td className={`${cell} whitespace-pre-line text-[12.5px]`}>{zero.map((e) => e.detail).filter(Boolean).join("\n")}</td>
+                <td className={`${cell} ${COL} w-[9.5em] whitespace-normal break-words pr-2.5`}>{zero.map((e) => e.name).join("・")}</td>
+                <td className={`${cell} ${COL} w-[3.6em] pr-3.5 text-right tabular-nums`}>0%</td>
+                <td className={`${cell} ${COL} whitespace-pre-line text-[12.5px]`}>{zero.map((e) => e.detail).filter(Boolean).join("\n")}</td>
               </tr>
             )}
           </tbody>
@@ -346,7 +349,7 @@ export function SyllabusDetailBody({ detail, toc = true, order = "site" }: BodyP
         onWheel={() => void (jumping.current = 0)}
         onTouchStart={() => void (jumping.current = 0)}
         onKeyDown={() => void (jumping.current = 0)}
-        className={`min-w-0 flex-1 overflow-y-auto pb-7 pt-1 ${drawer ? "px-4" : "px-[22px]"}`}>
+        className={`min-w-0 flex-1 overflow-y-auto pb-7 pt-1 ${drawer ? "px-4" : "px-[22px] max-[767px]:px-3"}`}>
         {shown.map((i, k) => {
           const Content = BODIES[i]!;
           return (
@@ -386,12 +389,14 @@ export function SyllabusDetailView({ detail, busy, onNote, onPrint, onClose }: P
             type="button"
             disabled={busy || !detail.noteRef}
             onClick={onNote}
-            className={`h-8 cursor-pointer rounded-[4px] border border-input px-3 text-[13px] disabled:cursor-default ${detail.noteOn ? "bg-accent" : "bg-card"}`}
+            aria-label={detail.noteOn ? "ふせんを外す" : "ふせんを貼る"}
+            className={`h-8 cursor-pointer rounded-[4px] border border-input px-3 text-[13px] disabled:cursor-default max-[767px]:grid max-[767px]:size-9 max-[767px]:flex-none max-[767px]:place-items-center max-[767px]:border-0 max-[767px]:p-0 ${detail.noteOn ? "bg-accent max-[767px]:text-primary" : "bg-card max-[767px]:bg-transparent max-[767px]:text-muted-foreground"}`}
           >
-            {detail.noteOn ? "ふせんを外す" : "ふせんを貼る"}
+            <span className="max-[767px]:hidden">{detail.noteOn ? "ふせんを外す" : "ふせんを貼る"}</span>
+            <IconBookmark size={20} className="min-[768px]:hidden" />
           </button>
-          <Button variant="secondary" disabled={busy || !detail.printRef} onClick={onPrint}>印刷</Button>
-          <button type="button" aria-label="閉じる" onClick={onClose} className="h-8 w-8 cursor-pointer rounded-[4px] border-0 bg-transparent text-base text-muted-foreground hover:bg-muted">✕</button>
+          <div className="max-[767px]:hidden"><Button variant="secondary" disabled={busy || !detail.printRef} onClick={onPrint}>印刷</Button></div>
+          <button type="button" aria-label="閉じる" onClick={onClose} className="grid size-9 flex-none cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent text-muted-foreground hover:bg-muted"><IconX size={20} /></button>
         </div>
         <SyllabusDetailBody detail={detail} />
       </aside>

@@ -52,7 +52,7 @@ test("出席が見つからない", () => {
 
 test("掲示とメモと下のボタン。掲示が無ければ節ごと出さず、メモが無ければメモの節も出さない", () => {
   const html = render(ready());
-  for (const s of ["この授業の掲示", "休講のお知らせ", "2026/10/20", "持ち物", "メモを保存", "シラバスを開く", "成績を見る", "‹ 戻る"]) expect(html).toContain(s);
+  for (const s of ["この授業の掲示", "休講のお知らせ", "2026/10/20", "持ち物", "メモを保存", "シラバスを開く", "成績を見る", "</svg>戻る"]) expect(html).toContain(s);
   const none = render(ready({ notices: [], memo: null }));
   expect(none).not.toContain("この授業の掲示");
   expect(none).not.toContain("メモを保存");
@@ -61,7 +61,7 @@ test("掲示とメモと下のボタン。掲示が無ければ節ごと出さ�
 test("シラバス表示: 戻るボタンと詳細。ふせん・印刷・✕ は出さない", () => {
   const d = { title: "合成演習", code: "5300100033", rows: [{ kind: "field" as const, label: "担当教員", values: ["教員A"] }], noteOn: false, noteRef: "", printRef: "", closeRef: "" };
   const html = renderToString(<SyllabusPane state={{ status: "ready", detail: d }} onBack={() => {}} onRetry={() => {}} />);
-  for (const s of ["‹ 授業に戻る", "担当教員", "教員A"]) expect(html).toContain(s);
+  for (const s of ["</svg>授業に戻る", "担当教員", "教員A"]) expect(html).toContain(s);
   for (const s of ["ふせん", "印刷", "閉じる"]) expect(html).not.toContain(s);
 });
 

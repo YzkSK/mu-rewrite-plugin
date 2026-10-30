@@ -1,3 +1,4 @@
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -67,7 +68,7 @@ export function DatePicker({ value, label, disabled, onChange, today = new Date(
         aria-expanded={open}
         disabled={disabled}
         onClick={toggle}
-        className="flex h-8 min-w-36 cursor-pointer items-center justify-between gap-3 rounded-[4px] border border-input bg-card px-2.5 text-sm tabular-nums disabled:cursor-default disabled:opacity-60"
+        className="flex h-8 min-w-36 cursor-pointer items-center justify-between gap-3 rounded-[4px] border border-input bg-card px-2.5 text-sm tabular-nums max-[767px]:h-10 max-[767px]:min-w-0 max-[767px]:text-base disabled:cursor-default disabled:opacity-60"
       >
         {value || "日付を選ぶ"}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" className="text-muted-foreground">
@@ -76,11 +77,12 @@ export function DatePicker({ value, label, disabled, onChange, today = new Date(
         </svg>
       </button>
       {open && (
-        <div role="dialog" aria-label={label} className="absolute left-0 top-full z-40 mt-1 w-64 rounded-[4px] border border-border bg-card p-3 shadow-md">
+        // 狭い画面は右端ではみ出さないよう、画面下から出るシートにする
+        <div role="dialog" aria-label={label} className="absolute left-0 top-full z-40 mt-1 w-64 rounded-[4px] border border-border bg-card p-3 shadow-md max-[767px]:fixed max-[767px]:inset-x-0 max-[767px]:bottom-0 max-[767px]:top-auto max-[767px]:mt-0 max-[767px]:w-auto max-[767px]:rounded-b-none max-[767px]:p-4">
           <div className="mb-2 flex items-center justify-between">
-            <button type="button" aria-label="前の月" onClick={() => step(-1)} className="size-8 cursor-pointer rounded-[4px] border-0 bg-transparent hover:bg-muted">‹</button>
+            <button type="button" aria-label="前の月" onClick={() => step(-1)} className="grid size-8 cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent hover:bg-muted max-[767px]:size-9"><IconChevronLeft size={18} /></button>
             <b className="text-sm">{`${view.y}年${view.m + 1}月`}</b>
-            <button type="button" aria-label="次の月" onClick={() => step(1)} className="size-8 cursor-pointer rounded-[4px] border-0 bg-transparent hover:bg-muted">›</button>
+            <button type="button" aria-label="次の月" onClick={() => step(1)} className="grid size-8 cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent hover:bg-muted max-[767px]:size-9"><IconChevronRight size={18} /></button>
           </div>
           <div className="grid grid-cols-7 gap-0.5 text-center text-xs">
             {WEEK.map((w, i) => (

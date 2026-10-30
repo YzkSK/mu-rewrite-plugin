@@ -70,7 +70,7 @@ const detail: NewsDetail = {
 
 test("詳細: 項目名と値、本文はサニタイズ、前の掲示・次の掲示・閉じる。未読に戻すは詳細に無い(一覧の行で切り替える)", () => {
   const html = render(ready({ detail, items: [item({ title: "詳細の件名" })] }));
-  for (const s of ["詳細の件名", "本文", "前の掲示", "次の掲示", "閉じる", "‹ 掲示板", "min-[768px]:grid-cols-2"]) expect(html).toContain(s);
+  for (const s of ["詳細の件名", "本文", "前の掲示", "次の掲示", "閉じる", "</svg>掲示板", "min-[768px]:grid-cols-2"]) expect(html).toContain(s);
   expect(html).toContain("<p>本文</p>");
   expect(html).not.toContain("onclick");
   const none = render(ready());

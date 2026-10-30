@@ -13,7 +13,7 @@ export function GenericTabs({ block, run }: { block: Extract<GBlock, { kind: "ta
           aria-selected={t.selected}
           disabled={t.disabled}
           onClick={() => !t.selected && run([{ kind: "click", ref: t.ref }])}
-          className={`cursor-pointer border-b-2 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40 ${t.selected ? "border-primary font-bold" : "border-transparent text-muted-foreground"}`}
+          className={`cursor-pointer border-b-2 px-3 py-1.5 text-sm max-[767px]:h-10 max-[767px]:py-0 disabled:cursor-not-allowed disabled:opacity-40 ${t.selected ? "border-primary font-bold" : "border-transparent text-muted-foreground"}`}
         >
           {t.label}
         </button>

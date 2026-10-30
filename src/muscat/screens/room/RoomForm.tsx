@@ -36,7 +36,7 @@ const SEP = "text-[13px] text-muted-foreground";
 /** 絞り込みの 1 行(左に項目名、右に中身)。grid の 2 列に並べる */
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <>
-    <span className="self-start pt-1.5 text-xs font-bold text-muted-foreground">{label}</span>
+    <span className="self-start pt-1.5 text-xs font-bold text-muted-foreground max-[767px]:mt-2 max-[767px]:pt-0 max-[767px]:first:mt-0">{label}</span>
     <div className="min-w-0">{children}</div>
   </>
 );
@@ -60,7 +60,7 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
   );
   const date = (label: string, f: { ref: string; value: string }) => <DatePicker label={label} value={text(f)} disabled={busy} clearable onChange={(x) => setText(f.ref, x)} />;
   const range = (label: string, r: RoomRange, unit?: string) => (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 max-[767px]:flex-wrap">
       <span className="w-14 text-[13px]">{label}</span>
       {input(`${label}の下限`, r.from, "w-20")}<span className={SEP}>〜</span>{input(`${label}の上限`, r.to, "w-20")}
       {unit && <span className={SEP}>{unit}</span>}
@@ -70,9 +70,10 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
   const showOn = page.showCapacity.length > 1 && !!v.on[page.showCapacity[1]!.ref];
   return (
     <Card className="gap-3.5 p-4">
-      <div className="flex flex-wrap items-start gap-x-6 gap-y-3" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !busy && search()}>
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-3 max-[767px]:grid" onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !busy && search()}>
         <Field label="期間">
-          <div className="flex flex-wrap items-center gap-2">{date("開始日", page.period.from)}<span className={SEP}>〜</span>{date("終了日", page.period.to)}</div>
+          {/* 狭い画面は 2 等分(〜 は置かない) */}
+          <div className="flex flex-wrap items-center gap-2 max-[767px]:grid max-[767px]:grid-cols-2 [&>div]:max-[767px]:min-w-0">{date("開始日", page.period.from)}<span className={`${SEP} max-[767px]:hidden`}>〜</span>{date("終了日", page.period.to)}</div>
           {backwards && <p role="alert" className="m-0 mt-1 text-xs text-error">終了日を開始日より後にしてください</p>}
         </Field>
         {page.targets.length > 0 && (
@@ -97,7 +98,7 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
         </div>
         <CollapsibleContent>
           {/* 項目名は左、中身は右の行を縦に並べる(2 列だと高さがずれて、場所の見出しの下が空いた) */}
-          <div className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-5 gap-y-3">
+          <div className="mt-3 grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-5 gap-y-3 max-[767px]:grid-cols-1 max-[767px]:gap-y-1">
             {free && (
               <Row label="空き教室">
                 <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +114,7 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
             )}
             {page.days.length > 0 && (
               <Row label="曜日">
-                <span className="inline-flex w-fit overflow-hidden rounded-[4px] border border-input">
+                <span className="inline-flex w-fit overflow-hidden rounded-[4px] border border-input max-[767px]:flex max-[767px]:w-full">
                   {page.days.map((o, i) => (
                     <button
                       key={o.ref}
@@ -121,7 +122,7 @@ export function RoomForm({ page, busy, act, onSearch, onClear }: { page: RoomPag
                       aria-pressed={!!v.on[o.ref]}
                       disabled={busy}
                       onClick={() => setOn(o.ref, !v.on[o.ref])}
-                      className={`h-8 min-w-9 cursor-pointer border-0 px-2.5 text-[13px] disabled:cursor-default ${i ? "border-l border-input" : ""} ${v.on[o.ref] ? "bg-primary font-semibold text-primary-foreground" : "bg-card"}`}
+                      className={`h-8 min-w-9 cursor-pointer border-0 px-2.5 text-[13px] max-[767px]:h-10 max-[767px]:min-w-0 max-[767px]:flex-1 max-[767px]:px-0 disabled:cursor-default ${i ? "border-l border-input" : ""} ${v.on[o.ref] ? "bg-primary font-semibold text-primary-foreground" : "bg-card"}`}
                     >
                       {o.label}
                     </button>

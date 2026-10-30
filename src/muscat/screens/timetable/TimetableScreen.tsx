@@ -1,3 +1,4 @@
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import { Button } from "@/ui/Button";
@@ -49,12 +50,13 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
   return (
     <div className="flex flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" label="前の年度" loading={moving && dir === -1} disabled={moving || noPrev} onClick={() => go(-1)}>‹</Button>
+        <div className="flex items-center gap-2 max-[767px]:[&>button]:size-9 max-[767px]:[&>button]:p-0">
+          <Button variant="ghost" label="前の年度" loading={moving && dir === -1} disabled={moving || noPrev} onClick={() => go(-1)}><IconChevronLeft size={18} /></Button>
           <span className="font-bold">{shownYear}年度</span>
-          <Button variant="ghost" label="次の年度" loading={moving && dir === 1} disabled={moving || noNext} onClick={() => go(1)}>›</Button>
+          <Button variant="ghost" label="次の年度" loading={moving && dir === 1} disabled={moving || noNext} onClick={() => go(1)}><IconChevronRight size={18} /></Button>
         </div>
-        <div role="tablist" className="flex overflow-hidden rounded-[4px] border border-input">
+        {/* 狭い画面は全幅等分の下線タブ */}
+        <div role="tablist" className="flex overflow-hidden rounded-[4px] border border-input max-[767px]:w-full max-[767px]:rounded-none max-[767px]:border-0 max-[767px]:border-b">
           {[1, 2, 3, 4].map((n) => (
             <button
               key={n}
@@ -62,7 +64,9 @@ export function TimetableScreen({ client, doc, year, term: term0, now: now0, ini
               role="tab"
               aria-selected={n === term}
               onClick={() => setTerm(n)}
-              className={`h-[30px] cursor-pointer border-0 px-3 text-sm ${n === term ? "bg-primary text-primary-foreground" : "bg-card text-foreground"} ${n > 1 ? "border-l border-input" : ""}`}
+              className={`h-[30px] cursor-pointer border-0 px-3 text-sm max-[767px]:h-10 max-[767px]:flex-1 max-[767px]:border-l-0 ${
+                n === term ? "bg-primary text-primary-foreground max-[767px]:bg-card max-[767px]:font-bold max-[767px]:text-primary max-[767px]:shadow-[inset_0_-2px_0_var(--color-primary)]" : "bg-card text-foreground"
+              } ${n > 1 ? "border-l border-input" : ""}`}
             >
               {`${n}学期`}
             </button>

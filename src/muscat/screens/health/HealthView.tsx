@@ -15,13 +15,15 @@ export function YearTable({ table }: { table: InfoTable }) {
   const keep = table.headers.map((h, j) => j === 0 || !!h || table.rows.some((r) => r[j]));
   const cols = keep.flatMap((k, j) => (k ? [j] : []));
   const cell = "border border-[#ECE9EF] px-2.5 py-1.5";
+  // 狭い画面は横にスクロールしても項目の列を左に残す(背景は不透明)
+  const pin = "max-[767px]:sticky max-[767px]:left-0 max-[767px]:z-[1]";
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-[13px] tabular-nums">
         <thead>
           <tr className="text-[12.5px]">
             {cols.map((j, n) => (
-              <th key={j} className={`${cell} font-semibold ${n === 0 ? "bg-[#FAF9FB] text-left text-muted-foreground" : n === 1 ? "border-primary bg-primary text-primary-foreground" : "bg-[#FAF9FB]"}`}>
+              <th key={j} className={`${cell} font-semibold ${n === 0 ? `${pin} bg-[#FAF9FB] text-left text-muted-foreground` : n === 1 ? "border-primary bg-primary text-primary-foreground" : "bg-[#FAF9FB]"}`}>
                 {table.headers[j]}
               </th>
             ))}
@@ -31,7 +33,7 @@ export function YearTable({ table }: { table: InfoTable }) {
           {table.rows.map((r, i) => (
             <tr key={i}>
               {cols.map((j, n) => (
-                <td key={j} className={`${cell} ${n === 0 ? "bg-[#FAF9FB] text-[12.5px] text-muted-foreground" : `text-center ${n === 1 ? "bg-[#F7F4FA] font-semibold" : ""}`} ${r[j] ? "" : "text-[#B8B2BF]"}`}>
+                <td key={j} className={`${cell} ${n === 0 ? `${pin} bg-[#FAF9FB] text-[12.5px] text-muted-foreground` : `text-center ${n === 1 ? "bg-[#F7F4FA] font-semibold" : ""}`} ${r[j] ? "" : "text-[#B8B2BF]"}`}>
                   {r[j] || "—"}
                 </td>
               ))}

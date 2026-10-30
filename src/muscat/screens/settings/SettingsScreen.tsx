@@ -28,7 +28,8 @@ function Section({ title, notes, footer, children }: { title: string; notes: str
         {children}
         {notes.map((n) => <p key={n} className="m-0 text-xs text-muted-foreground">{n}</p>)}
       </div>
-      {footer && <div className="flex justify-end gap-2 border-t border-[#ECE9EF] px-3.5 py-2.5">{footer}</div>}
+      {/* 狭い画面は保存を全幅(2 つあれば半々)・高さ 44px */}
+      {footer && <div className="flex justify-end gap-2 border-t border-[#ECE9EF] px-3.5 py-2.5 max-[767px]:*:h-11 max-[767px]:*:flex-1">{footer}</div>}
     </section>
   );
 }
@@ -182,7 +183,7 @@ export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?
       {status === "loading" && !page && <PageLoading />}
       {page && (
         <>
-          <div role="tablist" className="flex flex-wrap border-b border-border">
+          <div role="tablist" className="flex flex-wrap border-b border-border max-[767px]:flex-nowrap max-[767px]:overflow-x-auto">
             {page.tabs.map((t) => (
               <button
                 key={t.label}
@@ -192,7 +193,7 @@ export function SettingsScreen({ client, initial }: { client: MuscatClient; doc?
                 disabled={busy}
                 // 読み込み済みのタブは通信しないので、待つと待ち時間切れまで止まった(実機で確認)
                 onClick={() => !t.active && go((c) => c.press(t.ref), "タブを切り替えられませんでした")}
-                className={`cursor-pointer border-0 bg-transparent px-4 py-2.5 text-sm ${t.active ? "font-semibold text-primary shadow-[inset_0_-2px_0_var(--primary)]" : "text-muted-foreground hover:bg-muted"}`}
+                className={`cursor-pointer border-0 bg-transparent px-4 py-2.5 text-sm max-[767px]:h-10 max-[767px]:shrink-0 max-[767px]:whitespace-nowrap max-[767px]:py-0 ${t.active ? "font-semibold text-primary shadow-[inset_0_-2px_0_var(--primary)]" : "text-muted-foreground hover:bg-muted"}`}
               >
                 {t.label}
               </button>

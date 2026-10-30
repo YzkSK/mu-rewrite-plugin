@@ -35,7 +35,7 @@ const TABS: [GradeView, string][] = [
 function Settings({ filter, busy, cols, onCols, onApply }: { filter: GradeFilter; busy: boolean; cols: GradeCols; onCols: (c: GradeCols) => void; onApply: (f: GradeFilter) => void }) {
   const [draft, setDraft] = useState(filter);
   return (
-    <div className="grid grid-cols-[max-content_1fr_auto] items-center gap-x-4 gap-y-2 rounded-[4px] border border-border bg-card px-4 py-3">
+    <div className="grid grid-cols-[max-content_1fr_auto] items-center gap-x-4 gap-y-2 rounded-[4px] border border-border bg-card px-4 py-3 max-[767px]:grid-cols-1 max-[767px]:[&>button]:h-11 max-[767px]:[&>button]:w-full">
       {/* 狭い画面のリストには GPA 対象の列が無いので、列の設定は出さない */}
       <span className="text-xs text-muted-foreground max-[767px]:hidden">表示する列</span>
       <div className="col-span-2 flex flex-wrap gap-4 max-[767px]:hidden">
@@ -64,7 +64,7 @@ export function GradesScreen({ client, initial, initialView = "category", initia
       {grades && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <div role="tablist" className="flex h-8 overflow-hidden rounded-[4px] border border-input max-[767px]:w-full">
+            <div role="tablist" className="flex h-8 overflow-hidden rounded-[4px] border border-input max-[767px]:h-10 max-[767px]:w-full">
               {TABS.map(([v, label]) => (
                 <button
                   key={v}
