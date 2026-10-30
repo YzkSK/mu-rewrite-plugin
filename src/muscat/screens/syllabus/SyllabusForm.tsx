@@ -45,9 +45,9 @@ export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onCl
   // つながったボタン(選択中は primary)
   const joined = (label: string, g: "days" | "periods") =>
     page[g].length > 0 && (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 max-[767px]:w-full max-[767px]:flex-col max-[767px]:items-stretch max-[767px]:gap-1">
         <Label>{label}</Label>
-        <div className="inline-flex overflow-hidden rounded-[4px] border border-input">
+        <div className="inline-flex overflow-hidden rounded-[4px] border border-input max-[767px]:flex">
           {page[g].map((o, i) => {
             const on = v.picked[g].includes(o.label);
             return (
@@ -57,7 +57,7 @@ export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onCl
                 aria-pressed={on}
                 disabled={busy}
                 onClick={() => toggle(g, o.label)}
-                className={`h-8 min-w-9 cursor-pointer px-2.5 text-[13px] disabled:cursor-default ${i > 0 ? "border-l border-input" : ""} ${on ? "bg-primary text-primary-foreground" : "bg-card text-foreground"}`}
+                className={`h-8 min-w-9 cursor-pointer px-2.5 text-[13px] max-[767px]:h-10 max-[767px]:min-w-0 max-[767px]:flex-1 max-[767px]:px-0 disabled:cursor-default ${i > 0 ? "border-l border-input" : ""} ${on ? "bg-primary text-primary-foreground" : "bg-card text-foreground"}`}
               >
                 {o.label}
               </button>
@@ -94,13 +94,16 @@ export function SyllabusForm({ page, busy, act, showNote, onSearch, onNote, onCl
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-        <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] font-bold text-primary">
+        <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] font-bold text-primary max-[767px]:h-11">
           {`詳細条件 ${more ? "▴" : "▾"}`}
         </button>
         {showNote && <Button variant="secondary" disabled={busy} loading={act === "note"} onClick={onNote}>ふせんを貼った授業一覧</Button>}
         <span className="flex-1" />
-        <Button variant="secondary" disabled={busy} loading={act === "clear"} onClick={onClear}>条件をクリア</Button>
-        <Button disabled={busy} loading={act === "search"} onClick={search}>検索</Button>
+        {/* 狭い画面は 2 等分・高さ 44px */}
+        <div className="flex gap-2 max-[767px]:w-full max-[767px]:*:h-11 max-[767px]:*:flex-1">
+          <Button variant="secondary" disabled={busy} loading={act === "clear"} onClick={onClear}>条件をクリア</Button>
+          <Button disabled={busy} loading={act === "search"} onClick={search}>検索</Button>
+        </div>
       </div>
     </Card>
   );

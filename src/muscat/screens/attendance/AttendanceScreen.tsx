@@ -155,16 +155,17 @@ export function AttendanceScreen({ client, initial }: Props) {
   return (
     <div className="flex flex-col gap-3 p-4">
       {attendance && (
-        <div className={`${box} flex flex-wrap items-end gap-4`}>
-          <div className="flex flex-col gap-1">
+        // 狭い画面は 2 列(学期・基準日)+ 1 段下に 2 等分(出力)。欄は列いっぱいに広げる
+        <div className={`${box} flex flex-wrap items-end gap-4 max-[767px]:grid max-[767px]:grid-cols-2 max-[767px]:gap-3 max-[767px]:[&_[data-slot=native-select-wrapper]]:w-full max-[767px]:[&_button[aria-expanded]]:w-full max-[767px]:[&_button[aria-expanded]]:min-w-0 max-[767px]:[&_select]:min-w-0`}>
+          <div className="flex min-w-0 flex-col gap-1">
             <span className="text-xs text-muted-foreground">開講年度学期</span>
             <Select label="開講年度学期" value={attendance.termKey} options={options} disabled={loading} onChange={setTermKey} />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <span className="text-xs text-muted-foreground">出席率基準日</span>
             <DatePicker label="出席率基準日" value={attendance.baseDate} disabled={loading} onChange={setBaseDate} />
           </div>
-          <div className="ml-auto flex flex-wrap gap-2">
+          <div className="ml-auto flex flex-wrap gap-2 max-[767px]:col-span-2 max-[767px]:ml-0 max-[767px]:grid max-[767px]:grid-cols-2 max-[767px]:[&>button]:h-11 max-[767px]:[&>button]:w-full">
             {(["PDF", "Excel"] as const).map((t) => (
               <Button key={t} variant="secondary" disabled={loading || !attendance.exports.includes(t)} onClick={() => void exportFile(client, "出席確認", t)}>
                 {`${t} で出力`}
