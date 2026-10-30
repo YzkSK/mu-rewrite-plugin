@@ -27,12 +27,12 @@ export function NoticesToolbar(p: ToolbarProps) {
   ];
   return (
     <div className="flex flex-col gap-2.5 border-b border-border px-4 py-3">
-      <div className="flex flex-wrap gap-2">
-        <div className="min-w-[160px] flex-[2]"><TextInput label="お知らせを探す" placeholder="タイトル・本文で探す" value={p.draft} onChange={p.onDraft} onCommit={p.onCommit} /></div>
-        <div className="min-w-[140px] flex-1"><Select label="カテゴリ" value={p.category} options={options} onChange={p.onCategory} /></div>
+      <div className="flex flex-wrap gap-2 max-[767px]:flex-col">
+        <div className="min-w-[160px] flex-[2] max-[767px]:min-w-0"><TextInput label="お知らせを探す" placeholder="タイトル・本文で探す" value={p.draft} onChange={p.onDraft} onCommit={p.onCommit} /></div>
+        <div className="min-w-[140px] flex-1 max-[767px]:min-w-0"><Select label="カテゴリ" value={p.category} options={options} onChange={p.onCategory} /></div>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div role="tablist" aria-label="絞り込み" className="flex">
+        <div role="tablist" aria-label="絞り込み" className="flex max-[767px]:w-full">
           {FILTERS.map(([f, label], i) => (
             <button
               key={f}
@@ -40,7 +40,7 @@ export function NoticesToolbar(p: ToolbarProps) {
               role="tab"
               aria-selected={p.filter === f}
               onClick={() => p.onFilter(f)}
-              className={`h-8 cursor-pointer border px-3 text-[13px] ${i ? "-ml-px" : "rounded-l-[4px]"} ${i === FILTERS.length - 1 ? "rounded-r-[4px]" : ""} ${p.filter === f ? "relative border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"}`}
+              className={`h-8 cursor-pointer border px-3 text-[13px] max-[767px]:h-10 max-[767px]:flex-1 ${i ? "-ml-px" : "rounded-l-[4px]"} ${i === FILTERS.length - 1 ? "rounded-r-[4px]" : ""} ${p.filter === f ? "relative border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"}`}
             >
               {f === "unread" && p.unread ? `${label} ${p.unread}` : label}
             </button>
@@ -48,7 +48,7 @@ export function NoticesToolbar(p: ToolbarProps) {
         </div>
         {p.count != null ? <span className="text-[12.5px] text-muted-foreground">{`${p.count} 件`}</span> : null}
         <span className="flex-1" />
-        <button type="button" className={LINK} onClick={p.onAll}>すべて既読にする</button>
+        <button type="button" className={`${LINK} max-[767px]:h-9`} onClick={p.onAll}>すべて既読にする</button>
       </div>
     </div>
   );
@@ -85,7 +85,7 @@ export function NoticesRows({ rows, status, sel, more, onPick, onMore, onRetry }
                 type="button"
                 aria-current={it.uuid === sel ? "true" : undefined}
                 onClick={() => onPick(it.uuid)}
-                className={`grid w-full cursor-pointer grid-cols-[8px_1fr_auto] items-center gap-2.5 border-0 px-4 py-3 text-left text-inherit transition-colors ${it.uuid === sel ? "bg-sidebar-accent shadow-[inset_3px_0_0_var(--mu-primary)]" : "bg-transparent hover:bg-muted"}`}
+                className={`grid w-full cursor-pointer grid-cols-[8px_1fr_auto] items-center gap-2.5 border-0 px-4 py-3 text-left text-inherit transition-colors max-[767px]:min-h-11 ${it.uuid === sel ? "bg-sidebar-accent shadow-[inset_3px_0_0_var(--mu-primary)]" : "bg-transparent hover:bg-muted"}`}
               >
                 <span aria-hidden="true" className={`size-2 rounded-full ${unread ? "bg-primary" : ""}`} />
                 <span className="min-w-0">
@@ -98,7 +98,7 @@ export function NoticesRows({ rows, status, sel, more, onPick, onMore, onRetry }
           );
         })}
       </ul>
-      {more ? <button type="button" onClick={onMore} className="w-full cursor-pointer border-0 bg-transparent px-4 py-3 text-[13px] text-primary hover:bg-muted">さらに表示</button> : null}
+      {more ? <button type="button" onClick={onMore} className="w-full cursor-pointer border-0 bg-transparent px-4 py-3 text-[13px] text-primary hover:bg-muted max-[767px]:h-11">さらに表示</button> : null}
     </BusyOverlay>
   );
 }
