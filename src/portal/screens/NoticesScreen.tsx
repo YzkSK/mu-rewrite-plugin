@@ -4,7 +4,7 @@ import { readAllPath, unreadTotal, type FlatCategory } from "../lib/lib";
 import { NoticeDetail } from "./NoticeDetail";
 import { allScope, NoticesRows, NoticesToolbar, type Filter } from "./NoticesList";
 
-const PANEL = "min-w-0 overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground";
+const PANEL = "min-w-0 overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground max-[767px]:rounded-none max-[767px]:border-x-0";
 const SEARCH_MS = 400;
 
 /** すべて既読の確認(作りは SignOutDialog と同じ) */
@@ -126,7 +126,7 @@ export function NoticesScreen({ initialCategory = "" }: { initialCategory?: stri
   const markAll = () => fetchJson(readAllPath({ pinned: filter === "pinned", category })).then(() => { setConfirm(false); setReload((n) => n + 1); });
 
   return (
-    <div className="flex min-h-full items-start gap-4 px-5 py-4">
+    <div className="flex min-h-full items-start gap-4 px-5 py-4 max-[767px]:px-0">
       {confirm ? <ReadAllDialog scope={allScope(category, filter)} run={markAll} onClose={() => setConfirm(false)} /> : null}
       <section inert={confirm} aria-label="一覧" className={`${PANEL} flex-[1_1_0] ${showDetail ? "max-[767px]:hidden" : ""}`}>
         <NoticesToolbar
