@@ -5,7 +5,7 @@ import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
 import { commonmark, toggleLinkCommand, createCodeBlockCommand, insertHrCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from "@milkdown/kit/preset/commonmark";
 import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
-import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, type Icon } from "@tabler/icons-react";
+import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconDots, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, IconX, type Icon } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
@@ -14,7 +14,7 @@ import { isPlainDoc, plainDocJson, plainText } from "./mdEditor";
 import { Box } from "./parts";
 
 // 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
-const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] max-[767px]:text-[16px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
 // 書式ボタン。[見出し, アイコン, コマンド, 引数, 押下中と見なす mark/node の名前]
 const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?, string?][] = [
   ["太字", IconBold, toggleStrongCommand, undefined, "strong"],
@@ -30,6 +30,10 @@ const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?, string?][] = [
   ["元に戻す", IconArrowBackUp, undoCommand],
   ["やり直す", IconArrowForwardUp, redoCommand],
 ];
+// 狭い画面で常に出すボタン(残りは「その他」で出す)
+const MAIN = new Set(["太字", "斜体", "リンク", "見出し", "箇条書き", "番号付きリスト"]);
+const TOOL_BTN = "grid place-items-center rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:bg-muted aria-pressed:text-foreground max-[767px]:size-9 max-[767px]:p-0";
+const NOTE = "押すと保存して提出します(確定が要る課題は、このあと課題の画面で「提出を確定する」)";
 const count = (s: string) => Array.from(s.replace(/\s/g, "")).length;
 
 type FileRow = { id: number; name: string; size: number | null; pct?: number; error?: string; removing?: boolean };
@@ -84,7 +88,7 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
                 <span className="min-w-0 flex-1 truncate">{r.name}</span>
                 {r.size !== null ? <span className="text-muted-foreground">{formatSize(r.size)}</span> : null}
                 {r.removing ? <span className="text-muted-foreground">外しています…</span>
-                  : r.pct === undefined ? <button type="button" disabled={disabled} onClick={() => remove(r)} className="cursor-pointer border-0 bg-transparent p-0 text-primary hover:underline disabled:opacity-60">{r.error ? "消す" : "外す"}</button> : <span className="w-10 text-right text-muted-foreground">{`${r.pct}%`}</span>}
+                  : r.pct === undefined ? <button type="button" disabled={disabled} onClick={() => remove(r)} aria-label={r.error ? "消す" : "外す"} className="cursor-pointer border-0 bg-transparent p-0 text-primary hover:underline disabled:opacity-60 max-[767px]:grid max-[767px]:size-9 max-[767px]:place-items-center max-[767px]:text-muted-foreground"><span className="max-[767px]:hidden">{r.error ? "消す" : "外す"}</span><IconX size={18} className="min-[768px]:hidden" /></button> : <span className="w-10 text-right text-muted-foreground">{`${r.pct}%`}</span>}
               </div>
               {r.pct !== undefined ? <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${r.pct}%` }} /></div> : null}
               {r.error ? <span className="text-[12px] text-error">{r.error}</span> : null}
@@ -93,11 +97,11 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
           {rows && !rows.length ? <li className="px-4 py-2.5 text-[13px] text-muted-foreground">まだファイルがありません</li> : null}
         </ul>
         <div className="flex flex-col gap-1 px-4 py-3">
-          <label className={`inline-flex h-9 w-fit items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] ${busy ? "opacity-60" : "cursor-pointer hover:bg-muted"}`}>
+          <label className={`inline-flex h-9 w-fit items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] max-[767px]:h-11 ${busy ? "opacity-60" : "cursor-pointer hover:bg-muted"}`}>
             ファイルを選ぶ
             <input type="file" multiple hidden disabled={busy} onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
           </label>
-          <span className="text-[12px] text-muted-foreground">{`ここにドラッグ&ドロップもできます。${limitText(area)}`}</span>
+          <span className="text-[12px] text-muted-foreground"><span className="max-[767px]:hidden">ここにドラッグ&ドロップもできます。</span>{limitText(area)}</span>
           <span className="text-[12px] text-muted-foreground">外す・上げるは「提出する」を押すまで先生には見えません</span>
         </div>
       </Box>
@@ -181,6 +185,9 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<StatusRow[] | null | "loading" | undefined>(undefined);
   const back = `/mod/assign/view.php?id=${page.id}`;
+  const due = page.dates.find((d) => d.label === "期限") ?? page.dates.find((d) => d.label === "終了") ?? page.dates.at(-1);
+  const left = page.rows.find((r) => r.label === "残り時間");
+  const [more, setMore] = useState(false); // 狭い画面で書式ボタンの残りを出す
 
   const send = () => {
     if (form.text !== null && !editor.current) return; // エディタの準備前
@@ -210,8 +217,10 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4 p-4">
+    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4 p-4 max-[767px]:pb-24">
       <AssignHead page={page} title={`${page.title}を提出`} />
+      {/* 狭い画面は期限の箱がエディタの下に回るので、上に 1 行で出す */}
+      {due ? <p className={`m-0 text-[13px] min-[768px]:hidden ${/overdue|late/.test(left?.cls ?? "") ? "font-bold text-error" : "text-muted-foreground"}`}>{`${due.label}: ${due.value}${left?.text ? `(${left.text})` : ""}`}</p> : null}
       <div className="flex flex-wrap items-start gap-4">
         <div className="flex min-w-0 flex-[2_1_380px] flex-col gap-3">
           {form.text !== null
@@ -233,9 +242,10 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                         editor.current?.action(callCommand(cmd.key, arg));
                         refresh();
                       }}
-                      className="rounded-[4px] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 aria-pressed:bg-muted aria-pressed:text-foreground"
+                      className={`${TOOL_BTN} ${MAIN.has(label) || more ? "" : "max-[767px]:hidden"}`}
                     ><I size={16} /></button>
                   ))}
+                  <button type="button" title="その他" aria-label="その他" aria-expanded={more} onMouseDown={(e) => e.preventDefault()} onClick={() => setMore(!more)} className={`${TOOL_BTN} min-[768px]:hidden`}><IconDots size={16} /></button>
                 {link !== null ? (
                   <form
                     role="dialog"
@@ -270,7 +280,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                           placeholder={ph}
                           value={link[key as "text" | "href"]}
                           onChange={(e) => setLink({ ...link, [key!]: e.target.value })}
-                          className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm text-foreground"
+                          className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm text-foreground max-[767px]:h-10 max-[767px]:text-[16px]"
                         />
                       </label>
                     ))}
@@ -289,7 +299,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
             : null}
           {form.files ? <FilesBox area={form.files} disabled={busy} onUploading={setUploading} /> : null}
         </div>
-        <div className="w-full flex-[1_1_220px]">
+        <div className="w-full flex-[1_1_220px] max-[767px]:hidden">
           <Box title="期限">
             <div className="flex flex-col gap-1 px-4 py-3">
               {page.dates.length
@@ -316,10 +326,12 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
           </div>
         )
         : null}
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" disabled={busy || uploading} onClick={send} className="h-9 cursor-pointer rounded-[4px] bg-primary px-5 text-[13.5px] text-primary-foreground hover:opacity-90 disabled:cursor-default disabled:opacity-60">{busy ? "提出しています…" : "提出する"}</button>
-        <a className="inline-flex h-9 items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] hover:bg-muted" href={back}>やめる</a>
-        <span className="text-[12px] text-muted-foreground">押すと保存して提出します(確定が要る課題は、このあと課題の画面で「提出を確定する」)</span>
+      <p className="m-0 text-[12px] text-muted-foreground min-[768px]:hidden">{NOTE}</p>
+      {/* 狭い画面は画面下に固定の 2 等分 */}
+      <div className="flex flex-wrap items-center gap-3 max-[767px]:fixed max-[767px]:inset-x-0 max-[767px]:bottom-0 max-[767px]:z-30 max-[767px]:flex-nowrap max-[767px]:gap-2 max-[767px]:border-t max-[767px]:border-border max-[767px]:bg-card max-[767px]:p-2">
+        <button type="button" disabled={busy || uploading} onClick={send} className="h-9 cursor-pointer rounded-[4px] bg-primary px-5 text-[13.5px] text-primary-foreground hover:opacity-90 disabled:cursor-default disabled:opacity-60 max-[767px]:h-11 max-[767px]:flex-1">{busy ? "提出しています…" : "提出する"}</button>
+        <a className="inline-flex h-9 items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] hover:bg-muted max-[767px]:h-11 max-[767px]:flex-1 max-[767px]:justify-center" href={back}>やめる</a>
+        <span className="text-[12px] text-muted-foreground max-[767px]:hidden">{NOTE}</span>
       </div>
     </div>
   );

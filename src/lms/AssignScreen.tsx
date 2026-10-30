@@ -20,10 +20,14 @@ export function AssignHead({ page, title }: { page: AssignPage; title: string })
   );
 }
 
+/** カードの下の帯の主なボタン。狭い画面は全幅 44px */
+export const BTN = "inline-flex h-9 items-center rounded-[4px] bg-primary px-4 text-[13.5px] text-primary-foreground hover:opacity-90 max-[767px]:h-11 max-[767px]:justify-center";
+
 export const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="min-w-0 flex-1 basis-[180px] px-4 py-3">
+  // 狭い画面は 1 枠 = 1 行(左にラベル、右に値)
+  <div className="min-w-0 flex-1 basis-[180px] px-4 py-3 max-[767px]:flex max-[767px]:basis-auto max-[767px]:items-baseline max-[767px]:justify-between max-[767px]:gap-3">
     <p className="m-0 text-[12px] text-muted-foreground">{label}</p>
-    <p className="m-0 mt-0.5 text-[13.5px] [overflow-wrap:anywhere]">{children}</p>
+    <p className="m-0 mt-0.5 text-[13.5px] [overflow-wrap:anywhere] max-[767px]:mt-0 max-[767px]:text-right">{children}</p>
   </div>
 );
 
@@ -40,7 +44,7 @@ export function AssignScreen({ page }: { page: AssignPage }) {
     <div className="mx-auto flex w-full max-w-[900px] flex-col gap-4 p-4">
       <AssignHead page={page} title={page.title} />
       <div className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
-        <div className="flex flex-wrap divide-x divide-border">
+        <div className="flex flex-wrap divide-x divide-border max-[767px]:flex-col max-[767px]:divide-x-0 max-[767px]:divide-y">
           <Cell label="期限">
             {due ? due.value : "-"}
             {left?.text ? <span className={`block text-[12px] ${/overdue|late/.test(left.cls) ? "font-bold text-error" : "text-muted-foreground"}`}>{left.text}</span> : null}
@@ -50,15 +54,15 @@ export function AssignScreen({ page }: { page: AssignPage }) {
         </div>
         {(page.canSubmit || page.needsFinal) && page.id !== null
           ? (
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-muted px-4 py-2.5">
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-muted px-4 py-2.5 max-[767px]:flex-col max-[767px]:items-stretch">
               {/* 「提出ボタンを押させる」設定の課題は、保存しただけでは下書き。確定は元の画面の確認(提出の誓約など)に任せる */}
               {page.needsFinal ? (
                 <>
                   <span className="text-[12.5px] text-error">まだ下書きです。確定しないと提出になりません</span>
-                  <a className="inline-flex h-9 items-center rounded-[4px] bg-primary px-4 text-[13.5px] text-primary-foreground hover:opacity-90" href={`/mod/assign/view.php?id=${page.id}&action=submit`}>提出を確定する</a>
+                  <a className={BTN} href={`/mod/assign/view.php?id=${page.id}&action=submit`}>提出を確定する</a>
                 </>
               ) : null}
-              {page.canSubmit ? <a className="inline-flex h-9 items-center rounded-[4px] bg-primary px-4 text-[13.5px] text-primary-foreground hover:opacity-90" href={`/mod/assign/view.php?id=${page.id}&action=editsubmission`}>{submitted ? "提出を直す" : "提出する"}</a> : null}
+              {page.canSubmit ? <a className={BTN} href={`/mod/assign/view.php?id=${page.id}&action=editsubmission`}>{submitted ? "提出を直す" : "提出する"}</a> : null}
             </div>
           )
           : null}
@@ -75,8 +79,11 @@ export function AssignScreen({ page }: { page: AssignPage }) {
             <ul className="m-0 list-none p-0">
               {more.map((r) => (
                 <Row key={r.label}>
-                  <span className="w-[10rem] flex-none text-[12.5px] text-muted-foreground">{r.label}</span>
-                  <span className="min-w-0 flex-1 text-[12.5px] [overflow-wrap:anywhere]">{r.text}</span>
+                  {/* 狭い画面はラベルを値の上に積む */}
+                  <div className="flex min-w-0 flex-1 gap-3 max-[767px]:flex-col max-[767px]:gap-0.5">
+                    <span className="w-[10rem] flex-none text-[12.5px] text-muted-foreground max-[767px]:w-auto">{r.label}</span>
+                    <span className="min-w-0 flex-1 text-[12.5px] [overflow-wrap:anywhere]">{r.text}</span>
+                  </div>
                 </Row>
               ))}
             </ul>

@@ -62,10 +62,11 @@ export function SearchScreen({ search, initial }: { search: string; initial?: Se
   };
   return (
     <div className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4">
-      <form onSubmit={go} role="search">
-        <input type="search" aria-label="検索語" placeholder="コース・教材を探す" value={text} onChange={(e) => setText(e.target.value)} className="h-10 w-full rounded-[4px] border border-border bg-card px-3 text-[14px]" />
+      <form onSubmit={go} role="search" className="flex gap-2">
+        <input type="search" aria-label="検索語" placeholder="コース・教材を探す" value={text} onChange={(e) => setText(e.target.value)} className="h-10 min-w-0 flex-1 rounded-[4px] border border-border bg-card px-3 text-[14px] max-[767px]:h-11 max-[767px]:text-[16px]" />
+        <button type="submit" className="h-10 flex-none cursor-pointer rounded-[4px] bg-primary px-4 text-[13.5px] text-primary-foreground hover:opacity-90 max-[767px]:h-11">検索</button>
       </form>
-      {q ? <Results key={q} q={q} initial={q === first ? initial : undefined} /> : <Box title="検索"><Note>検索語を入れて Enter を押してください</Note></Box>}
+      {q ? <Results key={q} q={q} initial={q === first ? initial : undefined} /> : <Box title="検索"><Note>検索語を入れて検索を押してください</Note></Box>}
     </div>
   );
 }

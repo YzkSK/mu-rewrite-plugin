@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IconChevronLeft, IconChevronRight, IconDownload, IconMinus, IconPlus, IconX } from "@tabler/icons-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { PageLoading } from "@/ui/PageLoading";
 import { Note } from "./parts";
@@ -91,7 +92,7 @@ export function PdfViewer({ name, url, onClose }: { name: string; url: string; o
   // 最初は 1 ページ目の幅を画面の幅に合わせる
   const fit = useCallback(() => {
     if (!doc || !scroller.current) return;
-    void doc.getPage(1).then((p) => setScale(Math.min(2, (scroller.current!.clientWidth - 32) / p.getViewport({ scale: 1 }).width)));
+    void doc.getPage(1).then((p) => setScale(Math.min(2, (scroller.current!.clientWidth - (window.innerWidth < 768 ? 16 : 32)) / p.getViewport({ scale: 1 }).width)));
   }, [doc]);
   useEffect(() => { if (doc && scale === null) fit(); }, [doc, scale, fit]);
 
@@ -106,30 +107,32 @@ export function PdfViewer({ name, url, onClose }: { name: string; url: string; o
     const cur = s ?? 1;
     return dir > 0 ? ZOOMS.find((z) => z > cur + 0.01) ?? cur : [...ZOOMS].reverse().find((z) => z < cur - 0.01) ?? cur;
   });
-  const btn = "inline-flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-[4px] border border-border bg-card px-2 text-[13px] text-foreground hover:bg-muted disabled:cursor-default disabled:opacity-50";
+  const btn = "inline-flex h-8 min-w-8 max-[767px]:h-9 max-[767px]:min-w-9 cursor-pointer items-center justify-center rounded-[4px] border border-border bg-card px-2 text-[13px] text-foreground hover:bg-muted disabled:cursor-default disabled:opacity-50";
   const pages = doc?.numPages ?? 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[rgb(34_27_43/.55)] p-4 max-[639px]:p-0" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={`${name} のプレビュー`} className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden rounded-[4px] bg-card shadow-lg max-[639px]:rounded-none">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
-          <h2 className="m-0 min-w-0 flex-1 text-sm font-semibold [overflow-wrap:anywhere]">{name}</h2>
-          <a className={btn} href={url}>ダウンロード</a>
-          <button type="button" className={btn} onClick={onClose}>閉じる</button>
+    <div className="fixed inset-0 z-50 flex flex-col bg-[rgb(34_27_43/.55)] p-4 max-[767px]:p-0" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-label={`${name} のプレビュー`} className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden rounded-[4px] bg-card shadow-lg max-[767px]:rounded-none">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 max-[767px]:flex-nowrap max-[767px]:px-2">
+          <h2 className="m-0 min-w-0 flex-1 text-sm font-semibold [overflow-wrap:anywhere] max-[767px]:truncate max-[767px]:px-2">{name}</h2>
+          {/* 狭い画面は文字をやめてアイコンだけ */}
+          <a className={btn} href={url} aria-label="ダウンロード"><span className="max-[767px]:hidden">ダウンロード</span><IconDownload size={18} className="min-[768px]:hidden" /></a>
+          <button type="button" className={btn} onClick={onClose} aria-label="閉じる"><span className="max-[767px]:hidden">閉じる</span><IconX size={18} className="min-[768px]:hidden" /></button>
         </div>
         {doc ? (
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-muted px-4 py-1.5 text-[13px]">
-            <button type="button" className={btn} aria-label="前のページ" disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>
+          // 狭い画面はページ送りと拡大縮小を画面下の 1 段に回す
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-muted px-4 py-1.5 text-[13px] max-[767px]:order-last max-[767px]:justify-center max-[767px]:border-b-0 max-[767px]:border-t max-[767px]:px-2">
+            <button type="button" className={btn} aria-label="前のページ" disabled={page <= 1} onClick={() => go(page - 1)}><IconChevronLeft size={18} /></button>
             <span className="min-w-16 text-center tabular-nums">{`${page} / ${pages}`}</span>
-            <button type="button" className={btn} aria-label="次のページ" disabled={page >= pages} onClick={() => go(page + 1)}>›</button>
+            <button type="button" className={btn} aria-label="次のページ" disabled={page >= pages} onClick={() => go(page + 1)}><IconChevronRight size={18} /></button>
             <span className="mx-2 h-5 w-px bg-border" />
-            <button type="button" className={btn} aria-label="縮小" onClick={() => zoom(-1)}>−</button>
+            <button type="button" className={btn} aria-label="縮小" onClick={() => zoom(-1)}><IconMinus size={18} /></button>
             <span className="min-w-12 text-center tabular-nums">{`${Math.round((scale ?? 1) * 100)}%`}</span>
-            <button type="button" className={btn} aria-label="拡大" onClick={() => zoom(1)}>+</button>
-            <button type="button" className={btn} onClick={fit}>幅に合わせる</button>
+            <button type="button" className={btn} aria-label="拡大" onClick={() => zoom(1)}><IconPlus size={18} /></button>
+            <button type="button" className={`${btn} max-[767px]:hidden`} onClick={fit}>幅に合わせる</button>
           </div>
         ) : null}
-        <div ref={(el) => { scroller.current = el; setRoot(el); }} className="min-h-0 flex-1 overflow-auto bg-[#E7E4EB] p-4">
+        <div ref={(el) => { scroller.current = el; setRoot(el); }} className="min-h-0 flex-1 overflow-auto bg-[#E7E4EB] p-4 max-[767px]:p-2">
           {failed ? <Note>プレビューを読み込めませんでした。「ダウンロード」から開いてください</Note>
             : !doc || scale === null ? <PageLoading title={name} />
             : (

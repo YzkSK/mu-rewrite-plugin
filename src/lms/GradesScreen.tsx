@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
@@ -20,7 +21,21 @@ function Detail({ d }: { d: GradeDetail }) {
         </p>
       ) : null}
       {!d.items.length ? <Note>評定の項目がありません</Note> : (
-        <div className="overflow-x-auto">
+        <>
+        {/* 狭い画面は表をやめて項目ごとの一覧に */}
+        <ul className="m-0 list-none p-0 min-[768px]:hidden">
+          {d.items.map((i, k) => (
+            <li key={k} className="border-b border-border last:border-b-0">
+              <div className="flex items-baseline justify-between gap-3 px-4 pt-2.5 text-[13px]">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{i.name}</span>
+                <span className="flex-none font-semibold">{i.grade || "-"}</span>
+              </div>
+              <p className="m-0 px-4 pb-2.5 pt-0.5 text-[12px] text-muted-foreground">{[i.kind, d.showPercent && i.percent, d.showContrib && i.contrib && `寄与 ${i.contrib}`].filter(Boolean).join("、")}</p>
+              {i.feedback ? <p className="m-0 bg-muted px-4 py-2 text-[12.5px] text-muted-foreground [overflow-wrap:anywhere]">{i.feedback}</p> : null}
+            </li>
+          ))}
+        </ul>
+        <div className="overflow-x-auto max-[767px]:hidden">
           <table className="w-full min-w-[480px] border-collapse">
             <thead>
               <tr>
@@ -42,6 +57,7 @@ function Detail({ d }: { d: GradeDetail }) {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </>
   );
@@ -59,6 +75,7 @@ export function GradesScreen({ list: first, id: firstId, detail: firstDetail }: 
   const [listFailed, setListFailed] = useState(false);
   const [only, setOnly] = useState(true);
   const [id, setId] = useState<number | null>(firstId);
+  const [open, setOpen] = useState(firstId !== null); // 狭い画面で中身を重ねているか(コースの評定のページは最初から開く)
   const [detail, setDetail] = useState<GradeDetail | null>(firstDetail ?? null);
   const [detailFailed, setDetailFailed] = useState(false);
 
@@ -90,6 +107,7 @@ export function GradesScreen({ list: first, id: firstId, detail: firstDetail }: 
 
   const pick = (c: number) => {
     setId(c);
+    setOpen(true);
     try { history.replaceState(null, "", userUrl(c)); } catch { /* 書き換えられなくても画面は動く */ }
   };
 
@@ -102,14 +120,14 @@ export function GradesScreen({ list: first, id: firstId, detail: firstDetail }: 
     <div className="mx-auto grid w-full max-w-[1200px] items-start gap-4 p-4 min-[800px]:grid-cols-[300px_minmax(0,1fr)]">
       <div className="min-w-0">
         <Box title="コース">
-          <label className="flex items-center gap-2 border-b border-border px-4 py-2 text-[12.5px] text-muted-foreground">
+          <label className="flex items-center gap-2 border-b border-border px-4 py-2 text-[12.5px] text-muted-foreground max-[767px]:min-h-11">
             <input type="checkbox" checked={only} onChange={(e) => setOnly(e.target.checked)} />
             評定のあるコースだけ
           </label>
           <ul className="m-0 list-none p-0">
             {shown.map((c) => (
               <li key={c.id} className="border-b border-border last:border-b-0">
-                <button type="button" aria-current={c.id === current ? "true" : undefined} onClick={() => pick(c.id)} className={`flex w-full cursor-pointer items-baseline justify-between gap-3 px-4 py-2 text-left text-[13px] hover:bg-muted ${c.id === current ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" : ""}`}>
+                <button type="button" aria-current={c.id === current ? "true" : undefined} onClick={() => pick(c.id)} className={`flex w-full cursor-pointer items-baseline justify-between gap-3 px-4 py-2 text-left text-[13px] hover:bg-muted max-[767px]:min-h-11 ${c.id === current ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" : ""}`}>
                   <span className="min-w-0 [overflow-wrap:anywhere]">{c.name}</span>
                   <span className="flex-none text-muted-foreground">{c.grade || "-"}</span>
                 </button>
@@ -118,12 +136,18 @@ export function GradesScreen({ list: first, id: firstId, detail: firstDetail }: 
           </ul>
         </Box>
       </div>
-      <div className="min-w-0">
-        <Box title={list.find((c) => c.id === current)?.name ?? "評定"}>
-          {detailFailed ? <div className="p-4"><ErrorNotice title="読み込めませんでした" message="評定を取得できませんでした。" onRetry={current === null ? undefined : () => loadDetail(current)} /></div>
-            : !detail ? <PageLoading title="評定" />
-            : <Detail d={detail} />}
-        </Box>
+      {/* 狭い画面は、コースを選んだら中身を画面全体に重ねる */}
+      <div className={`min-w-0 ${open ? "max-[767px]:fixed max-[767px]:inset-0 max-[767px]:z-50 max-[767px]:overflow-y-auto max-[767px]:bg-background" : "max-[767px]:hidden"}`}>
+        <div className="sticky top-0 z-10 border-b border-border bg-card min-[768px]:hidden">
+          <button type="button" onClick={() => setOpen(false)} className="flex h-11 w-full cursor-pointer items-center gap-1 px-3 text-left text-[13.5px] text-primary"><IconChevronLeft size={18} />コース</button>
+        </div>
+        <div className="max-[767px]:p-4">
+          <Box title={list.find((c) => c.id === current)?.name ?? "評定"}>
+            {detailFailed ? <div className="p-4"><ErrorNotice title="読み込めませんでした" message="評定を取得できませんでした。" onRetry={current === null ? undefined : () => loadDetail(current)} /></div>
+              : !detail ? <PageLoading title="評定" />
+              : <Detail d={detail} />}
+          </Box>
+        </div>
       </div>
     </div>
   );
