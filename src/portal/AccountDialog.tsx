@@ -7,7 +7,7 @@ import { fmtFull } from "./lib/lib";
 
 type Tab = "info" | "device" | "log";
 
-const ACTIVE_TAB = "bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--mu-primary)] max-sm:shadow-[inset_0_-3px_0_var(--mu-primary)]";
+const ACTIVE_TAB = "bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-[inset_3px_0_0_var(--mu-primary)] max-[767px]:shadow-[inset_0_-3px_0_var(--mu-primary)]";
 const TH = "border-b border-border bg-muted px-3 py-2 text-left text-[12.5px] font-semibold whitespace-nowrap text-muted-foreground";
 // 最後の列(摘要)だけ折り返す。ほかは「サイン/イン」のように途中で切れた(実機で確認)
 const TD = "border-b border-border px-3 py-2 align-top text-[13.5px] whitespace-nowrap last:whitespace-normal";
@@ -64,7 +64,7 @@ function InfoTab() {
   return (
     <dl className="m-0 border-t border-l border-border">
       {st.data!.map((r, i) => (
-        <div key={i} className="grid grid-cols-[160px_1fr] max-sm:grid-cols-[110px_1fr]">
+        <div key={i} className="grid grid-cols-[160px_1fr] max-[767px]:grid-cols-[110px_1fr]">
           <dt className="border-r border-b border-border bg-muted px-3 py-2 text-[12.5px] text-muted-foreground">{r.label}</dt>
           <dd className="m-0 border-r border-b border-border px-3 py-2 text-[13.5px] break-words whitespace-pre-line">
             {r.value || <span className="text-muted-foreground">登録されていません</span>}
@@ -76,8 +76,8 @@ function InfoTab() {
 }
 
 /** 1 ページ目を読み、「さらに表示」で次を足す表。横にはみ出したら表の箱の中で流す */
-function PagedTable<T>({ load, head, row, empty, note, foot }: {
-  load: (page: number) => Promise<Paged<T>>; head: string[]; row: (x: T) => ReactNode[]; empty: string; note?: ReactNode; foot?: ReactNode;
+function PagedTable<T>({ load, head, row, card, empty, note, foot }: {
+  load: (page: number) => Promise<Paged<T>>; head: string[]; row: (x: T) => ReactNode[]; card: (x: T, cells: ReactNode[]) => ReactNode; empty: string; note?: ReactNode; foot?: ReactNode;
 }) {
   const [rows, setRows] = useState<T[]>([]);
   const [page, setPage] = useState(1);
@@ -95,16 +95,22 @@ function PagedTable<T>({ load, head, row, empty, note, foot }: {
     <div className="flex flex-col gap-3">
       {note ? <p className="m-0 text-[13px] text-muted-foreground">{note}</p> : null}
       {rows.length ? (
-        <div className="overflow-x-auto rounded-[4px] border border-border">
-          <table className="w-full border-collapse">
-            <thead><tr>{head.map((h) => <th key={h} className={TH}>{h}</th>)}</tr></thead>
-            <tbody>{rows.map((x, i) => <tr key={i}>{row(x).map((c, j) => <td key={j} className={TD}>{c}</td>)}</tr>)}</tbody>
-          </table>
-        </div>
+        <>
+          <div className="overflow-x-auto rounded-[4px] border border-border max-[767px]:hidden">
+            <table className="w-full border-collapse">
+              <thead><tr>{head.map((h) => <th key={h} className={TH}>{h}</th>)}</tr></thead>
+              <tbody>{rows.map((x, i) => <tr key={i}>{row(x).map((c, j) => <td key={j} className={TD}>{c}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+          {/* 狭い画面は表をやめて 2 行の一覧にする */}
+          <ul className="m-0 list-none rounded-[4px] border border-border p-0 min-[768px]:hidden">
+            {rows.map((x, i) => <li key={i} className="min-h-11 border-b border-border px-3 py-2 last:border-b-0">{card(x, row(x))}</li>)}
+          </ul>
+        </>
       ) : <p className="m-0 text-[13px] text-muted-foreground">{empty}</p>}
       {state === "error" ? <ErrorNotice title="読み込めませんでした" message="" onRetry={() => go(page + 1)} /> : null}
       {page < total && state === "ok" ? (
-        <div><button type="button" onClick={() => go(page + 1)} className="h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted">さらに表示</button></div>
+        <div><button type="button" onClick={() => go(page + 1)} className="h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted max-[767px]:h-11">さらに表示</button></div>
       ) : null}
       {state === "loading" ? <Center /> : null}
       {foot}
@@ -112,7 +118,7 @@ function PagedTable<T>({ load, head, row, empty, note, foot }: {
   );
 }
 
-const BTN = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] whitespace-nowrap hover:bg-muted disabled:cursor-default disabled:opacity-60";
+const BTN = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] whitespace-nowrap hover:bg-muted disabled:cursor-default disabled:opacity-60 max-[767px]:h-11";
 
 /** 登録デバイス。サインアウトは押すと確認の行に替わり、もう一度押して実行(ask: "all" か端末の id) */
 function DevicesTab() {
@@ -134,6 +140,15 @@ function DevicesTab() {
   );
   return (
     <PagedTable<DeviceItem> key={n} load={fetchDevices} head={["登録日", "端末の種類", "操作"]} empty="登録されている端末はありません"
+      card={(d, c) => (
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[13.5px]">{lbl(DEVICE, d.device_type)}</div>
+            <div className="text-[12px] text-muted-foreground">{when(d.created_at)}</div>
+          </div>
+          <div className="flex-none">{c[2]}</div>
+        </div>
+      )}
       note="端末をなくしたときや使わなくなったときは、その端末をサインアウトしてください。"
       row={(d) => [when(d.created_at), lbl(DEVICE, d.device_type),
         ask === String(d.id) ? confirm("この端末をサインアウトしますか?", () => deleteDevice(d.id))
@@ -169,17 +184,17 @@ export function AccountDialog({ userName, onClose }: { userName: string; onClose
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(34_27_43/.35)]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div role="dialog" aria-modal="true" aria-labelledby="mu-acct-title"
-        className="flex max-h-[calc(100vh-64px)] w-[min(880px,calc(100vw-32px))] flex-col rounded-[4px] border border-border bg-card text-card-foreground shadow-lg">
+        className="flex max-h-[calc(100vh-64px)] w-[min(880px,calc(100vw-32px))] flex-col rounded-[4px] border border-border bg-card text-card-foreground shadow-lg max-[767px]:h-full max-[767px]:max-h-none max-[767px]:w-full max-[767px]:rounded-none max-[767px]:border-0">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h2 id="mu-acct-title" className="m-0 text-[15px] font-bold">アカウントとセキュリティ</h2>
           <button ref={closeBtn} type="button" aria-label="閉じる" onClick={onClose}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-[4px] border border-border bg-card hover:bg-muted"><IconX className="size-4" /></button>
+            className="flex size-8 cursor-pointer items-center justify-center rounded-[4px] border border-border bg-card hover:bg-muted max-[767px]:size-9 max-[767px]:border-0 max-[767px]:bg-transparent"><IconX className="size-4" /></button>
         </div>
-        <div className="flex min-h-0 flex-1 max-sm:flex-col">
-          <div role="tablist" aria-orientation="vertical" className="flex w-52 flex-none flex-col border-r border-border max-sm:w-auto max-sm:flex-row max-sm:overflow-x-auto max-sm:border-r-0 max-sm:border-b">
+        <div className="flex min-h-0 flex-1 max-[767px]:flex-col">
+          <div role="tablist" aria-orientation="vertical" className="flex w-52 flex-none flex-col border-r border-border max-[767px]:w-auto max-[767px]:flex-row max-[767px]:overflow-x-auto max-[767px]:border-r-0 max-[767px]:border-b">
             {tabs.map(([t, label]) => (
               <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => pick(t)}
-                className={`h-10 cursor-pointer px-5 text-left text-[13.5px] whitespace-nowrap hover:bg-muted max-sm:px-4 ${tab === t ? ACTIVE_TAB : ""}`}>{label}</button>
+                className={`h-10 cursor-pointer px-5 text-left text-[13.5px] whitespace-nowrap hover:bg-muted max-[767px]:px-4 ${tab === t ? ACTIVE_TAB : ""}`}>{label}</button>
             ))}
           </div>
           <div className="min-w-0 flex-1 overflow-auto p-5">
@@ -192,6 +207,12 @@ export function AccountDialog({ userName, onClose }: { userName: string; onClose
             {seen.includes("log") ? (
               <div className={show("log")}>
                 <PagedTable<LogItem> load={fetchActionLog} head={["記録日時", "種別", "端末", "接続元", "摘要"]} empty="記録はありません"
+                  card={(_, c) => (
+                    <>
+                      <div className="text-[13.5px]">{[c[1], c[2]].filter(Boolean).join("　")}</div>
+                      <div className="text-[12px] text-muted-foreground">{[c[0], c[3]].filter(Boolean).join("　")}</div>
+                    </>
+                  )}
                   row={(l) => [when(l.created_at), lbl(ACTION, l.action), [lbl(KIND, l.type), lbl(PLATFORM, l.platform)].filter(Boolean).join(" / "), (l.remote_address ?? "").split(",")[0]!.trim(), summary(l.description)]} />
               </div>
             ) : null}
