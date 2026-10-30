@@ -10,7 +10,7 @@ const ITEMS: { title: string; href: string; key?: Active }[] = [
   { title: "成績", href: "/grade/report/overview/index.php", key: "grades" },
   { title: "メッセージ", href: "/message/index.php", key: "messages" },
 ];
-const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
+const FOOT = `${MB} h-8 max-[767px]:h-10 rounded-none px-5 text-[13px] text-muted-foreground`;
 const ROW = `${MB} ${ACTIVE} h-10 rounded-none px-5 text-sm`;
 
 /** 左の一覧。どれも普通のリンク(全画面の遷移)で、今の画面の項目だけ強調する。開閉・幅・押し出しは App(Sidebar)の仕事。 */

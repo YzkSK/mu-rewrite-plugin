@@ -20,7 +20,7 @@ export function ErrorToast() {
   }, [shown]);
   if (!shown) return null;
   return (
-    <div role="alert" className="fixed right-6 bottom-6 z-50 flex max-w-[420px] items-start gap-3 rounded-[4px] border border-[#e7b9b5] bg-[#fbefee] px-4 py-3 shadow-sm">
+    <div role="alert" className="fixed right-6 bottom-6 z-50 flex max-w-[420px] items-start max-[767px]:inset-x-3 max-[767px]:bottom-3 max-[767px]:max-w-none gap-3 rounded-[4px] border border-[#e7b9b5] bg-[#fbefee] px-4 py-3 shadow-sm">
       <div className="flex min-w-0 flex-col gap-1">
         <p className="m-0 text-sm font-semibold text-[#8c1d17]">{shown.title}</p>
         {shown.message && <p className="m-0 text-[13px] text-foreground">{shown.message}</p>}

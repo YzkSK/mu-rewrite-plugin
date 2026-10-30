@@ -28,7 +28,7 @@ function Node({ node, slug, depth, onPick }: { node: PageNode; slug: string; dep
   const cur = !ext && node.slug === slug;
   const [open, setOpen] = useState(() => hasCur(node, slug)); // いまのページを含む枠は開いておく
   if (ext && !isHttp(ext)) return null;
-  const cls = `${MB} ${ACTIVE} rounded-none ${depth ? "h-8 pr-10 text-[13px]" : "h-10 pr-10 text-sm"}`;
+  const cls = `${MB} ${ACTIVE} rounded-none ${depth ? "h-8 pr-10 text-[13px] max-[767px]:h-10" : "h-10 pr-10 text-sm"}`;
   const pad = depth ? { paddingLeft: `${1.25 + depth * 1}rem` } : undefined; // pl-9 相当から、深さごとに 1rem
   return (
     <SidebarMenuItem>
@@ -53,8 +53,7 @@ function Node({ node, slug, depth, onPick }: { node: PageNode; slug: string; dep
             aria-label={`${node.title}の中身を開閉`}
             aria-expanded={open}
             onClick={() => setOpen(!open)}
-            className="absolute top-0 right-2 flex size-8 cursor-pointer items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted"
-            style={{ height: depth ? "2rem" : "2.5rem" }}
+            className={`absolute top-0 right-2 flex w-8 max-[767px]:w-10 ${depth ? "h-8 max-[767px]:h-10" : "h-10"} cursor-pointer items-center justify-center rounded-[4px] text-muted-foreground hover:bg-muted`}
           >
             <IconChevronDown className={`size-4 transition-transform duration-200 ${open ? "" : "-rotate-90"}`} />
           </button>
@@ -69,7 +68,7 @@ function Node({ node, slug, depth, onPick }: { node: PageNode; slug: string; dep
   );
 }
 
-const FOOT = `${MB} h-8 rounded-none px-5 text-[13px] text-muted-foreground`;
+const FOOT = `${MB} h-8 max-[767px]:h-10 rounded-none px-5 text-[13px] text-muted-foreground`;
 
 /** 左の一覧。項目は本物のリンク(全画面の遷移)。開閉・幅・押し出しは App(Sidebar)の仕事。 */
 export function PortalSidebar({ tree, slug, onPick, onAccount, onSignOut }: { tree: PageNode[]; slug: string; onPick?: () => void; onAccount: () => void; onSignOut: () => void }) {

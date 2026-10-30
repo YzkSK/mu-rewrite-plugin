@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { App } from "@/muscat/shell/App";
+import { surname } from "@/ui/Header";
 import { courseName } from "@/portal/lib/lms";
 import type { AssignPage, SubmitForm } from "./assign";
 import { AssignScreen } from "./AssignScreen";
@@ -93,7 +94,7 @@ export function LmsApp({ userName: namePromise, userId, view }: { userName: Prom
       title={titleOf(view)}
       brand="MU LMS"
       barClassName="bg-[#26212E] text-white"
-      headerRight={userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{userName} さん</span> : null}
+      headerRight={userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold"><span className="max-[767px]:hidden">{userName}</span><span className="hidden max-[767px]:inline">{surname(userName)}</span> さん</span> : null}
       sidebar={(onPick) => <LmsSidebar active={activeOf(view)} onPick={onPick} onLogout={() => setLogout(true)} />}
     >
       <Screen view={view} userId={userId} />
