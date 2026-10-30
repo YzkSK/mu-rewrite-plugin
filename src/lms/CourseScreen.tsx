@@ -19,18 +19,23 @@ function ItemRow({ it, now }: { it: Item; now: number }) {
   const [preview, setPreview] = useState(false);
   const closePreview = useCallback(() => setPreview(false), []);
   const isPdf = it.mod === "resource" && it.type === "PDF" && !!it.url;
+  const tag = TAG[it.mod] ?? it.mod;
+  const tagCls = PURPLE.has(it.mod) ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground";
   return (
     <Row>
-      <span className={`h-fit w-[4.5rem] flex-none rounded-[3px] px-1 text-center text-[11px] leading-[18px] ${PURPLE.has(it.mod) ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"}`}>{TAG[it.mod] ?? it.mod}</span>
+      {/* 札と状態は広い画面では左右の列、狭い画面では名前の前・下へ回す */}
+      <span className={`h-fit w-[4.5rem] flex-none rounded-[3px] px-1 text-center text-[11px] leading-[18px] max-[767px]:hidden ${tagCls}`}>{tag}</span>
       <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">
+        <span className={`mr-1.5 hidden rounded-[3px] px-1 align-middle text-[11px] leading-[18px] max-[767px]:inline-block ${tagCls}`}>{tag}</span>
         {it.url
           // PDF は押したらプレビュー(修飾キー付きは元どおりブラウザに任せる)
           ? <a className="text-foreground hover:underline" href={it.url} onClick={isPdf ? (e) => { if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); setPreview(true); } : undefined}>{it.name}</a>
           : it.name}
         {preview ? <PdfViewer name={it.name} url={it.url} onClose={closePreview} /> : null}
         {it.type ? <small className="ml-1.5 text-[11px] text-muted-foreground">{it.type}</small> : null}
+        {it.status ? <span className={`mt-0.5 hidden text-[12px] max-[767px]:block ${late ? "font-bold text-error" : "text-muted-foreground"}`}>{shortStatus(it.status)}</span> : null}
       </span>
-      {it.status ? <span className={`h-fit max-w-[45%] flex-none text-right text-[12px] ${late ? "font-bold text-error" : "text-muted-foreground"}`}>{shortStatus(it.status)}</span> : null}
+      {it.status ? <span className={`h-fit max-w-[45%] flex-none text-right text-[12px] max-[767px]:hidden ${late ? "font-bold text-error" : "text-muted-foreground"}`}>{shortStatus(it.status)}</span> : null}
     </Row>
   );
 }
@@ -43,7 +48,7 @@ function VideoRow({ src }: { src: string }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="border-b border-border last:border-b-0">
-      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted">
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted max-[767px]:min-h-11">
         <span className="h-fit w-[4.5rem] flex-none rounded-[3px] border border-border px-1 text-center text-[11px] leading-[18px] text-muted-foreground">動画</span>
         <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">{fileName(src)}</span>
         <span className="flex-none text-[12px] text-primary">{open ? "閉じる" : "再生"}</span>
@@ -76,7 +81,7 @@ function SectionCard({ s, now, open, onToggle, refFn }: { s: Section; now: numbe
     : it.mod === "subsection"
       ? [
         <li key={it.id} className="border-b border-border last:border-b-0">
-          <button type="button" aria-expanded={subs.has(it.id)} onClick={() => toggleSub(it.id)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted">
+          <button type="button" aria-expanded={subs.has(it.id)} onClick={() => toggleSub(it.id)} className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-muted max-[767px]:min-h-11">
             <span className="h-fit w-[4.5rem] flex-none rounded-[3px] border border-border px-1 text-center text-[11px] leading-[18px] text-muted-foreground">セクション</span>
             <span className="min-w-0 flex-1 text-[13.5px] [overflow-wrap:anywhere]">{`${subs.has(it.id) ? "▾" : "▸"} ${it.name}`}</span>
             <span className="flex-none text-[12px] text-muted-foreground">{`${s.items.filter((c) => c.parent === it.id).length} 件 `}<span className="text-primary">{subs.has(it.id) ? "閉じる" : "開く"}</span></span>
@@ -96,7 +101,7 @@ function SectionCard({ s, now, open, onToggle, refFn }: { s: Section; now: numbe
       <Box
         title={s.title}
         actions={
-          <button type="button" aria-expanded={open} onClick={onToggle} className="flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground hover:text-foreground">
+          <button type="button" aria-expanded={open} onClick={onToggle} className="flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground hover:text-foreground max-[767px]:before:absolute max-[767px]:before:inset-0">
             {`${s.items.length} 件`}
             <span className="text-primary">{open ? "閉じる" : "開く"}</span>
           </button>
@@ -199,6 +204,13 @@ export function CourseScreen({ page, initial, now = new Date(), initialSlots }: 
   return (
     <div ref={top} className="mx-auto flex w-full max-w-[1280px] flex-wrap items-start gap-4 p-4">
       {head}
+      {/* 目次の代わりに、狭い画面では select で節へ飛ぶ */}
+      {filled.length ? (
+        <select aria-label="節へ移動" value="" onChange={(e) => { if (e.target.value) go(Number(e.target.value)); }} className="h-10 w-full rounded-[4px] border border-input bg-card px-2 text-[16px] min-[768px]:hidden">
+          <option value="">節へ移動</option>
+          {filled.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+        </select>
+      ) : null}
       <nav aria-label="目次" className="sticky top-4 hidden w-[180px] flex-none min-[1000px]:block">
         <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
           {filled.map((s) => (

@@ -29,7 +29,7 @@ test("狭い幅: 曜日のタブと、2 コマ続きは 1 行", () => {
   const slots = new Map([["2026_5300100047", { terms: [3], slots: [{ term: 3, day: "月", periods: [3, 4] }] }]]);
   const cs = [{ ...courses[0]!, shortname: "2026_5300100047" }];
   const h = renderToString(<CoursesScreen initial={cs} now={new Date(2026, 9, 26)} initialSlots={slots} />);
-  for (const t of ["min-[640px]:hidden", "max-[639px]:hidden", 'aria-pressed="true"', "3・4限", "専門デプロイメントコースⅢ"]) expect(h).toContain(t);
+  for (const t of ["min-[768px]:hidden", "max-[767px]:hidden", 'aria-pressed="true"', "3・4限", "専門デプロイメントコースⅢ"]) expect(h).toContain(t);
   expect(h.match(/3・4限/g)).toHaveLength(1);
   expect(renderToString(<CoursesScreen initial={cs} now={new Date(2026, 9, 27)} initialSlots={slots} />)).toContain("この曜日の授業はありません");
 });
