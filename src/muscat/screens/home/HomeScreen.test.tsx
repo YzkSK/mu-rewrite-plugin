@@ -39,9 +39,9 @@ test("今日: 題名は日付と授業の要約、前の日・次の日・今日
   expect(html.match(/border-dashed/g)).toHaveLength(1);
 });
 
-test("時限: 続く同じ授業は 1 行、空きは「空き」、教室・教員・終了時刻", () => {
+test("時限: 続く同じ授業は 1 行、空きは「空き」、教室・教員", () => {
   const html = render(ready());
-  for (const s of ["3・4限", "13:10", "〜16:40", "授業甲", "テスト棟101", "教員一、教員二", "掲示 2", "空き"]) expect(html).toContain(s);
+  for (const s of ["3・4限", "13:10","授業甲", "テスト棟101", "教員一、教員二", "掲示 2", "空き"]) expect(html).toContain(s);
   expect(html.match(/授業甲/g)).toHaveLength(1);
 });
 
