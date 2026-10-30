@@ -64,9 +64,10 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
     : "";
   return (
     <section className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
-      <div className="flex items-center gap-x-4 px-4 pt-4">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h2 className="m-0 text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
+      {/* 列が細いときはボタンを次の行へ回す(日付の側が押しつぶされて 1 文字ずつ折れたため) */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-4">
+        <div className="flex min-w-0 flex-[1_1_12rem] flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="m-0 whitespace-nowrap text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
           {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
         </div>
         <div className="ml-auto flex shrink-0 gap-1 max-[767px]:hidden">
