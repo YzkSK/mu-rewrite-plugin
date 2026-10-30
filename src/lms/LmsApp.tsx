@@ -17,6 +17,8 @@ import type { DiscussionPage, ForumList } from "./forum";
 import { LtiScreen } from "./LtiScreen";
 import type { LtiPage } from "./lti";
 import { MessagesScreen } from "./MessagesScreen";
+import { QuestionnaireScreen } from "./QuestionnaireScreen";
+import type { QuestionnairePage } from "./questionnaire";
 import { ProfileScreen } from "./ProfileScreen";
 import type { ProfilePage } from "./profile";
 import { SearchScreen } from "./SearchScreen";
@@ -35,6 +37,7 @@ export type View =
   | { kind: "discussion"; page: DiscussionPage }
   | { kind: "messages"; path: string; search: string }
   | { kind: "lti"; page: LtiPage }
+  | { kind: "questionnaire"; page: QuestionnairePage }
   | { kind: "search"; search: string }
   | { kind: "profile"; page: ProfilePage };
 
@@ -49,6 +52,7 @@ export const titleOf = (v: View | null): string =>
     : v.kind === "discussion" ? v.page.posts[0]?.subject || v.page.forumName || "フォーラム"
     : v.kind === "messages" ? "メッセージ"
     : v.kind === "lti" ? v.page.title || "教材"
+    : v.kind === "questionnaire" ? v.page.title || "アンケート"
     : v.kind === "search" ? "検索"
     : v.kind === "profile" ? v.page.name || "プロファイル"
     : "成績";
@@ -69,6 +73,7 @@ function Screen({ view, userId }: { view: View | null; userId: number | null }) 
     case "discussion": return <ForumScreen list={null} listUrl={view.page.forumUrl} d={view.page.d} posts={view.page.posts} forumName={view.page.forumName} courseId={view.page.courseId} courseName={view.page.courseName} />;
     case "messages": return <MessagesScreen path={view.path} search={view.search} userId={userId} />;
     case "lti": return <LtiScreen page={view.page} />;
+    case "questionnaire": return <QuestionnaireScreen page={view.page} />;
     case "search": return <SearchScreen search={view.search} />;
     case "profile": return <ProfileScreen page={view.page} />;
   }

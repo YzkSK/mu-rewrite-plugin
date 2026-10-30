@@ -1,8 +1,8 @@
-export type Route = "home" | "course" | "assign" | "submit" | "courses" | "calendar" | "grades" | "forum" | "discussion" | "messages" | "lti" | "search" | "profile";
+export type Route = "home" | "course" | "assign" | "submit" | "courses" | "calendar" | "grades" | "forum" | "discussion" | "messages" | "lti" | "questionnaire" | "search" | "profile";
 
 const GRADES = ["/grade/report/overview/index.php", "/grade/report/user/index.php"];
 const MESSAGES = ["/message/index.php", "/message/output/popup/notifications.php"];
-const OTHERS: Record<string, Route> = { "/mod/forum/view.php": "forum", "/mod/forum/discuss.php": "discussion", "/mod/lti/view.php": "lti", "/course/search.php": "search", "/user/profile.php": "profile" };
+const OTHERS: Record<string, Route> = { "/mod/forum/view.php": "forum", "/mod/forum/discuss.php": "discussion", "/mod/lti/view.php": "lti", "/mod/questionnaire/view.php": "questionnaire", "/course/search.php": "search", "/user/profile.php": "profile" };
 
 /** 描くのはホーム("/" と /index.php)・コース・課題・マイコース・カレンダー・成績・フォーラム・メッセージ・教材(動画)・検索・プロファイル。search(?redirect=0 など)は見ない */
 export function isTargetPath(p: string): boolean {
