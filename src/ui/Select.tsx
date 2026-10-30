@@ -15,7 +15,7 @@ export function Select({ value, options, onChange, disabled, label }: Props) {
     <NativeSelect
       aria-label={label}
       size="sm"
-      className="h-8 min-w-36 cursor-pointer rounded-[4px] bg-card py-0 dark:bg-card"
+      className="h-8 min-w-36 cursor-pointer rounded-[4px] bg-card py-0 dark:bg-card max-[767px]:h-10 max-[767px]:min-w-0 max-[767px]:text-base"
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}

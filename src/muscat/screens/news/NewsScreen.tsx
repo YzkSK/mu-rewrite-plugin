@@ -1,3 +1,4 @@
+import { IconChevronLeft } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { NewsGroup, NewsItem } from "@/muscat/api/types";
@@ -171,10 +172,11 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
                   <button
                     type="button"
                     disabled={!page.detail?.closeRef}
-                    className="mb-3 cursor-pointer border-0 bg-transparent px-0 py-1 text-sm text-primary min-[768px]:hidden"
+                    className="mb-3 inline-flex h-11 cursor-pointer items-center border-0 bg-transparent px-0 text-sm text-primary min-[768px]:hidden"
                     onClick={closeDetail}
                   >
-                    ‹ 掲示板
+                    <IconChevronLeft size={18} />
+                    掲示板
                   </button>
                   <NewsDetailView detail={detail!} busy={busy} onClick={detailClick} />
                 </div>

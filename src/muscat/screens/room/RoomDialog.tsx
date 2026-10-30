@@ -1,3 +1,4 @@
+import { IconX } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { RoomBar, RoomInfo, RoomRow } from "@/muscat/api/types";
@@ -90,15 +91,16 @@ export function RoomDialog({ client, room, bar, onClose, track }: Props) {
     };
   }, [client, room.name, bar]);
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(31_26_36/.32)] p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label={room.name} className="flex max-h-[70vh] w-full max-w-md flex-col rounded-[4px] border border-border bg-card shadow-md">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(31_26_36/.32)] p-4 max-[767px]:place-items-end max-[767px]:p-0" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      {/* 狭い画面は画面下からのシート */}
+      <div role="dialog" aria-label={room.name} className="flex max-h-[70vh] w-full max-w-md flex-col rounded-[4px] border border-border bg-card shadow-md max-[767px]:max-w-none max-[767px]:rounded-b-none max-[767px]:border-x-0 max-[767px]:border-b-0">
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
           <div className="min-w-0">
             <b className="block truncate text-sm">{room.name}</b>
             <span className="text-xs text-muted-foreground">{/* 時刻は説明文から(帯の位置からだと表の範囲 8:00〜で切れて食い違った。実機で確認) */}
             {booking ? `${room.date} ${booking.time || `${hhmm(bar!.start)}〜${hhmm(bar!.end)}`}` : (info?.place ?? "")}</span>
           </div>
-          <button type="button" aria-label="閉じる" onClick={onClose} className="size-8 shrink-0 cursor-pointer rounded-[4px] border-0 bg-transparent hover:bg-muted">✕</button>
+          <button type="button" aria-label="閉じる" onClick={onClose} className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent hover:bg-muted max-[767px]:size-9"><IconX size={20} /></button>
         </div>
         <div className="overflow-y-auto px-4 py-3 text-[13px]">
           {booking ? (

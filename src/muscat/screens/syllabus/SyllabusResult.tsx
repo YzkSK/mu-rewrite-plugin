@@ -31,7 +31,21 @@ export function SyllabusResult({ page, busy, act, onClick, onSize, onNote }: Pro
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto px-3.5">
+          {/* 狭い画面は 5 列の表をやめ、2 行の一覧にする */}
+          <ul key={`m${r.pager.page}:${r.pager.total}`} className="m-0 list-none p-0 min-[768px]:hidden">
+            {r.rows.map((row, i) => (
+              <li key={i} className="mu-row border-t border-border first:border-t-0" style={{ "--i": i } as React.CSSProperties}>
+                <button type="button" disabled={busy} onClick={() => onClick(row.openRef)} className="grid min-h-11 w-full cursor-pointer gap-0.5 border-0 bg-transparent px-3.5 py-2 text-left disabled:cursor-default">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <b className="min-w-0 break-words text-sm text-primary">{row.title}</b>
+                    <span className="flex-none text-[13px] tabular-nums">{row.credit}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">{[row.time, row.code, row.teachers].filter(Boolean).join("、")}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="overflow-x-auto px-3.5 max-[767px]:hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground">
@@ -58,7 +72,10 @@ export function SyllabusResult({ page, busy, act, onClick, onSize, onNote }: Pro
               </tbody>
             </table>
           </div>
-          <ListFoot pager={r.pager} busy={busy} loadingRef={act ?? undefined} onClick={onClick} />
+          {/* 狭い画面は番号ボタンを隠し、「‹ n / N ページ ›」の並びにする(ListFoot の中は触らず外から) */}
+          <div className="max-[767px]:[&_nav>button:not(:first-of-type):not(:last-of-type)]:hidden max-[767px]:[&_nav>button:first-of-type]:order-[-2] max-[767px]:[&_nav>span]:order-[-1] max-[767px]:[&_nav>button]:min-h-11 max-[767px]:[&_nav]:gap-3">
+            <ListFoot pager={r.pager} busy={busy} loadingRef={act ?? undefined} onClick={onClick} />
+          </div>
         </>
       )}
     </Card>

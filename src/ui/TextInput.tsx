@@ -9,8 +9,8 @@ type Props = {
   placeholder?: string;
 };
 
-// ほかの欄(選択欄・日付)とそろえて白地・角 4px。1 行の欄は高さ 32px
-const CLASS = "w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm";
+// ほかの欄(選択欄・日付)とそろえて白地・角 4px。1 行の欄は高さ 32px(狭い画面は 40px。16px 未満だと iOS が入力時に拡大する)
+const CLASS = "w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm max-[767px]:text-base";
 
 /** 素の input / textarea を包んだだけの薄い部品 */
 export function TextInput({ value, onChange, onCommit, label, disabled, multiline, placeholder }: Props) {
@@ -21,7 +21,7 @@ export function TextInput({ value, onChange, onCommit, label, disabled, multilin
     <input
       type="text"
       aria-label={label}
-      className={`${CLASS} h-8`}
+      className={`${CLASS} h-8 max-[767px]:h-10`}
       placeholder={placeholder}
       value={value}
       disabled={disabled}

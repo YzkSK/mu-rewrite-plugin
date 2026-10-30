@@ -1,3 +1,4 @@
+import { IconChevronLeft } from "@tabler/icons-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import { ParseError } from "@/muscat/api/errors";
@@ -96,7 +97,7 @@ export function SyllabusPane({ state, onBack, onRetry }: { state: SyllabusState;
     <>
       {/* 題名(親が出す)→ meta → 戻る → 本文 の順 */}
       {state.status === "ready" && <div className="-mt-3"><SyllabusMeta detail={state.detail} code={false} /></div>}
-      <button type="button" className="cursor-pointer self-start border-0 bg-transparent p-0 text-[13px] text-primary" onClick={onBack}>‹ 授業に戻る</button>
+      <button type="button" className="inline-flex cursor-pointer items-center self-start border-0 bg-transparent p-0 text-[13px] text-primary max-[767px]:h-11" onClick={onBack}><IconChevronLeft size={16} />授業に戻る</button>
       {state.status === "loading" && <PageLoading title="シラバス" />}
       {state.status === "error" && <ErrorNotice title="シラバスを読み込めませんでした" message={state.error} onRetry={onRetry} />}
       {state.status === "ready" && <SyllabusDetailBody detail={state.detail} toc={false} order="drawer" />}
@@ -195,7 +196,7 @@ export function CourseDrawer({ client, course: key, onClose, onNav, initial }: P
         className="absolute inset-y-0 right-0 flex w-[480px] max-w-full flex-col border-l border-border bg-background outline-none max-[767px]:w-full max-[767px]:border-l-0"
       >
         <div className="flex items-center justify-between border-b border-border bg-card px-3 py-2">
-          <button type="button" className={`${ghost} min-[768px]:hidden`} onClick={onClose}>‹ 戻る</button>
+          <button type="button" className={`${ghost} inline-flex h-11 items-center min-[768px]:hidden`} onClick={onClose}><IconChevronLeft size={18} />戻る</button>
           <button type="button" aria-label="閉じる" className={`${ghost} ml-auto max-[767px]:hidden`} onClick={onClose}>✕</button>
         </div>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
