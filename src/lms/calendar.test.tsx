@@ -37,7 +37,7 @@ test("monthOf: ?time= から年月、無ければ今", () => {
 
 test("狭い幅: 予定のある日だけの一覧(両方の形が出る)", () => {
   const h = renderToString(<CalendarScreen initial={month} now={NOW} />);
-  for (const t of ["min-[640px]:hidden", "max-[639px]:hidden", "10月1日(木)", "10月2日(金)", "専門"]) expect(h).toContain(t);
+  for (const t of ["min-[768px]:hidden", "max-[767px]:hidden", "10月1日(木)", "10月2日(金)", "専門"]) expect(h).toContain(t);
   expect(h).not.toContain("10月3日");
   const empty = toMonth(2026, 10, { ...raw, weeks: [] }, new Set(), now);
   expect(renderToString(<CalendarScreen initial={empty} now={NOW} />)).toContain("この月の予定はありません");

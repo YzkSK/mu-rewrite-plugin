@@ -35,7 +35,7 @@ export function AllList({ courses, slots }: { courses: MyCourse[]; slots: SlotMa
       <ul className="m-0 list-none p-0">
         {rows.map(({ c, label }) => (
           <Row key={c.id}>
-            <a className="flex min-h-9 min-w-0 flex-1 items-center text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere] max-[639px]:min-h-11" href={c.url}>{courseName(c.name)}</a>
+            <a className="flex min-h-9 min-w-0 flex-1 items-center text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere] max-[767px]:min-h-11" href={c.url}>{courseName(c.name)}</a>
             <span className="flex-none self-center text-[12px] text-muted-foreground">{label}</span>
           </Row>
         ))}
@@ -74,15 +74,15 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
   );
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
-      <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border max-[639px]:w-full">
+      <div role="group" aria-label="学期" className="flex w-fit overflow-hidden rounded-[4px] border border-border max-[767px]:w-full">
         {[1, 2, 3, 4, ALL].map((t) => (
-          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[639px]:h-11 max-[639px]:flex-1 max-[639px]:px-0 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{t === ALL ? "すべて" : `${t}学期`}</button>
+          <button key={t} type="button" aria-pressed={t === term} onClick={() => setTerm(t)} className={`h-9 max-[767px]:h-11 max-[767px]:flex-1 max-[767px]:px-0 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${t === term ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{t === ALL ? "すべて" : `${t}学期`}</button>
         ))}
       </div>
       <ErrorToast />
       {term === ALL ? <AllList courses={courses} slots={slots} /> : <>
 
-      <div className="min-[640px]:hidden">
+      <div className="min-[768px]:hidden">
         <Box title="時間割">
           <div role="group" aria-label="曜日" className="flex border-b border-border">
             {DAYS.map((d, i) => (
@@ -101,7 +101,7 @@ export function CoursesScreen({ initial, now = new Date(), initialSlots }: Props
           ) : <Note>この曜日の授業はありません</Note>}
         </Box>
       </div>
-      <div className="max-[639px]:hidden">
+      <div className="max-[767px]:hidden">
       <Box title="時間割">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] table-fixed border-collapse text-[13px]">
