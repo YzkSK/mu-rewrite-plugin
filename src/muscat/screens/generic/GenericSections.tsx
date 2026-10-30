@@ -36,7 +36,7 @@ function GenericDialog({ title, blocks, run }: { title: string; blocks: GBlock[]
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center overflow-auto bg-[rgb(34_27_43/.35)] p-4">
       <div role="dialog" aria-modal="true" aria-label={title} className="max-h-full w-full max-w-lg overflow-auto">
-        <Panel title={title}>
+        <Panel title={title} flush={false}>
           <div className="flex flex-col gap-2">
             {blocks.map((b, i) => (
               <GenericBlock key={i} block={b} run={run} />

@@ -23,13 +23,13 @@ function ReadAllDialog({ scope, run, onClose }: { scope: string; run: () => Prom
     setFailed(false);
     run().catch((e) => { console.error("[mu-portal]", e); setBusy(false); setFailed(true); });
   };
-  const btn = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted disabled:cursor-default disabled:opacity-60";
+  const btn = "h-8 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted disabled:cursor-default disabled:opacity-60 max-[767px]:h-11";
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(34_27_43/.35)] p-4" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div role="dialog" aria-modal="true" aria-label="すべて既読の確認" className="flex w-full max-w-sm flex-col gap-4 rounded-[4px] border border-border bg-card p-4 text-card-foreground shadow-lg">
         <p className="m-0 text-sm">{scope}のお知らせを、すべて既読にしますか?</p>
         {failed ? <p role="alert" className="m-0 text-[13px] text-error">既読にできませんでした</p> : null}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 max-[767px]:grid max-[767px]:grid-cols-2">
           <button type="button" className={btn} disabled={busy} onClick={onClose}>キャンセル</button>
           <button ref={ok} type="button" className={btn} disabled={busy} onClick={go}>{busy ? "既読にしています" : "既読にする"}</button>
         </div>
