@@ -24,12 +24,10 @@ function Row({ row, state, line, onOpen }: { row: DayRow; state: State; line: bo
           onClick={() => onOpen(it.title)}
           className={`flex min-w-0 cursor-pointer flex-col items-start gap-1 rounded-[4px] border px-4 py-3 text-left ${cur ? "border-primary bg-accent" : "border-border bg-card"} ${state === "past" ? "opacity-45" : ""}`}
         >
-          <span className="flex flex-wrap items-baseline gap-x-3">
-            {it.room && <b className="text-base">{it.room}</b>}
-            <b className="text-base">{it.title}</b>
-          </span>
+          <b className="text-base">{it.title}</b>
+          {it.room && <span className="text-sm">{it.room}</span>}
           <span className="text-sm text-muted-foreground">
-            {[`${row.start}〜${row.end}`, it.teachers.join("、")].filter(Boolean).join("、")}
+            {it.teachers.join("、")}
             {it.keijiCount > 0 && <span className="ml-2 font-semibold text-primary">{`掲示 ${it.keijiCount}`}</span>}
           </span>
         </button>
@@ -59,10 +57,12 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
     : "";
   return (
     <section className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pt-4">
-        <h2 className="m-0 text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
-        {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
-        <div className="ml-auto flex gap-1">
+      <div className="flex items-center gap-x-4 px-4 pt-4">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="m-0 text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
+          {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
+        </div>
+        <div className="ml-auto flex shrink-0 gap-1">
           {navBtn("前の日", nav?.prevDay)}
           {navBtn("次の日", nav?.nextDay)}
           {navBtn("今日", nav?.today)}
