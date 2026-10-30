@@ -22,7 +22,7 @@ test("readQuestionnairePage: 回答済み", () => {
 <div class="activity-header"><div data-region="activity-dates"><div><strong>開始済み:</strong> 2026年 09月 22日(火曜日) 13:38</div><div><strong>終了済み:</strong> 2026年 09月 22日(火曜日) 14:38</div></div></div>
 <div role="main"><div class="mod_questionnaire_viewpage">
 <div class="info"><p>アンケートは 2026年 09月 22日 に終了しました。ありがとうございます。</p></div>
-<div><a href="/mod/questionnaire/myreport.php?id=7" class="btn btn-secondary">あなたの回答を表示する</a></div></div></div></body>`;
+<div><a href="/mod/questionnaire/myreport.php?id=7" class="btn btn-secondary">あなたの回答を表示する</a><a href="/mod/questionnaire/view.php?id=7#" class="btn btn-secondary">すべてリセット</a></div></div></div></body>`;
   const p = readQuestionnairePage(document, "?id=7");
   expect(p.intro).toBeNull();
   expect(p.dates).toEqual([{ label: "開始済み", value: "2026年 09月 22日(火曜日) 13:38" }, { label: "終了済み", value: "2026年 09月 22日(火曜日) 14:38" }]);

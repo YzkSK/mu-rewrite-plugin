@@ -25,7 +25,7 @@ export function readQuestionnairePage(doc: Document, search: string): Questionna
   });
   const intro = doc.querySelector("#intro .no-overflow") ?? doc.querySelector("#intro");
   const main = doc.querySelector('[role="main"]');
-  const actions = [...(main?.querySelectorAll("a.btn") ?? [])].map((a) => ({ label: squash(a.textContent), url: (a as HTMLAnchorElement).getAttribute("href") ?? "" })).filter((a) => a.label && a.url);
+  const actions = [...(main?.querySelectorAll("a.btn") ?? [])].map((a) => ({ label: squash(a.textContent), url: (a as HTMLAnchorElement).getAttribute("href") ?? "" })).filter((a) => a.label && a.url && a.label !== "すべてリセット");
   // ボタンと空の見出しを除いた文章を、いちばん内側の p/div ごとに集める
   const body = (main?.querySelector(".mod_questionnaire_viewpage") ?? main)?.cloneNode(true) as Element | undefined;
   body?.querySelectorAll("a.btn, h2").forEach((e) => e.remove());
