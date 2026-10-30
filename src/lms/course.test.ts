@@ -13,6 +13,16 @@ test("composeCourse: visible=false で uservisible の無い教材は出さな�
   expect(s[0]!.items.length).toBe(0);
 });
 
+test("composeCourse: サブセクションの中身は親の節に小見出しつきで入れ、単独の節にしない", () => {
+  const s = composeCourse({
+    section: [{ id: 1, number: 1, title: "W4", cmlist: ["8", "9"], hassummary: false }, { id: 2, number: 2, title: "GIS入門", cmlist: ["10"], hassummary: false }],
+    cm: [{ id: 8, name: "中間課題", module: "assign" }, { id: 9, name: "GIS入門", module: "subsection", delegatesectionid: 2 }, { id: 10, name: "資料", module: "resource" }],
+  }, { 1: null, 2: null });
+  expect(s.map((x) => x.title)).toEqual(["W4"]);
+  expect(s[0]!.items.map((i) => [i.mod, i.name])).toEqual([["assign", "中間課題"], ["subsection", "GIS入門"], ["resource", "資料"]]);
+  expect(s[0]!.items.map((i) => i.parent)).toEqual([undefined, undefined, "9"]);
+});
+
 test("termLabel: 3 桁の読み", () => {
   expect(termLabel("333 専門デプロイメントコースⅢ")).toBe("3学期 水曜 3限");
   expect(termLabel("399 英語基礎C")).toBe("3学期");

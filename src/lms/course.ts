@@ -14,6 +14,8 @@ export type Item = {
   html: string | null;
   /** ラベルの中の動画(同じオリジンの http(s) だけ) */
   videos: string[];
+  /** サブセクションの中の教材なら、その小見出しの id */
+  parent?: string;
 };
 export type Section = { id: number; title: string; summary: string | null; items: Item[] };
 
@@ -125,7 +127,7 @@ export function parseSectionHtml(html: string): Page {
 
 export type RawState = {
   section: { id: number; number: number; title: string; cmlist: string[]; hassummary: boolean; visible?: boolean }[];
-  cm: { id: number | string; name: string; module: string; url?: string; visible?: boolean; uservisible?: boolean }[];
+  cm: { id: number | string; name: string; module: string; url?: string; visible?: boolean; uservisible?: boolean; delegatesectionid?: number | null }[];
 };
 
 /** 利用者に見える教材か */
@@ -142,14 +144,23 @@ const needsPage =(s: RawState["section"][number]): boolean => s.visible !== fals
 /** state と節ごとの HTML(読めなければ null)から画面の形にする。並び・名前・URL・種類は state が正。中身の無い節も返す */
 export function composeCourse(state: RawState, pages: Record<number, string | null>): Section[] {
   const cms = new Map(state.cm.map((c) => [String(c.id), c]));
-  return state.section.filter((s) => s.visible !== false).map((s) => {
+  const byId = new Map(state.section.map((s) => [s.id, s]));
+  // サブセクションの中身の節は単独で出さず、親の節の中に小見出しつきで入れる
+  const delegated = new Set(state.cm.flatMap((c) => c.delegatesectionid ? [c.delegatesectionid] : []));
+  const itemsOf = (s: RawState["section"][number]): Item[] => {
     const page = pages[s.id] ? parseSectionHtml(pages[s.id]!) : null;
     const items: Item[] = [];
     for (const id of s.cmlist.map(String)) {
       const cm = cms.get(id);
       if (!cm || !isShown(cm)) continue;
       const act = page?.acts.get(id);
-      if (cm.module === "label") {
+      const child = cm.delegatesectionid ? byId.get(cm.delegatesectionid) : undefined;
+      if (child) {
+        if (child.visible === false) continue;
+        const sum = pages[child.id] ? parseSectionHtml(pages[child.id]!).summary : null;
+        const inner = [...(sum ? [{ id: `${id}-summary`, name: "", url: "", mod: "label", type: null, status: "", html: sanitize(sum), videos: [] }] : []), ...itemsOf(child)];
+        if (inner.length) items.push({ id, name: cm.name, url: "", mod: "subsection", type: null, status: "", html: null, videos: [] }, ...inner.map((i) => ({ ...i, parent: id })));
+      } else if (cm.module === "label") {
         const videos = act?.html ? videosOf(act.html) : [];
         const html = sanitize(act?.html);
         if (!squash(html.replace(/<[^>]*>/g, "")) && !/<img/i.test(html) && !videos.length) continue;
@@ -158,7 +169,11 @@ export function composeCourse(state: RawState, pages: Record<number, string | nu
         items.push({ id, name: cm.name, url: cm.url ?? "", mod: cm.module, type: act?.type ?? null, status: act?.status ?? "", html: null, videos: [] });
       }
     }
-    return { id: s.id, title: s.title || (s.number === 0 ? "最初のページ" : `第 ${s.number} 節`), summary: page?.summary ? sanitize(page.summary) : null, items };
+    return items;
+  };
+  return state.section.filter((s) => s.visible !== false && !delegated.has(s.id)).map((s) => {
+    const page = pages[s.id] ? parseSectionHtml(pages[s.id]!) : null;
+    return { id: s.id, title: s.title || (s.number === 0 ? "最初のページ" : `第 ${s.number} 節`), summary: page?.summary ? sanitize(page.summary) : null, items: itemsOf(s) };
   });
 }
 
