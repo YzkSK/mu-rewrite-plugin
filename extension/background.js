@@ -98,16 +98,19 @@ async function bounce(tabId) {
 
 // 画面の遷移は POST。GET で /up/ を直接取りに行くのは再読み込みなどで、空の応答になる。
 // エラー画面が一瞬映らないよう、リクエストを出した時点で入り直す(ゲスト閲覧とスマホ版は除く)
+const unbounced = (url) => url.includes("guestlogin") || url.includes("/pky501/");
 chrome.webRequest.onBeforeRequest.addListener((d) => {
-  if (d.method !== "GET" || d.frameId !== 0 || d.tabId < 0) return;
-  if (d.url.includes("guestlogin") || d.url.includes("/pky501/")) return;
+  if (d.method !== "GET" || d.frameId !== 0 || d.tabId < 0 || unbounced(d.url)) return;
   bounce(d.tabId);
 }, { urls: [MUSCAT + "up/*"], types: ["main_frame"] });
 
 // 取りこぼし用: 500 以上が返ったときも入り直す
 chrome.webRequest.onCompleted.addListener((d) => {
-  if (d.statusCode >= 500) bounce(d.tabId);
+  if (d.statusCode >= 500 && !unbounced(d.url)) bounce(d.tabId);
 }, { urls: [MUSCAT + "up/*"], types: ["main_frame"] });
+
+// 閉じたタブの記録を消す
+chrome.tabs.onRemoved.addListener((tabId) => chrome.storage.session.remove(key(tabId)));
 
 // 開発用: ポータルのページから拡張を読み込み直す(localStorage["mu-dev"]="1" のときだけ content script が送る)。
 // localStorage はページからも書けるので、開発版(ストアの update_url もリリース zip の channel.txt もない)だけで受ける
