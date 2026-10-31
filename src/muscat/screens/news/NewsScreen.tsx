@@ -137,7 +137,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
     void run((c) => c.news.search(q), undefined, "検索できませんでした");
   };
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
       {status === "error" && <ErrorNotice title="掲示板を読み込めませんでした" message={error ?? ""} onRetry={() => void retry()} />}
       {status === "loading" && !page && <PageLoading />}
       {page && (
@@ -157,9 +157,10 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
               open(firstUnread.openRef);
             }}
           />
-          <BusyOverlay busy={busy}>
-            <div className={showDetail ? "grid grid-cols-1 items-start gap-3 min-[768px]:grid-cols-2" : ""}>
-              <div className="flex min-w-0 flex-col gap-3">
+          {/* 一覧と詳細は左右で別々にスクロールする */}
+          <BusyOverlay busy={busy} className="min-h-0 flex-1">
+            <div className={`grid h-full grid-rows-[minmax(0,1fr)] gap-3 ${showDetail ? "grid-cols-1 min-[768px]:grid-cols-2" : ""}`}>
+              <div className="flex min-w-0 flex-col gap-3 overflow-y-auto">
                 <NewsList page={listPage!} busy={busy} onOpen={(ref) => {
                   setReading(false);
                   open(ref);
@@ -167,7 +168,7 @@ export function NewsScreen({ client, initial, initialOpened = "", initialReading
               </div>
               {showDetail && (
                 // 767px 以下は詳細を全画面に重ねる
-                <div className="min-w-0 max-[767px]:fixed max-[767px]:inset-0 max-[767px]:z-40 max-[767px]:overflow-y-auto max-[767px]:bg-background max-[767px]:p-4">
+                <div className="min-w-0 overflow-y-auto max-[767px]:fixed max-[767px]:inset-0 max-[767px]:z-40 max-[767px]:overflow-y-auto max-[767px]:bg-background max-[767px]:p-4">
                   <button
                     type="button"
                     disabled={!page.detail?.closeRef}
