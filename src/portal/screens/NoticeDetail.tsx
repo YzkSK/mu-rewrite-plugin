@@ -17,7 +17,7 @@ export function NoticeDetail({ item, fail, onToggle, onBack }: Props) {
   const files = [...(item.files ?? []), ...(item.personal_files ?? [])].filter((f) => f && f.uuid);
   return (
     <>
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-card px-4 py-2">
         <button type="button" onClick={onBack} className="cursor-pointer border-0 bg-transparent p-0 text-[13px] text-primary min-[768px]:hidden">‹ 一覧へ</button>
         <span className="flex-1" />
         {fail ? <span role="alert" className="text-[12.5px] text-error">失敗しました</span> : null}

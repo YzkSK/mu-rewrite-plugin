@@ -24,7 +24,7 @@ export function NewsDetailView({ detail, busy, onClick }: Props) {
     </div>
   );
   return (
-    <Panel title="掲示" actions={actions}>
+    <Panel title="掲示" actions={actions} stickyHeader>
       <div className="flex flex-col gap-3">
         <h2 className="m-0 text-base font-bold">{detail.title}</h2>
         <dl className="m-0 flex flex-col gap-2 text-sm">
