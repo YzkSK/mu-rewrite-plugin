@@ -2,12 +2,13 @@ import type { ProfilePage } from "./profile";
 import { Box, Note, Row } from "./parts";
 
 const LINKS = [
-  { title: "プロファイルを編集する", href: "/user/edit.php" },
-  { title: "プレファレンス", href: "/user/preferences.php" },
+  { title: "プロファイル", href: "/user/edit.php" },
+  { title: "フォーラム・メッセージ", href: "/user/forum.php" },
+  { title: "通知", href: "/message/notificationpreferences.php" },
   { title: "プライベートファイル", href: "/user/files.php" },
 ];
 
-/** プロファイル。左に名前・メール・タイムゾーン、右に設定のリンク(どれも元の画面へ) */
+/** プロファイル。左に名前・メール・タイムゾーン、右に設定のリンク */
 export function ProfileScreen({ page }: { page: ProfilePage }) {
   return (
     <div className="mx-auto grid w-full max-w-[1000px] items-start gap-4 p-4 min-[800px]:grid-cols-[minmax(0,1fr)_300px]">
