@@ -33,7 +33,7 @@ export function NewsList({ page, busy, onOpen, onFlag, onRead, onMarkAllRead, on
     <div className="flex flex-col gap-3">
       {page.groups.map((g, i) => (
         <section key={`${g.title}-${i}`} className="overflow-hidden rounded-[4px] border border-border bg-card">
-          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-3 py-2 max-[767px]:flex-col max-[767px]:items-stretch">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               <h2 className="m-0 text-sm font-semibold">{g.title}</h2>
               {g.description && <small className="text-xs text-muted-foreground">{g.description}</small>}

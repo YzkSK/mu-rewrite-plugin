@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { LoginRequiredError } from "./api";
@@ -10,7 +11,7 @@ const WEEK = "日月火水木金土";
 const LATE = "border-[#E7B4B0] bg-[#FBEAEA] text-error";
 const PAST = "border-border bg-muted text-muted-foreground";
 const FUTURE = "border-border bg-sidebar-accent text-sidebar-accent-foreground";
-const NAV = "h-9 max-[639px]:h-11 max-[639px]:min-w-11 cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13.5px] hover:bg-muted";
+const NAV = "h-9 max-[767px]:h-11 max-[767px]:min-w-11 inline-flex items-center justify-center cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13.5px] hover:bg-muted";
 
 const hhmm = (s: number): string => {
   const d = new Date(s * 1000);
@@ -56,9 +57,9 @@ export function CalendarScreen({ search = "", initial, now = new Date() }: Props
 
   const bar = (
     <div className="flex flex-wrap items-center gap-2">
-      <button type="button" aria-label="前の月" className={NAV} onClick={() => go(ym.year, ym.month - 1)}>‹</button>
+      <button type="button" aria-label="前の月" className={NAV} onClick={() => go(ym.year, ym.month - 1)}><IconChevronLeft size={18} /></button>
       <h1 className="m-0 min-w-[8rem] text-center text-lg font-semibold">{`${ym.year}年${ym.month}月`}</h1>
-      <button type="button" aria-label="次の月" className={NAV} onClick={() => go(ym.year, ym.month + 1)}>›</button>
+      <button type="button" aria-label="次の月" className={NAV} onClick={() => go(ym.year, ym.month + 1)}><IconChevronRight size={18} /></button>
       <button type="button" className={NAV} onClick={() => go(now.getFullYear(), now.getMonth() + 1)}>今日</button>
     </div>
   );
@@ -70,18 +71,27 @@ export function CalendarScreen({ search = "", initial, now = new Date() }: Props
   const shown = (d: NonNullable<(typeof data.weeks)[number][number]>) => d.events.filter((e) => !course || e.courseId === course);
   const days = data.weeks.flat().flatMap((d) => (d ? [{ ...d, events: shown(d) }] : [])).filter((d) => d.events.length);
 
+  const legend = (
+    <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11.5px] text-muted-foreground max-[767px]:border-b max-[767px]:border-t-0">
+      <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${LATE}`} />期限切れ・未提出</span>
+      <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${PAST}`} />過去</span>
+      <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${FUTURE}`} />これから</span>
+    </p>
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         {bar}
-        <select aria-label="コース" value={course} onChange={(e) => setCourse(Number(e.target.value))} className="h-9 max-[639px]:h-11 max-w-full rounded-[4px] border border-input bg-card px-2 text-[13.5px]">
+        <select aria-label="コース" value={course} onChange={(e) => setCourse(Number(e.target.value))} className="h-9 max-[767px]:h-11 max-w-full rounded-[4px] border border-input bg-card px-2 text-[13.5px]">
           <option value={0}>すべてのコース</option>
           {course && !courses.has(course) ? <option value={course}>選んだコース</option> : null}
           {[...courses].map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select>
       </div>
-      <div className="min-[640px]:hidden">
+      <div className="min-[768px]:hidden">
         <Box title="予定">
+          {legend}
           {days.length ? (
             <ul className="m-0 list-none p-0">
               {days.map((d) => (
@@ -106,7 +116,7 @@ export function CalendarScreen({ search = "", initial, now = new Date() }: Props
           ) : <Note>この月の予定はありません</Note>}
         </Box>
       </div>
-      <div className="max-[639px]:hidden">
+      <div className="max-[767px]:hidden">
       <Box title="予定">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] table-fixed border-collapse text-[13px]">
@@ -131,11 +141,7 @@ export function CalendarScreen({ search = "", initial, now = new Date() }: Props
             </tbody>
           </table>
         </div>
-        <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[11.5px] text-muted-foreground">
-          <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${LATE}`} />期限切れ・未提出</span>
-          <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${PAST}`} />過去</span>
-          <span className="flex items-center gap-1.5"><i className={`inline-block size-3 rounded-[2px] border ${FUTURE}`} />これから</span>
-        </p>
+        {legend}
       </Box>
       </div>
     </div>

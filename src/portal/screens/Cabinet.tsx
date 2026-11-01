@@ -1,4 +1,4 @@
-import { IconFileText, IconFolder } from "@tabler/icons-react";
+import { IconCornerLeftUp, IconFileText, IconFolder } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Spin } from "@/ui/Spin";
@@ -68,7 +68,8 @@ export function Cabinet({ data }: { data: Record<string, any> }) {
             {shown.items ? <span className="text-[12px] text-muted-foreground">{`${folders.length} フォルダ`}</span> : null}
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-[13px]">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-[13px] max-[767px]:justify-start max-[767px]:gap-1 max-[767px]:pl-2">
+            <button type="button" aria-label="上のフォルダへ" className="flex size-9 flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-foreground hover:bg-muted min-[768px]:hidden" onClick={() => enter(shown.stack.slice(0, -1))}><IconCornerLeftUp className="size-5" /></button>
             <nav aria-label="フォルダの場所" className="min-w-0 [overflow-wrap:anywhere]">
               {shown.stack.map((f, i) => (
                 <span key={i}>
@@ -79,7 +80,7 @@ export function Cabinet({ data }: { data: Record<string, any> }) {
                 </span>
               ))}
             </nav>
-            <button type="button" className="h-8 flex-none cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted" onClick={() => enter(shown.stack.slice(0, -1))}>上のフォルダへ</button>
+            <button type="button" className="h-8 flex-none cursor-pointer rounded-[4px] border border-border bg-card px-3 text-[13px] hover:bg-muted max-[767px]:hidden" onClick={() => enter(shown.stack.slice(0, -1))}>上のフォルダへ</button>
           </div>
         )}
 
@@ -89,7 +90,7 @@ export function Cabinet({ data }: { data: Record<string, any> }) {
         {atRoot && folders.length ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2 p-4">
             {folders.map((it) => (
-              <button key={it.uuid} type="button" onClick={() => open(it)} className="flex h-9 min-w-0 cursor-pointer items-center gap-2 rounded-[4px] border border-border bg-card px-3 text-left text-[13px] text-foreground hover:bg-muted">
+              <button key={it.uuid} type="button" onClick={() => open(it)} className="flex h-9 min-w-0 cursor-pointer max-[767px]:h-11 items-center gap-2 rounded-[4px] border border-border bg-card px-3 text-left text-[13px] text-foreground hover:bg-muted">
                 <IconFolder className="size-4.5 flex-none text-primary" />
                 <span className="min-w-0 truncate">{it.name}</span>
               </button>
@@ -102,15 +103,15 @@ export function Cabinet({ data }: { data: Record<string, any> }) {
             <thead>
               <tr className="border-b border-border text-left text-[12px] text-muted-foreground">
                 <th className="px-4 py-2 font-normal">名前</th>
-                <th className="w-24 px-2 py-2 font-normal">大きさ</th>
-                <th className="w-28 px-4 py-2 font-normal">更新日</th>
+                <th className="w-24 px-2 py-2 font-normal max-[767px]:hidden">大きさ</th>
+                <th className="w-28 px-4 py-2 font-normal max-[767px]:hidden">更新日</th>
               </tr>
             </thead>
             <tbody>
               {(atRoot ? [] : folders).map((it) => (
                 <tr key={it.uuid} className="border-b border-border last:border-b-0">
                   <td className="px-4 py-2" colSpan={3}>
-                    <button type="button" onClick={() => open(it)} className="flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left text-[13px] font-bold text-foreground hover:underline">
+                    <button type="button" onClick={() => open(it)} className="flex cursor-pointer max-[767px]:min-h-9 items-center gap-2 border-0 bg-transparent p-0 text-left text-[13px] font-bold text-foreground hover:underline">
                       <IconFolder className="size-4.5 flex-none text-primary" />
                       <span className="[overflow-wrap:anywhere]">{it.name}</span>
                     </button>
@@ -120,13 +121,16 @@ export function Cabinet({ data }: { data: Record<string, any> }) {
               {files.map((it) => (
                 <tr key={it.uuid} className="border-b border-border last:border-b-0">
                   <td className="px-4 py-2">
-                    <a className="flex items-center gap-2 text-foreground no-underline hover:underline" href={"/api/shared-file/view/" + encodeURIComponent(it.uuid)} target="_blank" rel="noopener noreferrer">
+                    <a className="flex items-center gap-2 text-foreground no-underline hover:underline max-[767px]:min-h-9" href={"/api/shared-file/view/" + encodeURIComponent(it.uuid)} target="_blank" rel="noopener noreferrer">
                       <IconFileText className="size-4.5 flex-none text-muted-foreground" />
-                      <span className="[overflow-wrap:anywhere]">{it.name}</span>
+                      <span className="[overflow-wrap:anywhere]">
+                        {it.name}
+                        <span className="block text-[12px] text-muted-foreground min-[768px]:hidden">{[fmtSize(it.size), fmtYmd(it.updated_at)].filter(Boolean).join("、")}</span>
+                      </span>
                     </a>
                   </td>
-                  <td className="px-2 py-2 text-muted-foreground">{fmtSize(it.size)}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{fmtYmd(it.updated_at)}</td>
+                  <td className="px-2 py-2 text-muted-foreground max-[767px]:hidden">{fmtSize(it.size)}</td>
+                  <td className="px-4 py-2 text-muted-foreground max-[767px]:hidden">{fmtYmd(it.updated_at)}</td>
                 </tr>
               ))}
             </tbody>

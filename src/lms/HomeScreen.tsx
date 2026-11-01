@@ -18,9 +18,11 @@ function DueRow({ e, now }: { e: Due; now: number }) {
   const state = e.overdue ? (e.canSubmit ? "提出受付中" : "締切") : remain(e.due, now);
   return (
     <Row>
-      <span className={`w-24 flex-none text-[12.5px] ${e.overdue ? "text-error" : "text-muted-foreground"}`}>{fmtDue(e.due)}</span>
+      {/* 狭い画面は日時を課題名の下(2 行目)へ回す */}
+      <span className={`w-24 flex-none text-[12.5px] max-[767px]:hidden ${e.overdue ? "text-error" : "text-muted-foreground"}`}>{fmtDue(e.due)}</span>
       <span className="min-w-0 flex-1">
         <a className="block text-[13.5px] font-semibold text-foreground hover:underline [overflow-wrap:anywhere]" href={e.url}>{e.name}</a>
+        <span className={`hidden text-[12.5px] max-[767px]:block ${e.overdue ? "text-error" : "text-muted-foreground"}`}>{fmtDue(e.due)}</span>
         <span className="block text-[12px] text-muted-foreground">{[KIND[e.kind] ?? e.kind, e.course].filter(Boolean).join("、")}</span>
       </span>
       <span className={`h-fit flex-none whitespace-nowrap rounded-[3px] border px-1.5 text-[11px] leading-[18px] ${e.overdue ? "border-error text-error" : "border-border text-muted-foreground"}`}>{state}</span>
@@ -107,7 +109,7 @@ function TodayBox({ list }: { list: ReturnType<typeof todayClasses> }) {
         <ul className="m-0 list-none p-0">
           {list.map(({ course: c, periods }, i) => (
             <Row key={i}>
-              <span className="w-28 flex-none text-[12.5px] text-muted-foreground">{`${periods.join("・")}限 ${PERIODS[periods[0]! - 1]?.start}-${PERIODS[periods[periods.length - 1]! - 1]?.end}`}</span>
+              <span className="w-28 flex-none text-[12.5px] text-muted-foreground max-[767px]:w-[6.5rem]">{`${periods.join("・")}限 ${PERIODS[periods[0]! - 1]?.start}-${PERIODS[periods[periods.length - 1]! - 1]?.end}`}</span>
               <a className="min-w-0 flex-1 text-[13.5px] text-foreground hover:underline [overflow-wrap:anywhere]" href={c.url}>{courseName(c.name)}</a>
             </Row>
           ))}

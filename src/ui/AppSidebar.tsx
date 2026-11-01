@@ -34,7 +34,7 @@ function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
           {/* 見出しの click(開閉が確定)で、開閉より先に印を DOM から外す。後だと最初の 1 回が動かず、項目や押し下げで外すと開いたままの所に開く動きが出る */}
           <SidebarMenuButton
             onClickCapture={() => flushSync(() => setTouched(true))}
-            size="sm" className={`${MB} group/ghead h-9 cursor-pointer rounded-none px-5 text-xs font-semibold text-muted-foreground`}>
+            size="sm" className={`${MB} group/ghead h-9 max-[767px]:h-10 cursor-pointer rounded-none px-5 text-xs font-semibold text-muted-foreground`}>
             <span>{group.title}</span>
             <IconChevronDown className="ml-auto size-4 -rotate-90 text-muted-foreground transition-transform duration-200 group-aria-expanded/ghead:rotate-0" />
           </SidebarMenuButton>
@@ -48,7 +48,7 @@ function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
                   size="sm"
                   isActive={item.active}
                   aria-current={item.active ? "page" : undefined}
-                  className={`${MB} ${ACTIVE} h-8 translate-x-0 cursor-pointer rounded-none px-5 text-[13.5px]`}
+                  className={`${MB} ${ACTIVE} h-8 max-[767px]:h-10 translate-x-0 cursor-pointer rounded-none px-5 text-[13.5px]`}
                   onClick={(e) => {
                     e.preventDefault();
                     pick(item);
@@ -67,7 +67,7 @@ function Group({ group, pick }: { group: NavGroup; pick: Pick }) {
 }
 
 function FooterItem({ item, pick }: { item: NavItem; pick: Pick }) {
-  const cls = `${MB} ${ACTIVE} h-8 text-[13px] rounded-none px-5 ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
+  const cls = `${MB} ${ACTIVE} h-8 max-[767px]:h-10 text-[13px] rounded-none px-5 ${item.label === "ログアウト" ? "text-error hover:text-error" : "text-muted-foreground"}`;
   return (
     <SidebarMenuItem>
       {"href" in item ? (
