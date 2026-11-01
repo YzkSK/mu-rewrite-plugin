@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
 import { loadForumList, loadPosts, type ForumList, type Post } from "./forum";
@@ -25,6 +26,7 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
   const lst = useLoad(() => (listUrl ? loadForumList(listUrl) : Promise.resolve<ForumList>({ name: "", courseId: null, courseName: "", discussions: [] })), [listUrl], first ?? undefined);
   const list = lst.data;
   const [picked, setPicked] = useState<number | null>(null);
+  const [open, setOpen] = useState(firstD !== null); // 狭い画面で中身を重ねているか(本文のページは最初から開く)
   const d = picked ?? firstD ?? list?.discussions[0]?.id ?? null;
   const ps = useLoad(() => (d === null ? Promise.resolve([] as Post[]) : loadPosts(d)), [d], firstPosts && d === firstD ? firstPosts : undefined);
 
@@ -47,7 +49,7 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
               <ul className="m-0 list-none p-0">
                 {list.discussions.map((x) => (
                   <li key={x.id} className="border-b border-border last:border-b-0">
-                    <button type="button" aria-current={x.id === d ? "true" : undefined} onClick={() => setPicked(x.id)} className={`flex w-full cursor-pointer flex-col gap-0.5 px-4 py-2 text-left hover:bg-muted ${x.id === d ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}>
+                    <button type="button" aria-current={x.id === d ? "true" : undefined} onClick={() => { setPicked(x.id); setOpen(true); }} className={`flex w-full cursor-pointer flex-col gap-0.5 px-4 py-2 text-left hover:bg-muted ${x.id === d ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}>
                       <span className="text-[13px] font-semibold [overflow-wrap:anywhere]">{x.subject}</span>
                       <span className="text-[12px] text-muted-foreground">{[x.author, x.at, `返信 ${x.replies}`].filter(Boolean).join("、")}</span>
                     </button>
@@ -57,7 +59,12 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
             )}
           </Box>
         </div>
-        <div className="min-w-0">
+        {/* 狭い画面は、話題を選んだら中身を画面全体に重ねる(縦積みだと中身がずっと下に出るため) */}
+        <div className={`min-w-0 ${open ? "max-[767px]:fixed max-[767px]:inset-0 max-[767px]:z-50 max-[767px]:overflow-y-auto max-[767px]:bg-background" : "max-[767px]:hidden"}`}>
+          <div className="sticky top-0 z-10 border-b border-border bg-card min-[768px]:hidden">
+            <button type="button" onClick={() => setOpen(false)} className="flex h-11 w-full cursor-pointer items-center gap-1 px-3 text-left text-[13.5px] text-primary"><IconChevronLeft size={18} />話題</button>
+          </div>
+          <div className="max-[767px]:p-4">
           <Box title={current?.subject ?? ps.data?.[0]?.subject ?? "投稿"}>
             {d === null ? <Note>まだ投稿はありません</Note>
               : ps.failed ? <div className="p-4"><ErrorNotice title="読み込めませんでした" message="投稿を取得できませんでした。" onRetry={ps.reload} /></div>
@@ -73,6 +80,7 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
                 </article>
               ))}
           </Box>
+          </div>
         </div>
       </div>
     </div>
