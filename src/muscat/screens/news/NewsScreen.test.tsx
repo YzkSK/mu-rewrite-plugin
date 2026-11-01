@@ -24,7 +24,7 @@ test("平らな一覧: 件名・差出人・MM/DD、未読は太字と点、重�
   expect(html).not.toContain("2026/10/12");
   expect(html).not.toContain("並び");
   const read = render(ready());
-  expect(read).not.toContain("font-bold");
+  expect(read).not.toContain(" font-bold"); // 狭い画面の見出し(max-[767px]:font-bold)は数えない
   expect(read).not.toContain("bg-primary\"");
 });
 
