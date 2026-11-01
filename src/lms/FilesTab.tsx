@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
-import { fetchDoc, LoginRequiredError } from "./api";
+import { errText, fetchDoc, LoginRequiredError } from "./api";
 import {
   deleteDirDraft, deleteDraft, downloadDirDraft, formatSize, mkdirDraft, readFileArea, updateDirDraft, updateFileDraft, uploadDraft,
   type DraftFile, type FileArea,
@@ -18,7 +18,6 @@ type Drag = { dir: string; label: string; files: number | null };
 const ROOT = "ファイル";
 const BTN = "h-9 cursor-pointer rounded-[4px] border border-border bg-card px-4 text-[13.5px] hover:bg-muted disabled:cursor-default disabled:opacity-50";
 const LINK = "cursor-pointer border-0 bg-transparent p-0 text-[13px] text-primary hover:underline disabled:cursor-default disabled:opacity-50";
-const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 /** files.php を読み直す。保存のたびに下書きが新しくなるので、そのつど itemid ごと取り直す */
 async function loadFiles(): Promise<Loaded> {

@@ -1,5 +1,5 @@
 import { isHttp, sanitize } from "@/portal/lib/sanitize";
-import { ajax, LoginRequiredError, shortName } from "./api";
+import { ajax, isLoginRedirect, LoginRequiredError, shortName } from "./api";
 
 export type Teacher = { id: number; name: string };
 /** entry が今のページから読んだもの。name は先頭の 3 桁つき */
@@ -183,7 +183,7 @@ export async function loadCourse(courseId: number): Promise<Section[]> {
   const targets = state.section.filter(needsPage);
   const got = await Promise.allSettled(targets.map(async (s) => {
     const r = await fetch(`/course/section.php?id=${s.id}`, { credentials: "include" });
-    if (r.url.includes("/login/")) throw new LoginRequiredError();
+    if (isLoginRedirect(r)) throw new LoginRequiredError();
     if (!r.ok) throw new Error(`section ${s.id} ${r.status}`);
     return r.text();
   }));

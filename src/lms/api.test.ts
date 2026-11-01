@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { ajax, fetchUserName, LoginRequiredError, setSesskey } from "./api";
+import { ajax, fetchUserName, isLoginRedirect, LoginRequiredError, setSesskey } from "./api";
 
 const real = globalThis.fetch;
 afterEach(() => { globalThis.fetch = real; });
@@ -31,4 +31,10 @@ test("名前は姓・名の 2 つを半角空白でつなぐ", async () => {
   reply([{ error: false, data: [{ fullname: "佐藤　康樹 サトウ　コウキ" }] }], calls);
   expect(await fetchUserName(7)).toBe("佐藤 康樹");
   expect(JSON.parse(calls[0]!.init.body as string)[0].args).toEqual({ referenceuserid: 7, userids: [7], includecontactrequests: false, includeprivacyinfo: false });
+});
+
+test("isLoginRedirect: /login/ 配下だけ true、url が空でも落ちない", () => {
+  expect(isLoginRedirect({ url: "https://x.test/login/index.php" } as Response)).toBe(true);
+  expect(isLoginRedirect({ url: "https://x.test/mod/assign/view.php?x=/login/" } as Response)).toBe(false);
+  expect(() => isLoginRedirect({} as Response)).not.toThrow(); // url なしは今のページで判定
 });

@@ -7,6 +7,7 @@ import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
 import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconDots, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, IconX, type Icon } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
+import { errText } from "./api";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
 import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
@@ -15,6 +16,8 @@ import { Box } from "./parts";
 
 // 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
 const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] max-[767px]:text-[16px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
+// リンクにできる URL。javascript: などは入れない
+const HTTP_URL = /^https?:\/\/\S/i;
 // 書式ボタン。[見出し, アイコン, コマンド, 引数, 押下中と見なす mark/node の名前]
 const TOOLS: [string, Icon, { key: CmdKey<any> }, unknown?, string?][] = [
   ["太字", IconBold, toggleStrongCommand, undefined, "strong"],
@@ -47,7 +50,7 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
   const count = useRef(0);
   const patch = (id: number, p: Partial<FileRow> | null) => setRows((rs) => (rs ?? []).flatMap((r) => (r.id !== id ? [r] : p ? [{ ...r, ...p }] : [])));
 
-  useEffect(() => { listDraft(area).then((l) => setRows(l.filter((f) => !f.folder).map((f) => ({ id: next.current++, name: f.filename, size: f.size }))), (e: unknown) => { setLoadError(e instanceof Error ? e.message : String(e)); setRows([]); }); }, [area]);
+  useEffect(() => { listDraft(area).then((l) => setRows(l.filter((f) => !f.folder).map((f) => ({ id: next.current++, name: f.filename, size: f.size }))), (e: unknown) => { setLoadError(errText(e)); setRows([]); }); }, [area]);
   useEffect(() => {
     count.current = (rows ?? []).filter((r) => !r.error).length;
     // 一覧の読み込み中・上げている途中・外している途中は、提出も追加もさせない(途中の状態で提出が保存されないように)
@@ -116,6 +119,11 @@ const load = (id: number | string | null): string | null => { try { return sessi
 const save = (id: number | string | null, v: string | null): void => {
   try { if (v === null) sessionStorage.removeItem(key(id)); else sessionStorage.setItem(key(id), v); } catch { /* 保存できなくても書ける */ }
 };
+/** doc を書きかけとして保存し、古い版の書きかけ(id に文字で持っていたもの)を消す */
+const saveDocDraft = (id: number | null, doc: Node): void => {
+  save(`${id}-doc`, JSON.stringify(doc.toJSON()));
+  save(id, null);
+};
 
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
   user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
@@ -152,8 +160,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     const keep = (doc: Node) => {
       if (done.current) return;
       if (draft === null && doc.eq(initial.current!)) return save(`${page.id}-doc`, null);
-      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
-      save(page.id, null);
+      saveDocDraft(page.id, doc);
     };
     const ed = Editor.make()
       .config((ctx) => {
@@ -199,15 +206,14 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
       const doc = ctx.get(editorViewCtx).state.doc;
       if (draft === null && doc.eq(initial.current!)) return null;
       // 送っている間に離れても書きかけが残るよう、今の doc を保存しておく(このあと done で flush は止まる)
-      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
-      save(page.id, null);
+      saveDocDraft(page.id, doc);
       return isPlainDoc(doc) ? [plainText(doc), false] as const : [ctx.get(serializerCtx)(doc), true] as const;
     });
     const [body, md] = edited ?? [form.markdown ? form.text! : htmlToText(form.text ?? ""), form.markdown] as const;
     done.current = true;
     submit(form, body, md).then(() => { save(page.id, null); save(`${page.id}-doc`, null); save(`${page.id}-md`, null); }, (e: unknown) => {
       done.current = false;
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errText(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
       if (page.id === null) return setStatus(null);
@@ -256,7 +262,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       e.preventDefault();
                       const href = link.href.trim();
                       const text = link.text || href;
-                      if (!/^https?:\/\/\S/i.test(href)) return; // javascript: などは入れない
+                      if (!HTTP_URL.test(href)) return;
                       // 選んでいた範囲を、表示する文字にリンクを付けたものに置き換える(未選択ならカーソル位置に入れる)
                       editor.current?.action((ctx) => {
                         const view = ctx.get(editorViewCtx);
@@ -286,7 +292,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                     ))}
                     <div className="flex justify-end gap-2">
                       <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
-                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.href.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
+                      <button type="submit" disabled={!HTTP_URL.test(link.href.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
                     </div>
                   </form>
                 ) : null}

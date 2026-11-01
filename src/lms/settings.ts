@@ -1,4 +1,4 @@
-import { ajax, fetchDoc, LoginRequiredError } from "./api";
+import { ajax, fetchDoc, isLoginRedirect, LoginRequiredError } from "./api";
 import { htmlToText } from "./assign";
 import { readFileArea, type FileArea } from "./draftFiles";
 import { SETTINGS } from "./route";
@@ -178,8 +178,7 @@ export async function saveForm(form: HTMLFormElement, set: Record<string, string
   const body = new URLSearchParams([...fd].map(([k, v]) => [k, String(v)] as [string, string]));
   const action = new URL(form.getAttribute("action") || location.href, location.href);
   const r = await fetch(action, { method: "POST", credentials: "include", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
-  const to = new URL(r.url || location.href);
-  if (to.pathname.startsWith("/login/")) throw new LoginRequiredError();
+  if (isLoginRedirect(r)) throw new LoginRequiredError();
   const doc = new DOMParser().parseFromString(await r.text(), "text/html");
   const why = [...doc.querySelectorAll(".invalid-feedback, .alert-danger")].map((e) => squash(e.textContent)).filter(Boolean).join(" ");
   if (why) throw new Error(why);

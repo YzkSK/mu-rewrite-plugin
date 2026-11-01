@@ -30,10 +30,15 @@ export async function ajax<T>(methodname: string, args: unknown): Promise<T> {
   return first.data as T;
 }
 
+/** 転送を追った先がログイン画面か(r.url が空なら今のページ) */
+export const isLoginRedirect = (r: Response): boolean => new URL(r.url || location.href).pathname.startsWith("/login/");
+
+export const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
+
 /** ページを取って DOM にする。ログインに飛ばされたらセッション切れ */
 export async function fetchDoc(url: string): Promise<Document> {
   const r = await fetch(url, { credentials: "include" });
-  if ((r.url ?? "").includes("/login/")) throw new LoginRequiredError();
+  if (isLoginRedirect(r)) throw new LoginRequiredError();
   if (!r.ok) throw new Error(`${url} ${r.status}`);
   return new DOMParser().parseFromString(await r.text(), "text/html");
 }
