@@ -71,7 +71,8 @@ export function toDraftFiles(list: Record<string, unknown>[], dir = "/"): DraftF
   const out: DraftFile[] = [];
   for (const f of list) {
     if (typeof f.filename !== "string") continue;
-    const s = Number(f.filesize ?? f.size);
+    // size がバイト数。filesize は "2KB" のような表示用の文字
+    const s = Number(f.size ?? f.filesize);
     const t = Number(f.datemodified);
     const extra = { ...(typeof f.filepath === "string" ? { filepath: f.filepath } : {}), ...(Number.isFinite(t) && f.datemodified != null ? { time: t * 1000 } : {}), ...(typeof f.url === "string" ? { url: f.url } : {}) };
     if (f.type === "folder" || f.filename === ".") {

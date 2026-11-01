@@ -34,7 +34,7 @@ test("readFileArea: target の後ろのランダムな文字列(実機の files.
 test("toDraftFiles: フォルダ(filename \".\")・ファイル・自分自身を除く", () => {
   const list = [
     { filename: ".", filepath: "/mu-test/", fullname: "mu-test", type: "folder", datemodified: 100 },
-    { filename: "a.pdf", filepath: "/", filesize: "2048", datemodified: 200, type: "file", url: "https://x/a.pdf" },
+    { filename: "a.pdf", filepath: "/", size: 2048, filesize: "2KB", datemodified: 200, type: "file", url: "https://x/a.pdf" },
     { filename: ".", filepath: "/", type: "folder" },
   ];
   expect(toDraftFiles(list, "/")).toEqual([
