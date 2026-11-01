@@ -49,6 +49,8 @@ export async function listTree(a: FileArea): Promise<Tree> {
 
 export const usedBytes = (t: Tree): number => Object.values(t).flat().reduce((n, f) => n + (f.folder ? 0 : f.size ?? 0), 0);
 
+export const fileCount = (t: Tree): number => Object.values(t).flat().filter((f) => !f.folder).length;
+
 const p2 = (n: number): string => String(n).padStart(2, "0");
 export function formatTime(ms: number | null | undefined): string {
   if (ms == null) return "";
