@@ -13,3 +13,5 @@ export const hhmm = (min: number) => `${Math.floor(min / 60)}:${String(min % 60)
 
 export const HOUR_PX = 96;
 export const NAME_PX = 200;
+/** 狭い画面の教室名の列(収容人数は名前の下の 2 行目) */
+export const NAME_PX_NARROW = 64;

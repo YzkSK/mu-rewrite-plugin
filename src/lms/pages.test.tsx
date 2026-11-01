@@ -78,6 +78,6 @@ test("readProfile・ProfileScreen: 名前・メール・タイムゾーン、設
   const p = readProfile(doc);
   expect(p).toEqual({ name: "碧海 寿広", items: [{ label: "メールアドレス", value: "a@x" }, { label: "国", value: "日本" }, { label: "タイムゾーン", value: "Asia/Tokyo" }] });
   const h = renderToString(<ProfileScreen page={p} />);
-  for (const t of ["碧海 寿広", "a@x", "Asia/Tokyo", 'href="/user/edit.php"', 'href="/user/preferences.php"', 'href="/user/files.php"']) expect(h).toContain(t);
+  for (const t of ["碧海 寿広", "a@x", "Asia/Tokyo", 'href="/user/edit.php"', 'href="/user/forum.php"', 'href="/message/notificationpreferences.php"','href="/user/files.php"']) expect(h).toContain(t);
   expect(h).not.toContain("最終アクセス");
 });

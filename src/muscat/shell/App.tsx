@@ -45,7 +45,7 @@ export function App({ title, model, user, lastLogin, brand, headerRight, barClas
       mobileQuery="(max-width: 0px)"
       keyboardShortcut=""
       data-narrow={narrow}
-      style={{ ...FRAME_STYLE, zoom, height: `calc(100vh / ${zoom})` }}
+      style={{ ...FRAME_STYLE, zoom, height: `calc(100dvh /${zoom})` }}
       className={`${mounting ? "mu-noanim " : ""}group/frame relative min-h-0 flex-col overflow-hidden bg-background text-foreground`}
     >
       <Header title={title} user={user} lastLogin={lastLogin} brand={brand} right={headerRight} barClassName={barClassName} />

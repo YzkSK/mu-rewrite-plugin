@@ -2,7 +2,8 @@ import { Fragment, useEffect, useRef } from "react";
 import { IconInfoCircle } from "@tabler/icons-react";
 import type { RoomBar, RoomResult, RoomRow } from "@/muscat/api/types";
 import { Card } from "@/ui/Card";
-import { HOUR_PX, NAME_PX, hhmm, kindColor } from "./roomKinds";
+import { useSidebarState } from "@/ui/useSidebarState";
+import { HOUR_PX, NAME_PX, NAME_PX_NARROW, hhmm, kindColor } from "./roomKinds";
 
 const LANE = 28;
 const px = (min: number, from: number) => ((min - from) / 60) * HOUR_PX;
@@ -30,6 +31,8 @@ function Bar({ bar, from, to, rowH, lanes, i, onOpen }: { bar: RoomBar; from: nu
 /** 教室 × 時間のタイムライン。左の教室名と上の時刻見出しは貼り付き、縦横にスクロールする。予約・ⓘ を押すと押された教室を返す */
 export function RoomTimeline({ result, jump, onOpen, onInfo }: { result: RoomResult; jump?: { date: string; n: number }; onOpen: (b: RoomBar, room: RoomRow) => void; onInfo: (room: RoomRow) => void }) {
   const { from, to, rooms } = result;
+  const { narrow } = useSidebarState(); // 列幅は px で計算するので CSS だけでは切り替えられない
+  const namePx = narrow ? NAME_PX_NARROW : NAME_PX;
   const box = useRef<HTMLDivElement>(null);
   // 選んだ日の見出しへ縦にスクロールする(見出しは時刻の見出しの下に来るよう、その高さぶん手前)
   useEffect(() => {
@@ -46,9 +49,9 @@ export function RoomTimeline({ result, jump, onOpen, onInfo }: { result: RoomRes
   return (
     <Card className="gap-0 overflow-hidden p-0">
       <div ref={box} className="max-h-[520px] overflow-auto">
-        <div style={{ width: NAME_PX + width }}>
+        <div style={{ width: namePx + width }}>
           <div className="sticky top-0 z-20 flex border-b border-border bg-card">
-            <div className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground" style={{ width: NAME_PX }}>教室</div>
+            <div className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2 text-xs font-bold text-muted-foreground max-[767px]:px-1.5" style={{ width: namePx }}>教室</div>
             <div className="relative h-8 shrink-0" style={{ width }}>
               {hours.map((m) => (
                 <span key={m} className="absolute top-2 text-xs text-muted-foreground" style={{ left: px(m, from) + 4 }}>{hhmm(m)}</span>
@@ -62,12 +65,19 @@ export function RoomTimeline({ result, jump, onOpen, onInfo }: { result: RoomRes
               <Fragment key={`${r.date}|${r.name}|${k}`}>
               {r.date !== rooms[k - 1]?.date && <div data-date={r.date} className="sticky left-0 w-fit bg-muted px-3 py-1 text-xs font-bold">{r.date}</div>}
               <div className="flex border-b border-border" style={{ height: rowH }}>
-                <div className="sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-border bg-card px-3" style={{ width: NAME_PX }}>
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold">{r.name}</span>
-                  {r.capacity && <span className="shrink-0 text-xs text-muted-foreground">{r.capacity}</span>}
-                  <button type="button" aria-label={`${r.name}の情報`} onClick={() => onInfo(r)} className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-muted-foreground hover:text-primary">
-                    <IconInfoCircle className="size-4" />
-                  </button>
+                <div className={`sticky left-0 z-10 flex shrink-0 border-r border-border bg-card ${narrow ? "flex-col items-start justify-center gap-0.5 px-1.5" : "items-center gap-1 px-3"}`} style={{ width: namePx }}>
+                  {/* 狭い画面は ⓘ をやめ、教室名を押すと同じ小窓が出る */}
+                  {narrow ? (
+                    <button type="button" aria-label={`${r.name}の情報`} onClick={() => onInfo(r)} className="w-full min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left text-xs font-bold leading-tight [overflow-wrap:anywhere]">{r.name}</button>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold">{r.name}</span>
+                  )}
+                  {r.capacity && <span className="shrink-0 text-[11px] text-muted-foreground">{r.capacity}</span>}
+                  {!narrow && (
+                    <button type="button" aria-label={`${r.name}の情報`} onClick={() => onInfo(r)} className="shrink-0 cursor-pointer border-0 bg-transparent p-0 text-muted-foreground hover:text-primary">
+                      <IconInfoCircle className="size-4" />
+                    </button>
+                  )}
                 </div>
                 <div className="relative shrink-0" style={{ width, ...grid }}>
                   {/* 印は中身から作る。元の部品の ref は、元の画面が教室を描き足すたびに替わり、帯が作り直されてちらついた(実機で確認) */}

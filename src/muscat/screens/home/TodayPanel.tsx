@@ -1,3 +1,5 @@
+import { IconCalendarMonth, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 import type { HomeDay } from "@/muscat/api/types";
 import { Button } from "@/ui/Button";
 import { EmptyState } from "@/ui/EmptyState";
@@ -44,6 +46,11 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
   const navBtn = (name: string, ref: string | undefined) => (
     <Button variant="ghost"disabled={busy || !ref} onClick={() => onClick(ref!)}>{name}</Button>
   );
+  const iconBtn = (name: string, icon: ReactNode, off: boolean, fn: () => void) => (
+    <button type="button" aria-label={name} disabled={busy || off} onClick={fn} className="grid size-9 cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent text-foreground hover:bg-muted disabled:cursor-default disabled:opacity-40">
+      {icon}
+    </button>
+  );
   const { rows, extras } = dayRows(day?.items ?? []);
   const today = !!day && isSameDay(day.date, now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -57,16 +64,23 @@ export function TodayPanel({ day, timetableRef, busy, now, onClick, onOpenCourse
     : "";
   return (
     <section className="overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
-      <div className="flex items-center gap-x-4 px-4 pt-4">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h2 className="m-0 text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
+      {/* 列が細いときはボタンを次の行へ回す(日付の側が押しつぶされて 1 文字ずつ折れたため) */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-4">
+        <div className="flex min-w-0 flex-[1_1_12rem] flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="m-0 whitespace-nowrap text-[20px] font-bold">{day ? dateTitle(day.date) : "今日"}</h2>
           {summary && <span className="text-sm text-muted-foreground">{summary}</span>}
         </div>
-        <div className="ml-auto flex shrink-0 gap-1">
+        <div className="ml-auto flex shrink-0 gap-1 max-[767px]:hidden">
           {navBtn("前の日", nav?.prevDay)}
           {navBtn("次の日", nav?.nextDay)}
           {navBtn("今日", nav?.today)}
           {onCalendar && <Button variant="ghost" disabled={busy} onClick={onCalendar}>カレンダー</Button>}
+        </div>
+        {/* 狭い画面は文字のボタンの代わりにアイコン(「今日」は出さない) */}
+        <div className="ml-auto flex shrink-0 gap-0.5 min-[768px]:hidden">
+          {iconBtn("前の日", <IconChevronLeft size={20} />, !nav?.prevDay, () => onClick(nav!.prevDay))}
+          {iconBtn("次の日", <IconChevronRight size={20} />, !nav?.nextDay, () => onClick(nav!.nextDay))}
+          {onCalendar && iconBtn("カレンダー", <IconCalendarMonth size={20} />, false, onCalendar)}
         </div>
       </div>
       <div className="flex flex-col gap-3 p-4">

@@ -29,7 +29,7 @@ export function PageScreen({ slug, state }: { slug: string; state: PageState }) 
   if ("error" in state) return <div className="p-4"><ErrorNotice title="読み込めませんでした" message="" onRetry={state.retry} /></div>;
   if (!isSupported(state.page.blocks)) {
     return (
-      <div className="px-7 pt-5 pb-10 text-[13.5px]">
+      <div className="px-7 pt-5 pb-10 text-[13.5px] max-[767px]:px-4">
         <h1 className="m-0 mb-3 text-[22px] font-bold">{state.page.title}</h1>
         <p className="m-0 mb-2">このページはまだ対応していません</p>
         <button type="button" className="cursor-pointer border-0 bg-transparent p-0 text-primary underline" onClick={() => openOriginal(slug)}>元の画面で開く</button>

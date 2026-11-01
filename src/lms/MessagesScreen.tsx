@@ -63,8 +63,10 @@ function Chat({ userId, otherId, initial }: { userId: number; otherId: number; i
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const composer = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   // 読み込み・送信のあと(messages が替わる)に、送る欄を下端に合わせる(最新の発言はそのすぐ上に見える)
-  useEffect(() => { composer.current?.scrollIntoView({ block: "end" }); }, [t.data?.messages]);
+  // 入力中(フォーカスがある間)は動かさない。キーボードが出ている画面が跳ねるため
+  useEffect(() => { if (!field.current?.matches(":focus")) composer.current?.scrollIntoView({ block: "end" }); }, [t.data?.messages]);
   if (t.failed) return <ErrorNotice title="読み込めませんでした" message="会話を取得できませんでした。" onRetry={t.reload} />;
   if (!t.data) return <PageLoading title="メッセージ" />;
 
@@ -96,11 +98,12 @@ function Chat({ userId, otherId, initial }: { userId: number; otherId: number; i
           ))}
         </ul>
       )}
-      <div ref={composer} className="flex flex-col gap-2 border-t border-border p-4">
-        <label className="text-[12.5px] text-muted-foreground" htmlFor="mu-msg-body">先生に送る</label>
-        <textarea id="mu-msg-body" value={text} rows={4} disabled={sending} onChange={(e) => setText(e.target.value)} className="w-full rounded-[4px] border border-border bg-card p-2 text-[13.5px]" />
-        {error ? <p role="alert" className="m-0 text-[13px] text-error">{error}</p> : null}
-        <div><button type="button" className={BTN} disabled={sending || !text.trim()} onClick={() => void send()}>{sending ? "送っています" : "送る"}</button></div>
+      {/* 狭い画面は画面下に固定。1 行から伸びる欄の右に送るボタン */}
+      <div ref={composer} className="flex flex-col gap-2 border-t border-border p-4 max-[767px]:fixed max-[767px]:inset-x-0 max-[767px]:bottom-0 max-[767px]:z-30 max-[767px]:grid max-[767px]:grid-cols-[minmax(0,1fr)_auto] max-[767px]:items-end max-[767px]:bg-card max-[767px]:p-2">
+        <label className="text-[12.5px] text-muted-foreground max-[767px]:sr-only" htmlFor="mu-msg-body">先生に送る</label>
+        <textarea ref={field} id="mu-msg-body" value={text} rows={1} disabled={sending} onChange={(e) => setText(e.target.value)} className="min-h-24 w-full rounded-[4px] border border-border bg-card p-2 text-[13.5px] max-[767px]:max-h-32 max-[767px]:min-h-11 max-[767px]:text-[16px] max-[767px]:[field-sizing:content]" />
+        {error ? <p role="alert" className="m-0 text-[13px] text-error max-[767px]:order-last max-[767px]:col-span-2">{error}</p> : null}
+        <div><button type="button" className={`${BTN} max-[767px]:h-11`} disabled={sending || !text.trim()} onClick={() => void send()}>{sending ? "送っています" : "送る"}</button></div>
       </div>
     </Box>
   );
@@ -114,10 +117,10 @@ export function MessagesScreen({ path, search, userId, initial }: Props) {
   const other = Number(new URLSearchParams(search).get("id")) || null;
   if (userId === null) return <div className="p-4"><ErrorNotice title="読み込めませんでした" message="ユーザーが分かりませんでした。" /></div>;
   return (
-    <div className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4">
-      <div role="group" aria-label="種類" className="flex w-fit overflow-hidden rounded-[4px] border border-border">
+    <div className={`mx-auto flex w-full max-w-[800px] flex-col gap-4 p-4 ${tab === "messages" && other ? "max-[767px]:pb-24" : ""}`}>
+      <div role="group" aria-label="種類" className="flex w-fit overflow-hidden rounded-[4px] border border-border max-[767px]:w-full">
         {([["notifications", "通知"], ["messages", "メッセージ"]] as const).map(([k, label]) => (
-          <button key={k} type="button" aria-pressed={k === tab} onClick={() => setTab(k)} className={`h-9 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 ${k === tab ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{label}</button>
+          <button key={k} type="button" aria-pressed={k === tab} onClick={() => setTab(k)} className={`h-9 cursor-pointer border-r border-border px-4 text-[13.5px] last:border-r-0 max-[767px]:h-10 max-[767px]:flex-1 ${k === tab ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted"}`}>{label}</button>
         ))}
       </div>
       {tab === "notifications" ? <Notices userId={userId} initial={initial?.notices} />
