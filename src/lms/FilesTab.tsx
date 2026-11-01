@@ -7,7 +7,7 @@ import {
   type DraftFile, type FileArea,
 } from "./draftFiles";
 import { Box, Note } from "./parts";
-import { crumbs, fileKind, formatTime, listTree, parentOf, savePrivateFiles, usedBytes, type Tree } from "./privateFiles";
+import { crumbs, fileCount, fileKind, formatTime, listTree, parentOf, savePrivateFiles, usedBytes, type Tree } from "./privateFiles";
 import { useLoad } from "./useLoad";
 
 type Loaded = { area: FileArea; form: HTMLFormElement };
@@ -115,15 +115,20 @@ function FilesBox({ init }: { init: Loaded }) {
 
   const add = (files: File[], to: string) => {
     let left = limit > 0 ? limit - used : Infinity;
+    let count = tree ? fileCount(tree) : 0;
+    // uploadDraft は同名を上書きするので、先に弾く(同時に選んだ中の重複も)
+    const names = new Set((tree?.[to] ?? []).map((f) => f.filename));
     run(async () => {
       let ok = 0;
       for (const file of files) {
         const id = next.current++;
         setUploads((us) => [...us, { id, dir: to, name: file.name, size: file.size, pct: 0 }]);
-        const r = file.size > left
+        const r = names.has(file.name)
+          ? { ok: false as const, error: `同じ名前「${file.name}」があります` }
+          : file.size > left
           ? { ok: false as const, error: `容量を超えます(${formatSize(file.size)}。残り ${formatSize(Math.max(left, 0))})` }
-          : await uploadDraft(cur.current.area, file, (pct) => patch(id, { pct }), 0, to);
-        if (r.ok) { left -= file.size; ok++; patch(id, { pct: 100 }); } else patch(id, { pct: undefined, error: r.error });
+          : await uploadDraft(cur.current.area, file, (pct) => patch(id, { pct }), count, to);
+        if (r.ok) { left -= file.size; count++; names.add(file.name); ok++; patch(id, { pct: 100 }); } else patch(id, { pct: undefined, error: r.error });
       }
       return ok > 0;
     });
