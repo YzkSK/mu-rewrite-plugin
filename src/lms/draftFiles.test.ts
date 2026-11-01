@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { deleteDraft, limitText, listDraft, readFileArea, uploadDraft, type FileArea } from "./draftFiles";
+import { deleteDirDraft, deleteDraft, downloadDirDraft, limitText, listDraft, mkdirDraft, readFileArea, toDraftFiles, updateDirDraft, updateFileDraft, uploadDraft, type FileArea } from "./draftFiles";
 
 const realFetch = globalThis.fetch;
 const realXhr = globalThis.XMLHttpRequest;
@@ -13,6 +13,51 @@ test("readFileArea: 実機の形のインライン script から読む / 無け�
   expect(readFileArea(document)).toEqual({ itemid: 88, clientId: "69f1", ctxId: 66161, author: '山田 "太郎"', maxbytes: 52428800, maxfiles: 20, license: "allrightsreserved", repoId: 3, sesskey: "abc" });
   document.body.innerHTML = "<script>var a=1</script>";
   expect(readFileArea(document)).toBeNull();
+});
+
+test("readFileArea: 欄の名前を指定すると、その init を読む(target / areamaxbytes)", () => {
+  document.body.innerHTML = `<script>var x={"sesskey":"abc","repositories":[{"id":"3","type":"upload"}]};
+  M.form_filemanager.init(Y, {"itemid":1,"client_id":"d","maxbytes":"-1","maxfiles":"-1","target":"id_description_editor","context":{"id":9}});
+  M.form_filemanager.init(Y, {"itemid":2,"client_id":"i","maxbytes":"10485760","areamaxbytes":"10485760","maxfiles":1,"target":"id_imagefile","context":{"id":9}});</script>`;
+  expect(readFileArea(document)!.itemid).toBe(1);
+  expect(readFileArea(document, "imagefile")).toMatchObject({ itemid: 2, clientId: "i", maxbytes: 10485760, areamaxbytes: 10485760, maxfiles: 1 });
+  expect(readFileArea(document, "nothing")).toBeNull();
+});
+
+test("readFileArea: target の後ろのランダムな文字列(実機の files.php)", () => {
+  document.body.innerHTML = `<script>var x={"sesskey":"abc"};
+  M.form_filemanager.init(Y, {"itemid":3,"client_id":"f","maxbytes":"10485760","target":"id_files_filemanager_Okvue5UR3toNn6O","context":{"id":9}});</script>`;
+  expect(readFileArea(document, "files_filemanager")!.itemid).toBe(3);
+  expect(readFileArea(document, "files")).toBeNull();
+});
+
+test("toDraftFiles: フォルダ(filename \".\")・ファイル・自分自身を除く", () => {
+  const list = [
+    { filename: ".", filepath: "/mu-test/", fullname: "mu-test", type: "folder", datemodified: 100 },
+    { filename: "a.pdf", filepath: "/", filesize: "2048", datemodified: 200, type: "file", url: "https://x/a.pdf" },
+    { filename: ".", filepath: "/", type: "folder" },
+  ];
+  expect(toDraftFiles(list, "/")).toEqual([
+    { filename: "mu-test", size: null, folder: true, filepath: "/mu-test/", time: 100000 },
+    { filename: "a.pdf", size: 2048, filepath: "/", time: 200000, url: "https://x/a.pdf" },
+  ]);
+});
+
+test("フォルダの操作の本文", async () => {
+  const calls: { url: string; body: string }[] = [];
+  globalThis.fetch = (async (u: string, init: RequestInit) => { calls.push({ url: u, body: String(init.body) }); return Response.json({ fileurl: "https://x/z.zip" }); }) as unknown as typeof fetch;
+  await mkdirDraft(area, "d", "/");
+  await updateDirDraft(area, "/a/", "b", "/");
+  await updateFileDraft(area, "/", "x", "/a/", "x");
+  await deleteDirDraft(area, "/a/");
+  expect(await downloadDirDraft(area, "/a/")).toBe("https://x/z.zip");
+  const q = (i: number) => Object.fromEntries(new URLSearchParams(calls[i]!.body));
+  expect(calls.map((c) => c.url.split("=")[1])).toEqual(["mkdir", "updatedir", "updatefile", "delete", "downloaddir"]);
+  expect(q(0)).toMatchObject({ newdirname: "d", filepath: "/" });
+  expect(q(1)).toMatchObject({ filepath: "/a/", newdirname: "b", newfilepath: "/" });
+  expect(q(2)).toMatchObject({ filepath: "/", filename: "x", newfilepath: "/a/", newfilename: "x" });
+  expect(q(3)).toMatchObject({ filepath: "/a/", filename: "." });
+  expect(q(4).filepath).toBe("/a/");
 });
 
 test("limitText", () => {

@@ -22,6 +22,8 @@ import type { QuestionnairePage } from "./questionnaire";
 import { ProfileScreen } from "./ProfileScreen";
 import type { ProfilePage } from "./profile";
 import { SearchScreen } from "./SearchScreen";
+import { SettingsScreen } from "./SettingsScreen";
+import type { Tab } from "./settings";
 import { LogoutDialog } from "./LogoutDialog";
 
 /** ホーム以外の画面と、entry が今のページから読んだもの */
@@ -39,7 +41,9 @@ export type View =
   | { kind: "lti"; page: LtiPage }
   | { kind: "questionnaire"; page: QuestionnairePage }
   | { kind: "search"; search: string }
-  | { kind: "profile"; page: ProfilePage };
+  | { kind: "profile"; page: ProfilePage }
+  /** 設定の 4 画面。中身は画面が取りに行く */
+  | { kind: "settings"; tab: Tab };
 
 export const titleOf = (v: View | null): string =>
   !v ? "ホーム"
@@ -55,6 +59,7 @@ export const titleOf = (v: View | null): string =>
     : v.kind === "questionnaire" ? v.page.title || "アンケート"
     : v.kind === "search" ? "検索"
     : v.kind === "profile" ? v.page.name || "プロファイル"
+    : v.kind === "settings" ? "設定"
     : "成績";
 
 /** サイドバーで強調する項目 */
@@ -76,6 +81,7 @@ function Screen({ view, userId }: { view: View | null; userId: number | null }) 
     case "questionnaire": return <QuestionnaireScreen page={view.page} />;
     case "search": return <SearchScreen search={view.search} />;
     case "profile": return <ProfileScreen page={view.page} />;
+    case "settings": return <SettingsScreen tab={view.tab} />;
   }
 }
 

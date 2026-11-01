@@ -12,6 +12,7 @@ import { readDiscussionPage, readForumList } from "./forum";
 import { readLtiPage } from "./lti";
 import { readQuestionnairePage } from "./questionnaire";
 import { readProfile } from "./profile";
+import { tabOf } from "./settings";
 import { showBackButton } from "@/ui/backButton";
 import { closeOriginal, isAppPath, isSkipped, openOriginal, routeOf } from "./route";
 
@@ -120,8 +121,13 @@ if (window === window.top) {
           const other = new URLSearchParams(location.search).get("id");
           if (other !== null && Number(other) !== id) { openOriginal(); return; }
           view = { kind: "profile", page: readProfile(document) };
+        } else if (route === "settings") {
+          // 他人のプロファイル編集は元の画面で
+          const other = new URLSearchParams(location.search).get("id");
+          if (location.pathname === "/user/edit.php" && other !== null && Number(other) !== id) { openOriginal(); return; }
+          view = { kind: "settings", tab: tabOf(location.pathname) };
         }
-        if (view && ["forum", "discussion", "messages", "lti", "questionnaire", "search", "profile"].includes(view.kind)) heading = titleOf(view);
+        if (view && ["forum", "discussion", "messages", "lti", "questionnaire", "search", "profile", "settings"].includes(view.kind)) heading = titleOf(view);
         mountLms(name.then((n) => n || null), id, view);
         document.title = `${heading} | MU-LMS`;
         state = "on";

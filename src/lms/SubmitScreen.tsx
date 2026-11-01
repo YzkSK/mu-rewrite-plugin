@@ -43,7 +43,7 @@ function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: b
   const count = useRef(0);
   const patch = (id: number, p: Partial<FileRow> | null) => setRows((rs) => (rs ?? []).flatMap((r) => (r.id !== id ? [r] : p ? [{ ...r, ...p }] : [])));
 
-  useEffect(() => { listDraft(area).then((l) => setRows(l.map((f) => ({ id: next.current++, name: f.filename, size: f.size }))), (e: unknown) => { setLoadError(e instanceof Error ? e.message : String(e)); setRows([]); }); }, [area]);
+  useEffect(() => { listDraft(area).then((l) => setRows(l.filter((f) => !f.folder).map((f) => ({ id: next.current++, name: f.filename, size: f.size }))), (e: unknown) => { setLoadError(e instanceof Error ? e.message : String(e)); setRows([]); }); }, [area]);
   useEffect(() => {
     count.current = (rows ?? []).filter((r) => !r.error).length;
     // 一覧の読み込み中・上げている途中・外している途中は、提出も追加もさせない(途中の状態で提出が保存されないように)
