@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
+import { errText } from "./api";
 import { deleteDraft, uploadDraft } from "./draftFiles";
 import { FilesTab } from "./FilesTab";
 import { Box, Note } from "./parts";
@@ -19,7 +20,6 @@ const NAV: { tab: Tab; title: string; href: string }[] = [
 const INPUT = "h-9 w-full rounded-[4px] border border-input bg-card px-2.5 text-[13.5px]";
 const BTN = "h-9 cursor-pointer rounded-[4px] bg-primary px-5 text-[13.5px] text-primary-foreground hover:opacity-90 disabled:cursor-default disabled:opacity-50";
 const BTN2 = "h-9 cursor-pointer rounded-[4px] border border-border bg-card px-4 text-[13.5px] hover:bg-muted disabled:cursor-default disabled:opacity-50";
-const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
 /** 左に設定の目次、右に中身。800px 未満は目次が上の 1 列 */
 export function SettingsScreen({ tab }: { tab: Tab }) {

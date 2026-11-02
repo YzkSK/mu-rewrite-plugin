@@ -5,13 +5,16 @@ import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
 import { commonmark, toggleLinkCommand, createCodeBlockCommand, insertHrCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from "@milkdown/kit/preset/commonmark";
 import type { Node } from "@milkdown/kit/prose/model";
 import { callCommand } from "@milkdown/kit/utils";
-import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconDots, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, IconX, type Icon } from "@tabler/icons-react";
+import { IconArrowBackUp, IconArrowForwardUp, IconBlockquote, IconBold, IconCode, IconDots, IconH2, IconItalic, IconLink, IconList, IconListNumbers, IconSeparatorHorizontal, IconSourceCode, type Icon } from "@tabler/icons-react";
 import { ErrorNotice } from "@/ui/ErrorNotice";
+import { errText } from "./api";
 import { fetchStatus, htmlToText, submit, type AssignPage, type StatusRow, type SubmitForm } from "./assign";
 import { AssignHead } from "./AssignScreen";
-import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
+import { LinkDialog } from "./LinkDialog";
 import { isPlainDoc, plainDocJson, plainText } from "./mdEditor";
 import { Box } from "./parts";
+import { SubmitFilesBox } from "./SubmitFilesBox";
+import { load, save, saveDocDraft } from "./submitDraft";
 
 // 本文の見た目。AssignScreen の PROSE と同系統(入力欄の枠つき)
 const EDITOR = "min-h-[18rem] rounded-[4px] border border-border bg-card p-3 text-[13.5px] max-[767px]:text-[16px] [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_p]:my-2 [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal [&_:is(h1,h2,h3,h4,h5,h6)]:my-2 [&_:is(h1,h2,h3,h4,h5,h6)]:font-bold [&_h1]:text-[1.5em] [&_h2]:text-[1.3em] [&_h3]:text-[1.15em] [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_pre]:overflow-x-auto [&_code]:font-mono";
@@ -36,94 +39,13 @@ const TOOL_BTN = "grid place-items-center rounded-[4px] p-1.5 text-muted-foregro
 const NOTE = "押すと保存して提出します(確定が要る課題は、このあと課題の画面で「提出を確定する」)";
 const count = (s: string) => Array.from(s.replace(/\s/g, "")).length;
 
-type FileRow = { id: number; name: string; size: number | null; pct?: number; error?: string; removing?: boolean };
-
-/** 下書き置き場の一覧・追加・削除。「提出する」を押すまで提出には反映されない */
-function FilesBox({ area, disabled, onUploading }: { area: FileArea; disabled: boolean; onUploading: (b: boolean) => void }) {
-  const [rows, setRows] = useState<FileRow[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [over, setOver] = useState(false);
-  const next = useRef(0);
-  const count = useRef(0);
-  const patch = (id: number, p: Partial<FileRow> | null) => setRows((rs) => (rs ?? []).flatMap((r) => (r.id !== id ? [r] : p ? [{ ...r, ...p }] : [])));
-
-  useEffect(() => { listDraft(area).then((l) => setRows(l.filter((f) => !f.folder).map((f) => ({ id: next.current++, name: f.filename, size: f.size }))), (e: unknown) => { setLoadError(e instanceof Error ? e.message : String(e)); setRows([]); }); }, [area]);
-  useEffect(() => {
-    count.current = (rows ?? []).filter((r) => !r.error).length;
-    // 一覧の読み込み中・上げている途中・外している途中は、提出も追加もさせない(途中の状態で提出が保存されないように)
-    onUploading(rows === null || rows.some((r) => r.pct !== undefined || r.removing));
-  }, [rows, onUploading]);
-  const busy = disabled || rows === null;
-
-  const add = (files: File[]) => {
-    for (const file of files) {
-      const id = next.current++;
-      const n = count.current++;
-      setRows((rs) => [...(rs ?? []), { id, name: file.name, size: file.size, pct: 0 }]);
-      uploadDraft(area, file, (pct) => patch(id, { pct }), n).then((r) => {
-        if (r.ok) setRows((rs) => (rs ?? []).filter((x) => x.id === id || x.name !== file.name || x.pct !== undefined || x.error).map((x) => (x.id === id ? { id, name: file.name, size: file.size } : x)));
-        else { count.current--; patch(id, { pct: undefined, error: r.error }); }
-      });
-    }
-  };
-  const remove = (r: FileRow) => {
-    if (r.error) return patch(r.id, null);
-    patch(r.id, { removing: true });
-    deleteDraft(area, r.name).then(() => patch(r.id, null), () => patch(r.id, { removing: false, error: "外せませんでした" }));
-  };
-
-  return (
-    <div
-      onDragOver={(e) => { e.preventDefault(); if (!busy) setOver(true); }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => { e.preventDefault(); setOver(false); if (!busy) add([...e.dataTransfer.files]); }}
-      className={`rounded-[4px] ${over ? "outline outline-2 outline-primary" : ""}`}
-    >
-      <Box title="ファイル">
-        {loadError ? <p className="m-0 px-4 py-2 text-[12.5px] text-error">{`一覧を読めませんでした: ${loadError}`}</p> : null}
-        <ul className="m-0 list-none p-0">
-          {(rows ?? []).map((r) => (
-            <li key={r.id} className="flex flex-col gap-1 border-b border-border px-4 py-2.5 text-[13px]">
-              <div className="flex items-center gap-3">
-                <span className="min-w-0 flex-1 truncate">{r.name}</span>
-                {r.size !== null ? <span className="text-muted-foreground">{formatSize(r.size)}</span> : null}
-                {r.removing ? <span className="text-muted-foreground">外しています…</span>
-                  : r.pct === undefined ? <button type="button" disabled={disabled} onClick={() => remove(r)} aria-label={r.error ? "消す" : "外す"} className="cursor-pointer border-0 bg-transparent p-0 text-primary hover:underline disabled:opacity-60 max-[767px]:grid max-[767px]:size-9 max-[767px]:place-items-center max-[767px]:text-muted-foreground"><span className="max-[767px]:hidden">{r.error ? "消す" : "外す"}</span><IconX size={18} className="min-[768px]:hidden" /></button> : <span className="w-10 text-right text-muted-foreground">{`${r.pct}%`}</span>}
-              </div>
-              {r.pct !== undefined ? <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${r.pct}%` }} /></div> : null}
-              {r.error ? <span className="text-[12px] text-error">{r.error}</span> : null}
-            </li>
-          ))}
-          {rows && !rows.length ? <li className="px-4 py-2.5 text-[13px] text-muted-foreground">まだファイルがありません</li> : null}
-        </ul>
-        <div className="flex flex-col gap-1 px-4 py-3">
-          <label className={`inline-flex h-9 w-fit items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] max-[767px]:h-11 ${busy ? "opacity-60" : "cursor-pointer hover:bg-muted"}`}>
-            ファイルを選ぶ
-            <input type="file" multiple hidden disabled={busy} onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
-          </label>
-          <span className="text-[12px] text-muted-foreground"><span className="max-[767px]:hidden">ここにドラッグ&ドロップもできます。</span>{limitText(area)}</span>
-          <span className="text-[12px] text-muted-foreground">外す・上げるは「提出する」を押すまで先生には見えません</span>
-        </div>
-      </Box>
-    </div>
-  );
-}
-
-// 利用者ごとに分ける(同じタブで別の人がログインし直しても前の人の書きかけが出ない)
-let user = "";
-const key = (id: number | string | null) => `mu-lms-draft-${user}-${id}`;
-const load = (id: number | string | null): string | null => { try { return sessionStorage.getItem(key(id)); } catch { return null; } };
-const save = (id: number | string | null, v: string | null): void => {
-  try { if (v === null) sessionStorage.removeItem(key(id)); else sessionStorage.setItem(key(id), v); } catch { /* 保存できなくても書ける */ }
-};
-
 export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitForm }) {
-  user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
+  const user = form.fields.find(([k]) => k === "userid")?.[1] ?? "";
   // 書きかけは doc の JSON で `${id}-doc` に持つ(平文か Markdown かを読み戻しで変えないため)。古い版の書きかけは id に文字で
   const [draft] = useState((): { json: unknown } | { text: string; md: boolean } | null => {
-    try { const j = load(`${page.id}-doc`); if (j !== null) return { json: JSON.parse(j) }; } catch { /* 壊れていたら古い方へ */ }
-    const p = load(page.id);
-    return p === null ? null : { text: p, md: (load(`${page.id}-md`) ?? (form.markdown ? "1" : "0")) === "1" }; // -md はチェックがあった版の印
+    try { const j = load(user, `${page.id}-doc`); if (j !== null) return { json: JSON.parse(j) }; } catch { /* 壊れていたら古い方へ */ }
+    const p = load(user, page.id);
+    return p === null ? null : { text: p, md: (load(user, `${page.id}-md`) ??(form.markdown ? "1" : "0")) === "1" }; // -md はチェックがあった版の印
   });
   const [chars, setChars] = useState(() => count(draft && "text" in draft ? draft.text : form.markdown ? form.text ?? "" : htmlToText(form.text ?? "")));
   const [busy, setBusy] = useState(false);
@@ -151,9 +73,8 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
     // 元の本文に戻したら書きかけは消す(書きかけから始めたときは最初の doc も書きかけなので残す)
     const keep = (doc: Node) => {
       if (done.current) return;
-      if (draft === null && doc.eq(initial.current!)) return save(`${page.id}-doc`, null);
-      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
-      save(page.id, null);
+      if (draft === null && doc.eq(initial.current!)) return save(user, `${page.id}-doc`, null);
+      saveDocDraft(user, page.id, doc);
     };
     const ed = Editor.make()
       .config((ctx) => {
@@ -199,15 +120,14 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
       const doc = ctx.get(editorViewCtx).state.doc;
       if (draft === null && doc.eq(initial.current!)) return null;
       // 送っている間に離れても書きかけが残るよう、今の doc を保存しておく(このあと done で flush は止まる)
-      save(`${page.id}-doc`, JSON.stringify(doc.toJSON()));
-      save(page.id, null);
+      saveDocDraft(user, page.id, doc);
       return isPlainDoc(doc) ? [plainText(doc), false] as const : [ctx.get(serializerCtx)(doc), true] as const;
     });
     const [body, md] = edited ?? [form.markdown ? form.text! : htmlToText(form.text ?? ""), form.markdown] as const;
     done.current = true;
-    submit(form, body, md).then(() => { save(page.id, null); save(`${page.id}-doc`, null); save(`${page.id}-md`, null); }, (e: unknown) => {
+    submit(form, body, md).then(() => { save(user, page.id, null); save(user, `${page.id}-doc`, null); save(user, `${page.id}-md`, null); },(e: unknown) => {
       done.current = false;
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errText(e));
       setBusy(false);
       // 失敗と判定されても提出できている場合があるので、課題の画面で今の状況を確かめる
       if (page.id === null) return setStatus(null);
@@ -247,16 +167,11 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                   ))}
                   <button type="button" title="その他" aria-label="その他" aria-expanded={more} onMouseDown={(e) => e.preventDefault()} onClick={() => setMore(!more)} className={`${TOOL_BTN} min-[768px]:hidden`}><IconDots size={16} /></button>
                 {link !== null ? (
-                  <form
-                    role="dialog"
-                    aria-label="リンクを付ける"
-                    className="absolute left-0 top-full z-40 mt-1 flex w-[min(26rem,100%)] flex-col gap-2 rounded-[4px] border border-border bg-card p-3 shadow-md"
-                    onKeyDown={(e) => e.key === "Escape" && setLink(null)}
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const href = link.href.trim();
-                      const text = link.text || href;
-                      if (!/^https?:\/\/\S/i.test(href)) return; // javascript: などは入れない
+                  <LinkDialog
+                    value={link}
+                    onChange={setLink}
+                    onClose={() => setLink(null)}
+                    onApply={(href, text) => {
                       // 選んでいた範囲を、表示する文字にリンクを付けたものに置き換える(未選択ならカーソル位置に入れる)
                       editor.current?.action((ctx) => {
                         const view = ctx.get(editorViewCtx);
@@ -270,25 +185,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
                       setLink(null);
                       refresh();
                     }}
-                  >
-                    {[["表示する文字", "text", "リンクの文字"], ["URL", "href", "https://"]].map(([label, key, ph]) => (
-                      <label key={key} className="flex flex-col gap-1 text-[12px] text-muted-foreground">
-                        {label}
-                        <input
-                          autoFocus={key === (link.text ? "href" : "text")}
-                          type={key === "href" ? "url" : "text"}
-                          placeholder={ph}
-                          value={link[key as "text" | "href"]}
-                          onChange={(e) => setLink({ ...link, [key!]: e.target.value })}
-                          className="h-8 w-full rounded-[4px] border border-input bg-card px-2.5 py-1 text-sm text-foreground max-[767px]:h-10 max-[767px]:text-[16px]"
-                        />
-                      </label>
-                    ))}
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => setLink(null)} className="h-8 rounded-[4px] px-3 text-sm text-muted-foreground hover:bg-muted">やめる</button>
-                      <button type="submit" disabled={!/^https?:\/\/\S/i.test(link.href.trim())} className="h-8 rounded-[4px] bg-primary px-3 text-sm text-primary-foreground disabled:opacity-50">リンクにする</button>
-                    </div>
-                  </form>
+                  />
                 ) : null}
                 </div>
                 <div ref={host} onKeyUp={refresh} onMouseUp={refresh} />
@@ -297,7 +194,7 @@ export function SubmitScreen({ page, form }: { page: AssignPage; form: SubmitFor
               </div>
             )
             : null}
-          {form.files ? <FilesBox area={form.files} disabled={busy} onUploading={setUploading} /> : null}
+          {form.files ? <SubmitFilesBox area={form.files} disabled={busy} onUploading={setUploading} /> : null}
         </div>
         <div className="w-full flex-[1_1_220px] max-[767px]:hidden">
           <Box title="期限">

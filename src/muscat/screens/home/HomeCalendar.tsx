@@ -1,12 +1,13 @@
-import { IconChevronLeft, IconChevronRight, IconX } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { useMemo, useState } from "react";
 import type { MuscatClient } from "@/muscat/api/client";
 import type { HomeEvent } from "@/muscat/api/types";
 import { BusyOverlay } from "@/ui/BusyOverlay";
 import { Button } from "@/ui/Button";
 import { ErrorNotice } from "@/ui/ErrorNotice";
-import { errorToast } from "@/ui/Toast";
-import { eventLabel, groupEvents, gridRange, monthGrid, type DayEvent } from "../teacherSchedule/monthGrid";
+import { DayEventsDialog } from "../teacherSchedule/DayEventsDialog";
+import { eventLabel, groupEvents, monthGrid, type DayEvent } from "../teacherSchedule/monthGrid";
+import { useMonthEvents } from "../teacherSchedule/useMonthEvents";
 
 type Kind = HomeEvent["kind"];
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
@@ -21,31 +22,8 @@ const STYLE: Record<Kind, string> = {
   class: "bg-muted text-foreground",
   other: "bg-muted text-foreground",
 };
+const read = (c: MuscatClient, from: Date, to: Date) => c.homeEvents(from, to);
 const label = (e: DayEvent<Kind>) => (e.kind === "notice" ? `掲示 ${eventLabel(e)}` : eventLabel(e));
-
-function DayEvents({ date, events, onClose }: { date: string; events: DayEvent<Kind>[]; onClose: () => void }) {
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [onClose]);
-  return (
-    // 狭い画面は画面下から出るシート(左右いっぱい)
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[rgb(31_26_36/.32)] p-4 max-[767px]:place-items-end max-[767px]:p-0" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-label={`${date} の予定`} className="flex max-h-[70vh] w-full max-w-sm flex-col rounded-[4px] border border-border bg-card shadow-md max-[767px]:max-w-none max-[767px]:rounded-b-none">
-        <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-          <b className="text-sm">{`${date.replaceAll("-", "/")} の予定 ${events.length} 件`}</b>
-          <button type="button" aria-label="閉じる" onClick={onClose} className="grid size-8 cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent hover:bg-muted max-[767px]:size-9"><IconX size={18} /></button>
-        </div>
-        <ul className="m-0 flex list-none flex-col gap-1 overflow-y-auto p-3">
-          {events.map((e, j) => (
-            <li key={j} className={`rounded-[2px] px-2 py-1 text-[13px] ${STYLE[e.kind]}`}>{label(e)}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
 
 const Legend = ({ swatch, text }: { swatch: string; text: string }) => (
   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -57,38 +35,10 @@ const Legend = ({ swatch, text }: { swatch: string; text: string }) => (
 /** ホームの月表示。予定は元のページの Schedule と同じ通信で取る。日曜と祝日は赤、今日は紫の四角 */
 export function HomeCalendar({ client, onBack, today: given }: { client: MuscatClient; onBack: () => void; today?: Date }) {
   const [today] = useState(() => given ?? new Date()); // 描くたびに作り直すと、月の表も毎回作り直しになる
-  const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [events, setEvents] = useState<HomeEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const loadedOnce = useRef(false);
-  const [tries, setTries] = useState(0); // 再読み込みのたびに増やして effect をやり直す
+  const { month, events, loading, error, retry, move, goThisMonth, isThisMonth } = useMonthEvents(client, read, today);
   const [shown, setShown] = useState<string | null>(null);
-  useEffect(() => {
-    let live = true;
-    setLoading(true);
-    setError(null);
-    const [from, to] = gridRange(month);
-    client
-      .homeEvents(from, to)
-      .then((e) => live && (setEvents(e), (loadedOnce.current = true)))
-      .catch((e: unknown) => {
-        if (!live) return;
-        setEvents([]); // 前の月の予定を残さない
-        const message = e instanceof Error ? e.message : String(e);
-        // 一度でも読めていれば月を移った失敗なのでトースト。まだ何も読めていなければ画面にエラーを出す
-        if (loadedOnce.current) errorToast("予定を読み込めませんでした", message);
-        else setError(message);
-      })
-      .finally(() => live && setLoading(false));
-    return () => {
-      live = false;
-    };
-  }, [client, month, tries]);
   const grid = useMemo(() => monthGrid(month, today), [month, today]);
   const byDate = useMemo(() => groupEvents(events), [events]);
-  const move = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
-  const isThisMonth = month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
   return (
     <section className="rounded-[4px] border border-border bg-card">
       <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
@@ -103,7 +53,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
         <Button variant="secondary" label="前の月" disabled={loading} onClick={() => move(-1)}><IconChevronLeft size={16} /></Button>
         <b className="min-w-28 text-center text-lg">{`${month.getFullYear()}年${month.getMonth() + 1}月`}</b>
         <Button variant="secondary" label="次の月" disabled={loading} onClick={() => move(1)}><IconChevronRight size={16} /></Button>
-        <Button variant="secondary" disabled={loading || isThisMonth} onClick={() => setMonth(new Date(today.getFullYear(), today.getMonth(), 1))}>今月</Button>
+        <Button variant="secondary" disabled={loading || isThisMonth} onClick={goThisMonth}>今月</Button>
         <span className="flex-1 max-[767px]:hidden" />
         <span className="flex flex-wrap gap-3 max-[767px]:w-full">
           <Legend swatch="bg-primary" text="大学の行事" />
@@ -111,7 +61,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
           <Legend swatch="bg-muted" text="授業・予定" />
         </span>
       </div>
-      {error && <div className="px-4 pb-3"><ErrorNotice title="予定を読み込めませんでした" message={error} onRetry={() => setTries((n) => n + 1)} /></div>}
+      {error && <div className="px-4 pb-3"><ErrorNotice title="予定を読み込めませんでした" message={error} onRetry={retry} /></div>}
       <BusyOverlay busy={loading}>
         <div className="grid grid-cols-7 border-t border-border">
           {WEEK.map((d, i) => (
@@ -149,7 +99,7 @@ export function HomeCalendar({ client, onBack, today: given }: { client: MuscatC
           })}
         </div>
       </BusyOverlay>
-      {shown && <DayEvents date={shown} events={byDate.get(shown) ?? []} onClose={() => setShown(null)} />}
+      {shown && <DayEventsDialog date={shown} events={byDate.get(shown) ?? []} rowClass={(e) => STYLE[e.kind]} rowText={label} onClose={() => setShown(null)} />}
     </section>
   );
 }
