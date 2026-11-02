@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "MU Portal Rewrite",
   "version": "1.0.7",
+  "description": "武蔵野大学の MUSCAT・MU ポータル・MU-LMS を見やすく軽い画面に置き換えます",
   "permissions": [
     "webRequest",
     "storage"

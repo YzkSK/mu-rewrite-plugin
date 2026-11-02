@@ -149,7 +149,7 @@ function CalendarBlock({ data }: { data: Record<string, any> }) {
     fetchCalendar(sources, addOutLook, n.getFullYear(), n.getMonth() + 1).then(setFirst).catch((e) => { console.error("[mu-portal]", e); setFirst(null); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (first === undefined) return <div className="grid place-items-center py-6"><Spin className="size-6" /></div>;
-  return <AcademicCalendar data={{ header: data.header || "学年暦", sources, addOutLook, first }} load={(y, m) => fetchCalendar(sources, addOutLook, y, m)} />;
+  return <AcademicCalendar flush={false} data={{ header: data.header || "学年暦", sources, addOutLook, first }} load={(y, m) => fetchCalendar(sources, addOutLook, y, m)} />;
 }
 
 function LinkBox({ data }: { data: Record<string, any> }) {
@@ -158,9 +158,9 @@ function LinkBox({ data }: { data: Record<string, any> }) {
   return (
     <div>
       {data.header ? <div className="mb-1 text-[12px] text-muted-foreground">{data.header}</div> : null}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 max-[767px]:flex-col">
         {rows.map((r, i) => (
-          <a key={i} className="inline-flex h-8 items-center gap-1.5 rounded-[4px] border border-border bg-card px-3 text-[13px] text-foreground no-underline hover:bg-muted" href={r.href} target="_blank" rel="noopener noreferrer">
+          <a key={i} className="inline-flex h-8 items-center gap-1.5 max-[767px]:h-10 max-[767px]:justify-center rounded-[4px] border border-border bg-card px-3 text-[13px] text-foreground no-underline hover:bg-muted" href={r.href} target="_blank" rel="noopener noreferrer">
             {r.text}
             <span className="text-[11px] text-muted-foreground">外部</span>
           </a>
@@ -218,7 +218,7 @@ function Blocks({ list, ctx }: { list: Block[]; ctx: Ctx }) {
 
 function SectionRow({ s, ctx }: { s: Section; ctx: Ctx }) {
   return (
-    <section className="grid grid-cols-1 gap-x-7 gap-y-2 border-t border-border px-6 py-[18px] first:border-t-0 min-[640px]:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+    <section className="grid grid-cols-1 gap-x-7 gap-y-2 border-t border-border px-6 py-[18px] first:border-t-0 max-[767px]:px-3 min-[640px]:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
       {s.head
         ? <h2 id={"mu-h-" + ctx.titles.indexOf(s.head)} className="m-0 text-[15px] font-bold text-primary-dark [overflow-wrap:anywhere]" dangerouslySetInnerHTML={html(reword(s.head.data?.text))} />
         : null}
@@ -236,13 +236,13 @@ export function PageView({ title, blocks }: { title: string; blocks: Block[] }) 
   };
   const { lead, sections } = sectionize(blocks, title);
   return (
-    <div className="px-7 pt-5 pb-10">
-      <h1 className="m-0 mb-3 text-[22px] font-bold">{title}</h1>
-      {isSoleCabinet(blocks) ? <Blocks list={blocks.filter((b) => b.type === "fileShare")} ctx={ctx} /> : (
+    <div className="px-7 pt-5 pb-10 max-[767px]:px-0">
+      <h1 className="m-0 mb-3 text-[22px] font-bold max-[767px]:px-4">{title}</h1>
+      {isSoleCabinet(blocks) ? <div className="max-[767px]:px-3"><Blocks list={blocks.filter((b) => b.type === "fileShare")} ctx={ctx} /></div> : (
         <>
-          {lead.filter((p) => text(reword(p.data?.text))).map((p, i) => <div key={i} className={`mb-3 max-w-[76ch] text-[13.5px] leading-relaxed text-muted-foreground ${RICH}`} dangerouslySetInnerHTML={html(reword(p.data?.text))} />)}
+          {lead.filter((p) => text(reword(p.data?.text))).map((p, i) => <div key={i} className={`mb-3 max-w-[76ch] max-[767px]:px-4 text-[13.5px] leading-relaxed text-muted-foreground ${RICH}`} dangerouslySetInnerHTML={html(reword(p.data?.text))} />)}
           {sections.length ? (
-            <div className="max-w-[1100px] overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground">
+            <div className="max-w-[1100px] overflow-hidden rounded-[4px] border border-border bg-card text-card-foreground max-[767px]:rounded-none max-[767px]:border-x-0">
               {sections.map((s, i) => <SectionRow key={i} s={s} ctx={ctx} />)}
             </div>
           ) : null}

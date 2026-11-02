@@ -28,7 +28,13 @@ test("フォーラム・メッセージ・教材・検索・プロファイル",
   const ps = ["/mod/forum/view.php", "/mod/forum/discuss.php", "/message/index.php", "/message/output/popup/notifications.php", "/mod/lti/view.php", "/course/search.php", "/user/profile.php"];
   expect(ps.map(isTargetPath)).toEqual(ps.map(() => true));
   expect(ps.map((p) => routeOf(p))).toEqual(["forum", "discussion", "messages", "messages", "lti", "search", "profile"]);
-  expect(["/mod/forum/post.php", "/mod/resource/view.php", "/user/edit.php"].map(isTargetPath)).toEqual([false, false, false]);
+  expect(["/mod/forum/post.php", "/mod/resource/view.php", "/user/editadvanced.php"].map(isTargetPath)).toEqual([false, false, false]);
+});
+
+test("設定の 4 画面", () => {
+  const ps = ["/user/edit.php", "/user/preferences.php", "/user/forum.php", "/message/edit.php", "/message/notificationpreferences.php", "/user/files.php"];
+  expect(ps.map(isTargetPath)).toEqual(ps.map(() => true));
+  expect(ps.map((p) => routeOf(p))).toEqual(ps.map(() => "settings"));
 });
 
 test("マイコース・カレンダー・成績", () => {

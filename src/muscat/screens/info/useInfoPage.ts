@@ -11,7 +11,10 @@ export function useInfoPage(load: () => Promise<InfoPage>, initial?: InfoState):
     let alive = true;
     load().then(
       (page) => alive && setState({ status: "ready", page }),
-      (e) => alive && setState({ status: "error", error: errorMessage(e) }),
+      (e) => {
+        const error = errorMessage(e);
+        if (alive && error) setState({ status: "error", error }); // "" は画面を離れた印なので何も出さない
+      },
     );
     return () => {
       alive = false;

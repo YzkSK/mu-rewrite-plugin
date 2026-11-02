@@ -40,8 +40,9 @@ function Periods({ list, today }: { list: Period[]; today: string }) {
           const now = pad(p.from) <= today && (!p.to || today <= pad(p.to));
           return (
             <tr key={i}>
-              <td className={`whitespace-nowrap py-0.5 pr-4 ${now ? "font-semibold" : ""}`}>{p.name}</td>
-              <td className="whitespace-nowrap py-0.5 text-[12.5px] text-muted-foreground">
+              {/* 狭い画面は名前と期間を 2 行に */}
+              <td className={`whitespace-nowrap py-0.5 pr-4 max-[767px]:block max-[767px]:pb-0 ${now ? "font-semibold" : ""}`}>{p.name}</td>
+              <td className="whitespace-nowrap py-0.5 text-[12.5px] text-muted-foreground max-[767px]:block max-[767px]:pb-1.5">
                 {`${p.from}〜${p.to}`}
                 {now && <span className="ml-2 rounded-[2px] bg-accent px-1.5 text-[11px] font-semibold text-primary">現在</span>}
               </td>
@@ -61,12 +62,12 @@ export function InfoGrid({ grid, today = new Date() }: { grid: Grid; today?: Dat
     return <InfoTableView table={{ headers, rows }} />;
   }
   return (
-    <dl className="m-0 grid grid-cols-[130px_minmax(0,1fr)] border border-b-0 border-[#ECE9EF] text-[13.5px] max-sm:grid-cols-[100px_minmax(0,1fr)]">
+    <dl className="m-0 grid grid-cols-[130px_minmax(0,1fr)] border border-b-0 border-[#ECE9EF] text-[13.5px] max-[767px]:grid-cols-1">
       {grid.rows.map(([k, v = ""], i) => {
         const periods = splitPeriods(v);
         return (
           <div key={i} className="contents">
-            <dt className="border-b border-[#ECE9EF] bg-[#FAF9FB] px-2.5 py-1.5 text-[12.5px] text-muted-foreground">{k}</dt>
+            <dt className="border-b border-[#ECE9EF] bg-[#FAF9FB] px-2.5 py-1.5 text-[12.5px] text-muted-foreground max-[767px]:border-b-0 max-[767px]:pb-0.5">{k}</dt>
             <dd className={`m-0 min-w-0 border-b border-[#ECE9EF] px-2.5 py-1.5 [overflow-wrap:anywhere] ${v ? "" : "text-[#B8B2BF]"}`}>
               {periods ? <Periods list={periods} today={ymd(today)} /> : v || "—"}
             </dd>

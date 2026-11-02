@@ -16,7 +16,10 @@ export function useCourse(client: MuscatClient, key: CourseKey, initial?: Course
     setState({ status: "loading" });
     client.getCourse({ title: key.title, code: key.code }).then(
       (course) => alive && setState({ status: "ready", course }),
-      (e) => alive && setState({ status: "error", error: errorMessage(e) }),
+      (e) => {
+        const error = errorMessage(e);
+        if (alive && error) setState({ status: "error", error }); // "" は画面を離れた印なので何も出さない
+      },
     );
     return () => {
       alive = false;

@@ -1,5 +1,6 @@
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { loadNav, type LtiPage, type Nav } from "./lti";
+import { NavLinks } from "./parts";
 import { useLoad } from "./useLoad";
 
 const LINK = "flex-none whitespace-nowrap text-[12.5px] text-primary hover:underline";
@@ -11,7 +12,7 @@ export function LtiScreen({ page, nav: first }: { page: LtiPage; nav?: Nav | nul
   const launch = `/mod/lti/launch.php?id=${page.id}&triggerview=0`;
   const n = nav.data;
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 p-4">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 p-4 max-[767px]:pb-20">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="m-0 text-[12px] text-muted-foreground">
@@ -20,12 +21,11 @@ export function LtiScreen({ page, nav: first }: { page: LtiPage; nav?: Nav | nul
           <h1 className="m-0 text-lg font-semibold [overflow-wrap:anywhere]">{page.title}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          {n?.prev ? <a className={LINK} href={n.prev.url} title={n.prev.name}>‹ 前の教材</a> : null}
-          {n?.next ? <a className={LINK} href={n.next.url} title={n.next.name}>次の教材 ›</a> : null}
-          <a className={LINK} href={launch} target="_blank" rel="noopener noreferrer">別の窓で開く</a>
+          <NavLinks prev={n?.prev} next={n?.next} />
+          <a className={`${LINK} max-[767px]:inline-flex max-[767px]:h-9 max-[767px]:items-center max-[767px]:rounded-[4px] max-[767px]:border max-[767px]:border-border max-[767px]:px-3`} href={launch} target="_blank" rel="noopener noreferrer">別の窓で開く</a>
         </div>
       </div>
-      <iframe title={page.title || "教材"} src={launch} allow="microphone; camera; autoplay; encrypted-media; fullscreen" allowFullScreen className="block aspect-video max-h-[calc(100vh-10rem)] w-full border-0 bg-black" />
+      <iframe title={page.title || "教材"} src={launch} allow="microphone; camera; autoplay; encrypted-media; fullscreen" allowFullScreen className="block aspect-video max-h-[calc(100vh-10rem)] w-full border-0 bg-black max-[767px]:-mx-4 max-[767px]:w-[calc(100%+2rem)] max-[767px]:max-w-none" />
     </div>
   );
 }
