@@ -35,10 +35,30 @@ export const isLoginRedirect = (r: Response): boolean => new URL(r.url || locati
 
 export const errText = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
-/** ページを取って DOM にする。ログインに飛ばされたらセッション切れ */
-export async function fetchDoc(url: string): Promise<Document> {
-  const r = await fetch(url, { credentials: "include" });
+/**
+ * ページを取る。ログインが切れていたら LoginRequiredError。
+ * 切れ方は 3 通り: /login/ への転送、別オリジンの SSO への転送(fetch が TypeError)、ゲストとして開かれたページ(body.notloggedin)
+ */
+export async function fetchPage(url: string | URL, init: RequestInit = {}): Promise<Response> {
+  let r: Response;
+  try {
+    r = await fetch(url, { ...init, credentials: "include" });
+  } catch (e) {
+    // TypeError の理由は分からないので、ajax で確かめる。元のリクエストは POST の二重送信を避けるため送り直さない
+    if (e instanceof TypeError) {
+      try { await ajax("core_session_time_remaining", {}); } catch (check) { if (check instanceof LoginRequiredError) throw check; }
+    }
+    throw e;
+  }
   if (isLoginRedirect(r)) throw new LoginRequiredError();
+  const guest = new DOMParser().parseFromString(await r.clone().text(), "text/html").body.classList.contains("notloggedin");
+  if (guest) throw new LoginRequiredError();
+  return r;
+}
+
+/** ページを取って DOM にする */
+export async function fetchDoc(url: string): Promise<Document> {
+  const r = await fetchPage(url);
   if (!r.ok) throw new Error(`${url} ${r.status}`);
   return new DOMParser().parseFromString(await r.text(), "text/html");
 }
