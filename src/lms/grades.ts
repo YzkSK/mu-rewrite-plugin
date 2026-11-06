@@ -1,5 +1,5 @@
 import { courseName } from "@/portal/lib/lms";
-import { LoginRequiredError } from "./api";
+import { fetchDoc } from "./api";
 
 export type GradeCourse = { id: number; name: string; grade: string };
 export type GradeItem = { name: string; kind: string; grade: string; percent: string; feedback: string; contrib: string };
@@ -49,13 +49,6 @@ export function readGradeDetail(doc: Document): GradeDetail {
     }
   }
   return { items, total, showPercent: items.some((i) => !quiet(i.percent)), showContrib: items.some((i) => !quiet(i.contrib)) };
-}
-
-async function fetchDoc(url: string): Promise<Document> {
-  const r = await fetch(url, { credentials: "include" });
-  if (!r.ok) throw new Error(`${url} ${r.status}`);
-  if (r.url.includes("/login/")) throw new LoginRequiredError();
-  return new DOMParser().parseFromString(await r.text(), "text/html");
 }
 
 export const loadGradeList = async (): Promise<GradeCourse[]> => {

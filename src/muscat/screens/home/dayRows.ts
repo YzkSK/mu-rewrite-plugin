@@ -1,15 +1,8 @@
 import type { HomeDayItem } from "@/muscat/api/types";
+import { END, START } from "../timetable/period";
 
 /** 時限の開始と終了(元の時間割の注記どおり) */
-export const PERIODS = [
-  { start: "8:50", end: "10:30" },
-  { start: "10:40", end: "12:20" },
-  { start: "13:10", end: "14:50" },
-  { start: "15:00", end: "16:40" },
-  { start: "16:50", end: "18:30" },
-  { start: "18:40", end: "20:20" },
-  { start: "20:20", end: "22:00" },
-];
+export const PERIODS = START.map((start, i) => ({ start, end: END[i]! }));
 
 const hhmm = (t: string) => t.replace(/^0/, "");
 

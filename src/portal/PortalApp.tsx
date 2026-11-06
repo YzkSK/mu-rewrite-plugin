@@ -3,6 +3,7 @@ import { AccountDialog } from "./AccountDialog";
 import { App } from "@/muscat/shell/App";
 import { ErrorNotice } from "@/ui/ErrorNotice";
 import { PageLoading } from "@/ui/PageLoading";
+import { surname } from "@/ui/Header";
 import { ErrorToast } from "@/ui/Toast";
 import { fetchCalendar } from "./api";
 import { loadTop, TOP, type PortalData, type TopData } from "./data";
@@ -57,7 +58,7 @@ export function PortalApp({ data }: { data: PortalData }) {
     <App
       title={title}
       brand="MU Portal"
-      headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold">{data.shell.userName} さん</span> : null}
+      headerRight={data.shell.userName ? <span className="flex-none whitespace-nowrap text-[13px] font-semibold"><span className="max-[767px]:hidden">{data.shell.userName}</span><span className="hidden max-[767px]:inline">{surname(data.shell.userName)}</span> さん</span> : null}
       sidebar={(onPick) => <PortalSidebar tree={data.shell.tree} slug={slug} onPick={onPick} onAccount={() => setAccount(true)} onSignOut={() => setSignOut(true)} />}
     >
       {route === "notices" ? <NoticesScreen key={u.search} initialCategory={u.searchParams.get("category") ?? ""} />

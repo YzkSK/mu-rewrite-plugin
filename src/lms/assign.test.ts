@@ -53,9 +53,17 @@ test("submit: ログイン画面に転送されたら失敗(書きかけを消�
   await expect(submit(form, "a", false, () => {})).rejects.toThrow("ログインが切れていた");
 });
 
+/** url と redirected は Response を作ったあとでは設定できないので、上書きする */
+const asResponse = (url: string, html: string, status = 200, redirected = true): Response =>
+  Object.defineProperties(new Response(html, { status }), { url: { value: url }, redirected: { value: redirected } });
 const reply = (url: string, html: string, status = 200, redirected = true) => {
-  globalThis.fetch = (async () => ({ ok: status < 400, url, redirected, text: async () => html })) as unknown as typeof fetch;
+  globalThis.fetch = (async () => asResponse(url, html, status, redirected)) as unknown as typeof fetch;
 };
+
+test("submit: ゲストページが返っても失敗(書きかけを消さない)", async () => {
+  reply("https://lms/mod/assign/view.php?id=55", "<body class='notloggedin'></body>", 404, false);
+  await expect(submit(form, "a", false, () => {})).rejects.toThrow("ログインが切れていた");
+});
 
 test("submit: 成功は課題ページへ", async () => {
   reply("https://lms/mod/assign/view.php?id=55&action=view", "<div id='region-main'>ok</div>");
@@ -77,7 +85,7 @@ test("submit: 課題の画面へ転送されなければ、エラーが無くて
 
 test("submit: 送った中身は POST の urlencoded", async () => {
   let init: RequestInit | undefined;
-  globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return { ok: true, url: "https://lms/mod/assign/view.php?id=55&action=view", redirected: true, text: async () => "" }; }) as unknown as typeof fetch;
+  globalThis.fetch = (async (_u: unknown, i: RequestInit) => { init = i; return asResponse("https://lms/mod/assign/view.php?id=55&action=view", ""); }) as unknown as typeof fetch;
   await submit(form, "a", false, () => {});
   expect(init?.method).toBe("POST");
   expect(init?.credentials).toBe("include");

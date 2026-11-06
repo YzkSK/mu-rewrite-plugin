@@ -1,4 +1,5 @@
 import { sanitize } from "@/portal/lib/sanitize";
+import { fetchPage, LoginRequiredError } from "./api";
 import { readFileArea, type FileArea } from "./draftFiles";
 
 export type DateRow = { label: string; value: string };
@@ -124,8 +125,8 @@ const stillForm = (html: string): boolean => !!new DOMParser().parseFromString(h
 /** 課題の画面を取り直して「提出ステータス」「最終更新日時」の行を返す。読めなければ null */
 export async function fetchStatus(id: number): Promise<StatusRow[] | null> {
   try {
-    const r = await fetch(new URL(`/mod/assign/view.php?id=${id}`, location.href), { credentials: "include" });
-    if (!r.ok || new URL(r.url || location.href).pathname.startsWith("/login/")) return null;
+    const r = await fetchPage(new URL(`/mod/assign/view.php?id=${id}`, location.href));
+    if (!r.ok) return null;
     const doc = new DOMParser().parseFromString(await r.text(), "text/html");
     return readAssignPage(doc, `?id=${id}`).rows.filter((x) => x.label === "提出ステータス" || x.label === "最終更新日時");
   } catch {
@@ -135,16 +136,20 @@ export async function fetchStatus(id: number): Promise<StatusRow[] | null> {
 
 /** 送る。成功したら課題ページへ移る。失敗は理由つきの Error */
 export async function submit(form: SubmitForm, text: string, markdown = false, go: (url: string) => void = (u) => location.assign(u)): Promise<void> {
-  const r = await fetch(new URL(form.action, location.href), {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: buildSubmission(form, text, markdown),
-  });
+  let r: Response;
+  try {
+    r = await fetchPage(new URL(form.action, location.href), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: buildSubmission(form, text, markdown),
+    });
+  } catch (e) {
+    // 成功と見なすと書きかけを消してしまうので、ログイン切れは書いた本文が残ることを伝える
+    if (e instanceof LoginRequiredError) throw new Error("ログインが切れていたため提出できませんでした。書いた本文は残っています");
+    throw e;
+  }
   const html = await r.text();
-  // ログインが切れていると、ログイン画面への転送を追って 200 が返る。成功と見なすと書きかけを消してしまう
   const to = new URL(r.url || location.href);
-  if (to.pathname.startsWith("/login/")) throw new Error("ログインが切れていたため提出できませんでした。書いた本文は残っています");
   // Moodle は保存できたときだけ課題の画面(採点できる人は採点一覧)へ転送する。それを確かめられなければ失敗
   const saved = r.ok && r.redirected && to.pathname === "/mod/assign/view.php" && ["", "view", "grading"].includes(to.searchParams.get("action") ?? "");
   if (!saved || stillForm(html)) {

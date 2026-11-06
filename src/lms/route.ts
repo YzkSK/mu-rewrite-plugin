@@ -1,12 +1,17 @@
-export type Route = "home" | "course" | "assign" | "submit" | "courses" | "calendar" | "grades" | "forum" | "discussion" | "messages" | "lti" | "questionnaire" | "search" | "profile";
+export type Route = "home" | "course" | "assign" | "submit" | "courses" | "calendar" | "grades" | "forum" | "discussion" | "messages" | "lti" | "questionnaire" | "search" | "profile" | "settings";
 
+/** 設定の 4 画面。preferences.php と message/edit.php は入口だけ違う */
+export const SETTINGS: Record<string, "profile" | "prefs" | "notify" | "files"> = {
+  "/user/edit.php": "profile", "/user/preferences.php": "profile", "/user/forum.php": "prefs", "/message/edit.php": "prefs",
+  "/message/notificationpreferences.php": "notify", "/user/files.php": "files",
+};
 const GRADES = ["/grade/report/overview/index.php", "/grade/report/user/index.php"];
 const MESSAGES = ["/message/index.php", "/message/output/popup/notifications.php"];
 const OTHERS: Record<string, Route> = { "/mod/forum/view.php": "forum", "/mod/forum/discuss.php": "discussion", "/mod/lti/view.php": "lti", "/mod/questionnaire/view.php": "questionnaire", "/course/search.php": "search", "/user/profile.php": "profile" };
 
-/** 描くのはホーム("/" と /index.php)・コース・課題・マイコース・カレンダー・成績・フォーラム・メッセージ・教材(動画)・検索・プロファイル。search(?redirect=0 など)は見ない */
+/** 描くのはホーム("/" と /index.php)・コース・課題・マイコース・カレンダー・成績・フォーラム・メッセージ・教材(動画)・検索・プロファイル・設定。search(?redirect=0 など)は見ない */
 export function isTargetPath(p: string): boolean {
-  return p === "/" || p === "/index.php" || p === "/course/view.php" || p === "/mod/assign/view.php" || p === "/my/courses.php" || p === "/calendar/view.php" || GRADES.includes(p) || MESSAGES.includes(p) || p in OTHERS;
+  return p === "/" || p === "/index.php" || p === "/course/view.php" || p === "/mod/assign/view.php" || p === "/my/courses.php" || p === "/calendar/view.php" || GRADES.includes(p) || MESSAGES.includes(p) || p in OTHERS || p in SETTINGS;
 }
 
 /** 課題は action なし=課題ページ、action=editsubmission=提出画面。ほかの action は null(元の画面) */
@@ -17,6 +22,7 @@ export function routeOf(p: string, search = ""): Route | null {
   if (GRADES.includes(p)) return "grades";
   if (MESSAGES.includes(p)) return "messages";
   if (p in OTHERS) return OTHERS[p]!;
+  if (p in SETTINGS) return "settings";
   if (p === "/mod/assign/view.php") {
     const a = new URLSearchParams(search).get("action");
     return a === null ? "assign" : a === "editsubmission" ? "submit" : null;
