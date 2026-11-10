@@ -4,7 +4,7 @@ import { fetchDoc, shortName } from "./api";
 
 export type Discussion = { id: number; subject: string; author: string; at: string; lastAuthor: string; lastAt: string; replies: number };
 /** 一覧のページ(view.php)から読んだもの */
-export type ForumList = { name: string; courseId: number | null; courseName: string; discussions: Discussion[] };
+export type ForumList = { name: string; /** 説明文(sanitize 済み)。無ければ null */ intro: string | null; courseId: number | null; courseName: string; discussions: Discussion[] };
 export type Post = { id: string; subject: string; at: string; author: string; /** sanitize 済み */ html: string };
 /** 本文のページ(discuss.php)から読んだもの */
 export type DiscussionPage = { d: number | null; forumUrl: string | null; forumName: string; courseId: number | null; courseName: string; posts: Post[] };
@@ -55,7 +55,8 @@ export function readForumList(doc: Document): ForumList {
       replies: replies ? Number(replies) : 0,
     }];
   });
-  return { name: forumNameOf(doc), ...readCourseCrumb(doc), discussions };
+  const intro = doc.querySelector("#intro .no-overflow") ?? doc.querySelector("#intro");
+  return { name: forumNameOf(doc), intro: intro?.innerHTML.trim() ? sanitize(intro.innerHTML) : null, ...readCourseCrumb(doc), discussions };
 }
 
 /** 本文のページの投稿を読む(本文は sanitize) */
