@@ -22,7 +22,7 @@ type Props = {
 
 /** フォーラム。左に件名の一覧、右に選んだ話題の投稿(返信・購読などは出さない) */
 export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts, forumName, courseId, courseName }: Props) {
-  const lst = useLoad(() => (listUrl ? loadForumList(listUrl) : Promise.resolve<ForumList>({ name: "", courseId: null, courseName: "", discussions: [] })), [listUrl], first ?? undefined);
+  const lst = useLoad(() => (listUrl ? loadForumList(listUrl) : Promise.resolve<ForumList>({ name: "", intro: null, courseId: null, courseName: "", discussions: [] })), [listUrl], first ?? undefined);
   const list = lst.data;
   const [picked, setPicked] = useState<number | null>(null);
   const [open, setOpen] = useState(firstD !== null); // 狭い画面で中身を重ねているか(本文のページは最初から開く)
@@ -41,6 +41,7 @@ export function ForumScreen({ list: first, listUrl, d: firstD, posts: firstPosts
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 p-4">
       {head}
+      {list?.intro ? <Box title="説明"><div className={PROSE} dangerouslySetInnerHTML={{ __html: list.intro }} /></Box> : null}
       <div className="grid items-start gap-4 min-[800px]:grid-cols-[320px_minmax(0,1fr)]">
         <div className="min-w-0">
           <Box title="話題">

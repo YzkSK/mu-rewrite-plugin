@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { IconX } from "@tabler/icons-react";
+import { IconPlus, IconX } from "@tabler/icons-react";
 import { errText } from "./api";
 import { deleteDraft, formatSize, limitText, listDraft, uploadDraft, type FileArea } from "./draftFiles";
 import { Box } from "./parts";
@@ -63,13 +63,16 @@ export function SubmitFilesBox({ area, disabled, onUploading }: { area: FileArea
             </li>
           ))}
           {rows && !rows.length ? <li className="px-4 py-2.5 text-[13px] text-muted-foreground">まだファイルがありません</li> : null}
+          <li>
+            <label className={`mx-4 my-2 flex items-center justify-center gap-1.5 rounded-[4px] border border-dashed px-4 py-3.5 text-[13px] focus-within:outline focus-within:outline-2 focus-within:outline-primary ${over && !busy ? "border-primary bg-muted text-primary" : "border-border text-muted-foreground"} ${busy ? "opacity-60" : "cursor-pointer hover:border-primary hover:text-primary"}`}>
+              <IconPlus size={18} />
+              <span><span className="max-[767px]:hidden">ここにドラッグ、または </span><span className="font-medium text-primary">ファイルを選ぶ</span></span>
+              <input type="file" multiple className="sr-only" disabled={busy} onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
+            </label>
+          </li>
         </ul>
-        <div className="flex flex-col gap-1 px-4 py-3">
-          <label className={`inline-flex h-9 w-fit items-center rounded-[4px] border border-border bg-card px-4 text-[13.5px] max-[767px]:h-11 ${busy ? "opacity-60" : "cursor-pointer hover:bg-muted"}`}>
-            ファイルを選ぶ
-            <input type="file" multiple hidden disabled={busy} onChange={(e) => { add([...(e.target.files ?? [])]); e.target.value = ""; }} />
-          </label>
-          <span className="text-[12px] text-muted-foreground"><span className="max-[767px]:hidden">ここにドラッグ&ドロップもできます。</span>{limitText(area)}</span>
+        <div className="flex flex-col gap-1 px-4 pb-3 pt-1">
+          <span className="text-[12px] text-muted-foreground">{limitText(area)}</span>
           <span className="text-[12px] text-muted-foreground">外す・上げるは「提出する」を押すまで先生には見えません</span>
         </div>
       </Box>

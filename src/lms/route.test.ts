@@ -43,6 +43,13 @@ test("マイコース・カレンダー・成績", () => {
   expect(ps.map((p) => routeOf(p))).toEqual(["courses", "calendar", "grades", "grades"]);
 });
 
+test("タブ全体の印があれば、どの対象ページも元の画面", () => {
+  sessionStorage.setItem("mu-lms-skip-all", "1");
+  expect(isSkipped({ pathname: "/course/view.php", search: "?id=2" })).toBe(true);
+  expect(isAppPath({ pathname: "/", search: "" })).toBe(false);
+  sessionStorage.removeItem("mu-lms-skip-all");
+});
+
 test("isSkipped: 印のあるページ(パス+search)だけ true", () => {
   sessionStorage.setItem("mu-lms-skip:/course/view.php?id=1", "1");
   expect(isSkipped({ pathname: "/course/view.php", search: "?id=1" })).toBe(true);
