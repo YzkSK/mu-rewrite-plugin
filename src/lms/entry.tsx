@@ -14,7 +14,7 @@ import { readQuestionnairePage } from "./questionnaire";
 import { readProfile } from "./profile";
 import { tabOf } from "./settings";
 import { showBackButton } from "@/ui/backButton";
-import { closeOriginal, isAppPath, isSkipped, openOriginal, routeOf } from "./route";
+import { closeOriginal, isAppPath, isSkipped, openOriginalPage, routeOf } from "./route";
 
 const FAIL_SAFE_MS = 20_000;
 
@@ -119,12 +119,12 @@ if (window === window.top) {
         else if (route === "profile") {
           // 自分以外のプロファイルは元の画面で見る(元の script は止めてあるので、印を付けて読み直す)
           const other = new URLSearchParams(location.search).get("id");
-          if (other !== null && Number(other) !== id) { openOriginal(); return; }
+          if (other !== null && Number(other) !== id) { openOriginalPage(); return; }
           view = { kind: "profile", page: readProfile(document) };
         } else if (route === "settings") {
           // 他人のプロファイル編集は元の画面で
           const other = new URLSearchParams(location.search).get("id");
-          if (location.pathname === "/user/edit.php" && other !== null && Number(other) !== id) { openOriginal(); return; }
+          if (location.pathname === "/user/edit.php" && other !== null && Number(other) !== id) { openOriginalPage(); return; }
           view = { kind: "settings", tab: tabOf(location.pathname) };
         }
         if (view && ["forum", "discussion", "messages", "lti", "questionnaire", "search", "profile", "settings"].includes(view.kind)) heading = titleOf(view);

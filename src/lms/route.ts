@@ -30,21 +30,31 @@ export function routeOf(p: string, search = ""): Route | null {
   return "home";
 }
 
-// 印はそのページ(パス+search)だけ。タブ全体に付けると、ほかのページまで元の画面のままになる
+// ボタンで選んだときはタブ全体(SKIP_ALL)、他人のプロファイルなど自動で切り替えるときはそのページ(パス+search)だけ
 const SKIP = "mu-lms-skip:";
+const SKIP_ALL = "mu-lms-skip-all";
 const skipped = (l: { pathname: string; search: string }): boolean => {
-  try { return sessionStorage.getItem(SKIP + l.pathname + l.search) === "1"; } catch { return false; }
+  try { return sessionStorage.getItem(SKIP_ALL) === "1" || sessionStorage.getItem(SKIP + l.pathname + l.search) === "1"; } catch { return false; }
 };
 
-/** このページを元の LMS で開く(セッションの間だけ)。印を付けて読み込み直す */
+/** このタブを元の LMS で開く(セッションの間だけ。ほかのページへ移っても元の画面のまま)。印を付けて読み込み直す */
 export function openOriginal(): void {
+  try { sessionStorage.setItem(SKIP_ALL, "1"); } catch { /* 付けられなければ読み直しても同じ画面になるだけ */ }
+  location.reload();
+}
+
+/** このページだけを元の LMS で開く。印を付けて読み込み直す */
+export function openOriginalPage(): void {
   try { sessionStorage.setItem(SKIP + location.pathname + location.search, "1"); } catch { /* 付けられなければ読み直しても同じ画面になるだけ */ }
   location.reload();
 }
 
-/** このページの「元の LMS で開く」印を消して読み込み直す(拡張の画面に戻る) */
+/** 「元の LMS で開く」印(タブ全体とこのページ)を消して読み込み直す(拡張の画面に戻る) */
 export function closeOriginal(): void {
-  try { sessionStorage.removeItem(SKIP + location.pathname + location.search); } catch { /* 消せなければ読み直しても同じ画面になるだけ */ }
+  try {
+    sessionStorage.removeItem(SKIP_ALL);
+    sessionStorage.removeItem(SKIP + location.pathname + location.search);
+  } catch { /* 消せなければ読み直しても同じ画面になるだけ */ }
   location.reload();
 }
 
