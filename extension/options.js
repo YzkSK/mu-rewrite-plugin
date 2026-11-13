@@ -9,14 +9,15 @@ document.getElementById("zoom").addEventListener("change", (e) => {
   chrome.storage.sync.set({ [KEY]: Number(e.target.value) });
 });
 
-// 初めて開いたときだけ「はじめに」を出す。閉じたら次から出さない
-const INTRO = "mu-intro-seen";
+// 「はじめに」はインストール直後に開いた 1 回だけ出す。印は background が付け、出したら消す
+const INTRO = "mu-intro";
 const intro = document.getElementById("intro");
-chrome.storage.local.get(INTRO).then((r) => { intro.hidden = !!r[INTRO]; });
-document.getElementById("intro-close").addEventListener("click", () => {
-  intro.hidden = true;
-  chrome.storage.local.set({ [INTRO]: true });
+chrome.storage.local.get(INTRO).then((r) => {
+  if (!r[INTRO]) return;
+  intro.hidden = false;
+  chrome.storage.local.remove(INTRO);
 });
+document.getElementById("intro-close").addEventListener("click", () => { intro.hidden = true; });
 
 // ストアから入れると manifest に update_url が付く。channel.txt はリリースの zip にだけ入る
 const manifest = chrome.runtime.getManifest();
