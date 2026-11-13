@@ -28,8 +28,9 @@ async function checkUpdate() {
 chrome.runtime.onStartup.addListener(checkUpdate);
 chrome.runtime.onInstalled.addListener(checkUpdate);
 // 入れた直後にアイコンの画面を開いて「はじめに」を見せる。ポップアップを開けない環境ではタブで開く
-chrome.runtime.onInstalled.addListener(({ reason }) => {
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason !== "install") return;
+  await chrome.storage.local.set({ "mu-intro": true });
   chrome.action.openPopup().catch(() => chrome.tabs.create({ url: "options.html" }));
 });
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
